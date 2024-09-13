@@ -1,0 +1,39 @@
+# Repo Template
+
+## Abstract
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
+tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
+veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
+velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint
+occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+mollit anim id est laborum.
+
+## Project Organization
+
+- `/code` Scripts with prefixes (e.g., `01_import-data.R`,
+  `02_clean-data.R`) and functions in `/code/src`.
+- `/data` Simulated and real data, the latter not pushed.
+- `/figures` PNG images and plots.
+- `/output` Output from model runs, not pushed.
+- `/presentations` Presentation slides.
+- `/private` A catch-all folder for miscellaneous files, not pushed.
+- `/renv` Project library, once initialized (see below).
+- `/writing` Case studies and the paper.
+- `renv.lock` Information on the reproducible environment.
+
+## Reproducible Environment
+
+Every package you install lives in your system library, accessible to
+all projects. However, packages change. Add a reproducible environment
+by creating a project library using the `{renv}` package.
+
+- Initialize the project library *once* using `renv::init()`.
+- Once you’ve installed packages, add them to the project library using
+  `renv::snapshot()`.
+- If a project library already exists, install the associated packages
+  with `renv::restore()`.
+
+For more details on using GitHub, Quarto, etc. see [Research Assistant
+Training](https://github.com/marcdotson/ra-training).

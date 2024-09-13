@@ -1,5 +1,5 @@
 ---
-title: "Antecedents to and Effects of Participating in Advanced Coursework"
+title: "Antecedents to and Effects of Advanced Coursework"
 format: gfm
 ---
 

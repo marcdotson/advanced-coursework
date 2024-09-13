@@ -1,4 +1,4 @@
-# Antecedents to and Effects of Participating in Advanced Coursework
+# Antecedents to and Effects of Advanced Coursework
 
 
 ## Description

@@ -13,6 +13,9 @@ private/*
 
 # Files
 *.pdf
+*.csv
+*.xls
+*.xlsx
 code/src/*
 !code/src/*.R
 !code/src/*.py

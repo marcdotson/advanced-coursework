@@ -7,6 +7,9 @@
 # Apple
 .DS_Store
 
+# venv
+.venv
+
 # Folders
 output/*
 private/*

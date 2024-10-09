@@ -1,8 +1,8 @@
 
 import pandas as pd
 
-df = pd.read_csv('/Users/MattHortin/Downloads/ASC/Clearing House Data - USU Version.csv')
-
+csv_path = '../data/Clearing House Data - USU Version.csv'
+df = pd.read_csv(csv_path)
 #Remove rows that don't have data
 df = df[df['Record_Found_Y/N'] != 'N']
 #Condence the graduation date to only the year
@@ -81,6 +81,4 @@ new_column_order = [
 ]
 df_combined = df_combined[new_column_order]
 
-df_combined.head()
-
-df_combined.to_csv('clean_clearinghouse_data.csv', index=False)
+df_combined.to_csv('simple_clearinghouse_data.csv', index=False)

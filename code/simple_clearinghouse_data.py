@@ -1,7 +1,7 @@
 
 import pandas as pd
 
-csv_path = '../data/Clearing House Data - USU Version.csv'
+csv_path = 'data/Clearing House Data - USU Version.csv'
 df = pd.read_csv(csv_path)
 #Remove rows that don't have data
 df = df[df['Record_Found_Y/N'] != 'N']

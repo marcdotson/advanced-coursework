@@ -31,7 +31,7 @@ df = full_join.groupby('StudentNumber').agg(
 
 
 #------------------------------------------------------------------------------------
-# Get the avg grade for students enrolled in ac and create ac_gpa column
+# Get the avg grade for students enrolled in ac and create ac_gpa column for exploratory analysis
 ac_grade = advanced_course[['StudentNumber', 'GradeEarned']].copy()
 ac_grade['GradeEarned'] = ac_grade['GradeEarned'].replace({'P': 4.0, 'F': 0.0}) # replace P and F with numbers
 ac_grade['GradeEarned'] = pd.to_numeric(ac_grade['GradeEarned'], errors='coerce') # make sure GradeEarned is a numeric value
@@ -42,7 +42,7 @@ df['ac_gpa'] = df['ac_gpa'].fillna(0)
 
 
 #------------------------------------------------------------------------------------
-# Student Attendance by School and Grade
+# Student Attendance by School and Grade for the model
 # 'nan' columns capture attendance when grade data is missing.
 
 courses = pd.read_excel('data/2022 EOY Data - USU.xlsx', sheet_name='Transcript Courses')
@@ -72,8 +72,63 @@ school_grid.columns = school_grid.columns.str.replace(r'\.0', '', regex=True)
 school_grid.reset_index(inplace=True)
 school_grid = school_grid.drop(columns=['School_Grade'], errors='ignore')
 
-# Merge the school grid with the main DataFrame 'df' on 'StudentNumber'
-df = pd.merge(df, school_grid, on='StudentNumber', how='left')
+# Reorder the columns
+grid_columns = [
+    'StudentNumber',
+    'school_710_grade_8', 'school_710_grade_9', 'school_710_grade_10', 'school_710_grade_11', 'school_710_grade_12', 'school_710_grade_nan',
+    'school_706_grade_8', 'school_706_grade_9', 'school_706_grade_10', 'school_706_grade_11', 'school_706_grade_12', 'school_706_grade_nan',
+    'school_705_grade_9', 'school_705_grade_10', 'school_705_grade_11', 'school_705_grade_12', 'school_705_grade_nan',
+    'school_703_grade_8', 'school_703_grade_9', 'school_703_grade_10', 'school_703_grade_11', 'school_703_grade_12', 'school_703_grade_nan',
+    'school_702_grade_8', 'school_702_grade_9', 'school_702_grade_10', 'school_702_grade_11', 'school_702_grade_12', 'school_702_grade_nan',
+    'school_330_grade_9', 'school_330_grade_nan', 
+    'school_106_grade_nan', 'school_109_grade_nan', 'school_111_grade_nan', 'school_118_grade_nan', 
+    'school_120_grade_nan', 'school_124_grade_nan', 'school_128_grade_nan', 'school_130_grade_nan', 
+    'school_132_grade_nan', 'school_140_grade_nan', 'school_144_grade_nan', 'school_152_grade_nan', 
+    'school_156_grade_nan', 'school_160_grade_nan', 'school_164_grade_nan', 'school_166_grade_nan', 
+    'school_170_grade_nan', 'school_406_grade_nan', 'school_410_grade_nan', 'school_600_grade_nan'
+]
+
+school_grid = school_grid.reindex(columns=grid_columns)
+
+school_grid.head()
+
+
+#------------------------------------------------------------------------------------
+# Student's Teacher by TeacherID and Grade for the model
+# 'nan' columns capture attendance when grade data is missing.
+
+course_data = courses[['StudentNumber', 'GradeLevel']]
+membership_data = membership[['StudentNumber', 'CourseRecordID']]
+master_data = master[['CourseRecordID', 'Teacher1ID']]
+
+# Merge master and membership on 'CourseRecordID' to get Teacher1ID per student
+teacher_membership = pd.merge(membership_data, master_data, on='CourseRecordID', how='left')
+
+# Merge with courses on 'StudentNumber' to add GradeLevel
+teacher_data = pd.merge(teacher_membership, course_data, on='StudentNumber', how='left')
+
+teacher_data['Teacher1ID'] = teacher_data['Teacher1ID'].astype(str)
+teacher_data['GradeLevel'] = teacher_data['GradeLevel'].astype(str)
+
+# Create the 'Teacher_Grade' column
+teacher_data['Teacher_Grade'] = 'teacher_' + teacher_data['Teacher1ID'] + '_grade_' + teacher_data['GradeLevel']
+
+# Pivot the data to create a grid for each student, indicating attendance with 1 and non-attendance with 0
+teacher_grid = teacher_data.pivot_table(
+    index='StudentNumber',
+    columns='Teacher_Grade',
+    values='GradeLevel',
+    aggfunc=lambda x: 1,    # Use 1 to indicate attendance
+    fill_value=0            # Fill missing values with 0 to indicate no attendance
+)
+
+
+teacher_grid.columns = teacher_grid.columns.str.replace(r'\.0', '', regex=True)
+teacher_grid.reset_index(inplace=True)
+teacher_grid = teacher_grid.drop(columns=['Teacher_Grade'], errors='ignore')
+
+# Display the resulting teacher grid
+teacher_grid.head()
 
 
 #------------------------------------------------------------------------------------
@@ -108,17 +163,16 @@ df = pd.merge(df, teacher_df, on='StudentNumber', how='left')
 #------------------------------------------------------------------------------------
 # Get the current grade level and school for each student
 student_school = pd.merge(membership[['StudentNumber', 'SchoolNumber']], 
-                          courses[['StudentNumber', 'SchoolYear']], 
+                          courses[['StudentNumber', 'GradeLevel']], 
                           on='StudentNumber', 
                           how='left')
 
 current_school_grade = student_school.groupby('StudentNumber', as_index=False).agg({
-    'SchoolYear': 'max',           # Get the maximum school year
+    'GradeLevel': 'max',           # Get the maximum school year
     'SchoolNumber': 'last'         # Get the school associated with the latest year
 })
-current_school_grade = current_school_grade.rename(columns={'SchoolYear': 'current_grade', 'SchoolNumber': 'current_school'})
+current_school_grade = current_school_grade.rename(columns={'GradeLevel': 'current_grade', 'SchoolNumber': 'current_school'})
 
-current_school_grade.head()
 df = pd.merge(df, current_school_grade[['StudentNumber', 'current_grade', 'current_school']], on='StudentNumber', how='left')
 
 
@@ -138,25 +192,31 @@ current_attendance = current_attendance[['StudentNumber', 'days_attended']]
 
 df = pd.merge(df, current_attendance, on='StudentNumber', how='left')
 
-# Reorder columns in df
-final_columns = [
-    'StudentNumber', 'ac_ind', 'ac_count', 'ac_gpa', 'current_grade', 'current_school', 'days_attended', 
-    'school_710_grade_8', 'school_710_grade_9', 'school_710_grade_10', 'school_710_grade_11', 'school_710_grade_12', 'school_710_grade_nan',
-    'school_706_grade_8', 'school_706_grade_9', 'school_706_grade_10', 'school_706_grade_11', 'school_706_grade_12', 'school_706_grade_nan',
-    'school_705_grade_9', 'school_705_grade_10', 'school_705_grade_11', 'school_705_grade_12', 'school_705_grade_nan',
-    'school_703_grade_8', 'school_703_grade_9', 'school_703_grade_10', 'school_703_grade_11', 'school_703_grade_12', 'school_703_grade_nan',
-    'school_702_grade_8', 'school_702_grade_9', 'school_702_grade_10', 'school_702_grade_11', 'school_702_grade_12', 'school_702_grade_nan',
-    'school_330_grade_9', 'school_330_grade_nan', 
-    'school_106_grade_nan', 'school_109_grade_nan', 'school_111_grade_nan', 'school_118_grade_nan', 
-    'school_120_grade_nan', 'school_124_grade_nan', 'school_128_grade_nan', 'school_130_grade_nan', 
-    'school_132_grade_nan', 'school_140_grade_nan', 'school_144_grade_nan', 'school_152_grade_nan', 
-    'school_156_grade_nan', 'school_160_grade_nan', 'school_164_grade_nan', 'school_166_grade_nan', 
-    'school_170_grade_nan', 'school_406_grade_nan', 'school_410_grade_nan', 'school_600_grade_nan'
-] + [col for col in df.columns if col.startswith('teacher_')]
 
-df = df.reindex(columns=final_columns)
-df=df.fillna(0)
+#------------------------------------------------------------------------------------
+# Change df to exploratory_data and order the columns
+exploratory_columns = [
+    'StudentNumber', 'ac_ind', 'ac_count', 'ac_gpa', 'current_grade', 'current_school', 'days_attended'
+] + list(teacher_df.columns)
+exploratory_data = df[exploratory_columns]
+exploratory_data = exploratory_data.fillna(0)
+exploratory_data.head()
 
 
-df.head()
-df.to_csv('2022_EOY_Summary.csv', index=False)
+
+#------------------------------------------------------------------------------------
+# Merge data to create the data needed for the model
+model_data = df[['StudentNumber', 'ac_ind']]
+model_data = pd.merge(model_data, school_grid, on='StudentNumber', how='left')
+model_data = pd.merge(model_data, teacher_grid, on='StudentNumber', how='left')
+model_data = model_data.fillna(0)
+model_data.head()
+
+
+#------------------------------------------------------------------------------------
+#Export dataframes to CSV
+model_data.to_csv('2022_model_data.csv', index=False)
+exploratory_data.to_csv('2022_exploratory_data.csv', index=False)
+
+
+

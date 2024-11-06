@@ -151,12 +151,6 @@ school_year = courses[['student_number', 'SchoolYear', 'GradeLevel']]
 teacher_join = pd.merge(school_year, teacher_year, on='student_number', how='left')
 teacher_2022 = teacher_join[teacher_join['SchoolYear'] == 2022]
 
-# Filter to include only students in grades above 8
-teacher_2022 = teacher_join[teacher_join['GradeLevel'] > 8]
-
-# Drop 'GradeLevel' so it is not included in df
-teacher_2022 = teacher_2022.drop(columns=['GradeLevel']).drop_duplicates(subset=['student_number', 'Teacher1ID'])
-
 teacher_2022 = teacher_2022.drop_duplicates(subset=['student_number', 'Teacher1ID'])
 teacher_counts = teacher_2022.groupby('student_number')['Teacher1ID'].nunique()
 teacher_list = teacher_2022.groupby('student_number')['Teacher1ID'].apply(list)
@@ -216,6 +210,10 @@ df = df[df_columns]
 df.head()
 df = pd.merge(df, school_grid, on='student_number', how='left')
 df = pd.merge(df, teacher_grid, on='student_number', how='left')
+
+# Filter to include only students in grades above 8
+teacher_2022 = teacher_join[teacher_join['GradeLevel'] > 8]
+df = df[df['current_grade']>8]
 df = df.fillna(0)
 df.head()
 

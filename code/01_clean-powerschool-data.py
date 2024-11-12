@@ -166,7 +166,7 @@ df = pd.merge(df, teacher_df, on='student_number', how='left')
 
 
 #------------------------------------------------------------------------------------
-# Get the current grade level and school for each student
+# Get the current grade level and school for each student. Then dummy code school and grade columns
 student_school = pd.merge(membership[['student_number', 'SchoolNumber']], 
                           courses[['student_number', 'GradeLevel']], 
                           on='student_number', 
@@ -177,9 +177,15 @@ current_school_grade = student_school.groupby('student_number', as_index=False).
     'SchoolNumber': 'last'         # Get the school associated with the latest year
 })
 current_school_grade = current_school_grade.rename(columns={'GradeLevel': 'current_grade', 'SchoolNumber': 'current_school'})
+current_school_grade = current_school_grade[current_school_grade['current_grade']>8] # Filter to grades > 8 so only grades 9 - 12 and highschools are returned
 
+# Create dummy variables for 'current_school' and 'current_grade'
+school_dummies = pd.get_dummies(current_school_grade['current_school'], prefix='current_school', dtype=int)
+grade_dummies = pd.get_dummies(current_school_grade['current_grade'], prefix='current_grade', dtype=int)
+
+# Concatenate the dummy variables with the original DataFrame
+df = pd.concat([df, school_dummies, grade_dummies], axis=1)
 df = pd.merge(df, current_school_grade, on='student_number', how='left')
-
 
 #------------------------------------------------------------------------------------
 # Get the current years attendance for each student
@@ -202,7 +208,10 @@ df = pd.merge(df, current_attendance, on='student_number', how='left')
 # Order df columns and merge school_grid, and teacher_grid 
 df_columns = [
     'student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa', 'current_grade', 'current_school', 'days_attended'
-] + [col for col in df.columns if col.startswith('teacher_')]
+] + \
+[col for col in df.columns if col.startswith('current_grade_')] + \
+[col for col in df.columns if col.startswith('current_school_')] + \
+[col for col in df.columns if col.startswith('teacher_')]
 df = df[df_columns]
 df.head()
 df = pd.merge(df, school_grid, on='student_number', how='left')
@@ -218,4 +227,3 @@ df.head()
 #------------------------------------------------------------------------------------
 # Export dataframe to CSV
 df.to_csv('./data/01_cleaned_powerschool_data.csv', index=False)
-

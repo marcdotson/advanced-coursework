@@ -50,6 +50,13 @@ df['ac_gpa'] = df['ac_gpa'].fillna(0)
 
 
 #------------------------------------------------------------------------------------
+# Get the Cumulative GPA for every student
+cumulative_gpa = student[['student_number', 'CumulativeGPA']]
+cumulative_gpa = cumulative_gpa.rename(columns={'CumulativeGPA': 'overall_gpa'})
+df = pd.merge(df, cumulative_gpa, on='student_number', how='left')
+
+
+#------------------------------------------------------------------------------------
 # Student Attendance by School and Grade for the model
 # 'nan' columns capture attendance when grade data is missing.
 
@@ -81,21 +88,11 @@ school_grid.reset_index(inplace=True)
 # Drop 'School_Grade' now that it's captured in pivot columns
 school_grid = school_grid.drop(columns=['School_Grade'], errors='ignore')
 
-# Reorder the columns
-grid_columns = [
-    'student_number',
-    'school_710_grade_8', 'school_710_grade_9', 'school_710_grade_10', 'school_710_grade_11', 'school_710_grade_12', 'school_710_grade_nan',
-    'school_706_grade_8', 'school_706_grade_9', 'school_706_grade_10', 'school_706_grade_11', 'school_706_grade_12', 'school_706_grade_nan',
-    'school_705_grade_9', 'school_705_grade_10', 'school_705_grade_11', 'school_705_grade_12', 'school_705_grade_nan',
-    'school_703_grade_8', 'school_703_grade_9', 'school_703_grade_10', 'school_703_grade_11', 'school_703_grade_12', 'school_703_grade_nan',
-    'school_702_grade_8', 'school_702_grade_9', 'school_702_grade_10', 'school_702_grade_11', 'school_702_grade_12', 'school_702_grade_nan',
-    'school_330_grade_9', 'school_330_grade_nan', 
-    'school_106_grade_nan', 'school_109_grade_nan', 'school_111_grade_nan', 'school_118_grade_nan', 
-    'school_120_grade_nan', 'school_124_grade_nan', 'school_128_grade_nan', 'school_130_grade_nan', 
-    'school_132_grade_nan', 'school_140_grade_nan', 'school_144_grade_nan', 'school_152_grade_nan', 
-    'school_156_grade_nan', 'school_160_grade_nan', 'school_164_grade_nan', 'school_166_grade_nan', 
-    'school_170_grade_nan', 'school_406_grade_nan', 'school_410_grade_nan', 'school_600_grade_nan'
-]
+# Reorder the school_grid columns dynamically
+school_columns = sorted([col for col in school_grid.columns if col.startswith('school_')], reverse=True)
+
+# Ensure 'student_number' is the first column, followed by the school columns
+grid_columns = ['student_number'] + school_columns
 
 school_grid = school_grid.reindex(columns=grid_columns)
 
@@ -204,7 +201,7 @@ df = pd.merge(df, current_attendance, on='student_number', how='left')
 #------------------------------------------------------------------------------------
 # Order df columns and merge school_grid, and teacher_grid 
 df_columns = [
-    'student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'current_grade', 'current_school', 'days_attended'
+    'student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa', 'current_grade', 'current_school', 'days_attended'
 ] + [col for col in df.columns if col.startswith('teacher_')]
 df = df[df_columns]
 df.head()
@@ -217,10 +214,8 @@ df = df[df['current_grade']>8]
 df = df.fillna(0)
 df.head()
 
+
 #------------------------------------------------------------------------------------
-#Export dataframe to CSV
+# Export dataframe to CSV
 df.to_csv('./data/01_cleaned_powerschool_data.csv', index=False)
-
-
-
 

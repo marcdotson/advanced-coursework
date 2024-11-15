@@ -172,12 +172,16 @@ student_school = pd.merge(membership[['student_number', 'SchoolNumber']],
                           on='student_number', 
                           how='left')
 
+student_school = student_school[student_school['GradeLevel'] > 8]
+student_school = student_school.sort_values(by=['student_number', 'GradeLevel'])
+
+
 current_school_grade = student_school.groupby('student_number', as_index=False).agg({
     'GradeLevel': 'max',           # Get the maximum school year
     'SchoolNumber': 'last'         # Get the school associated with the latest year
 })
 current_school_grade = current_school_grade.rename(columns={'GradeLevel': 'current_grade', 'SchoolNumber': 'current_school'})
-current_school_grade = current_school_grade[current_school_grade['current_grade']>8] # Filter to grades > 8 so only grades 9 - 12 and highschools are returned
+#current_school_grade = current_school_grade[current_school_grade['current_grade']>8] # Filter to grades > 8 so only grades 9 - 12 and highschools are returned
 
 # Create dummy variables for 'current_school' and 'current_grade'
 school_dummies = pd.get_dummies(current_school_grade['current_school'], prefix='current_school', dtype=int)
@@ -218,9 +222,13 @@ df = pd.merge(df, school_grid, on='student_number', how='left')
 df = pd.merge(df, teacher_grid, on='student_number', how='left')
 
 # Filter to include only students in grades above 8
-teacher_2022 = teacher_join[teacher_join['GradeLevel'] > 8]
 df = df[df['current_grade']>8]
 df = df.fillna(0)
+
+# Remove duplicate students
+df = df.loc[df.groupby('student_number')['current_grade'].idxmax()]
+df = df.reset_index(drop=True)
+
 df.head()
 
 

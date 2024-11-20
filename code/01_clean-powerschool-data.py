@@ -220,7 +220,3 @@ df.head()
 #------------------------------------------------------------------------------------
 #Export dataframe to CSV
 df.to_csv('./data/01_cleaned_powerschool_data.csv', index=False)
-
-
-
-

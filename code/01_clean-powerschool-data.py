@@ -78,10 +78,8 @@ df['ac_gpa'] = df['ac_gpa'].astype(float)
 df.head()
 
 
-
 #------------------------------------------------------------------------------------
 # Student Attendance by School and Grade
-
 course_year = courses[['student_number', 'GradeLevel']]
 school_number = membership[['student_number', 'SchoolNumber']]
 
@@ -257,6 +255,7 @@ current_school_grade = student_school.groupby('student_number', as_index=False).
 })
 
 current_school_grade = current_school_grade.rename(columns={'GradeLevel': 'current_grade', 'SchoolNumber': 'current_school'})
+#current_school_grade = current_school_grade[current_school_grade['current_grade']>8] # Filter to grades > 8 so only grades 9 - 12 and highschools are returned
 
 # Make sure student_number is a string
 current_school_grade['student_number'] = current_school_grade['student_number'].astype(str)
@@ -282,7 +281,6 @@ grade_school_dummies = grade_school_dummies[['student_number'] + [col for col in
 grade_school_dummies['student_number'] = grade_school_dummies['student_number'].astype(str)
 
 grade_school_dummies.head()
-
 
 #------------------------------------------------------------------------------------
 # Get the current years attendance for each student
@@ -333,6 +331,7 @@ model_data = pd.merge(model_data, school_grid, on='student_number', how='left')
 
 model_data.head()
 
+df.head()
 
 # ------------------------------------------------------------------------------------
 # Export the exploratory data

@@ -459,7 +459,60 @@ model_df.head()
 
 
 #------------------------------------------------------------------------------------------------------------------------------
+# Function to process a column: add to df, replace nulls, and dummy code
+def student_bianary_columns(hs_student_table, df, model_df, column_name, dummy_name):
+    # Extract and rename the column
+    student_column = hs_student_table[['student_number', column_name]].rename(columns={column_name: dummy_name})
+    
+    # Replace null values with 'N'
+    student_column[dummy_name] = student_column[dummy_name].fillna('N')
+    
+    # Ensure student_number is a string in all dataframes
+    student_column['student_number'] = student_column['student_number'].astype(str)
+    df['student_number'] = df['student_number'].astype(str)
+    model_df['student_number'] = model_df['student_number'].astype(str)
+    
+    # Merge non-dummy column into df
+    df = pd.merge(df, student_column, on='student_number', how='left')
+    
+    # Create dummy variable (Y=1, N=0)
+    student_column[f"{dummy_name}_y"] = student_column[dummy_name].map({'Y': 1, 'N': 0})
+    
+    # Create a table containing only student_number and the dummy column
+    dummy_table = student_column[['student_number', f"{dummy_name}_y"]]
+    
+    # Merge dummy variable into model_df
+    model_df = pd.merge(model_df, dummy_table, on='student_number', how='left')
+    
+    # Return the updated df and model_df
+    return df, model_df
 
+# Apply the function to each column
+columns_to_process = [
+    ('Ethnicity', 'ethnicity'),
+    ('AmerIndianAlaskan', 'amerindian_alaskan'),
+    ('Asian', 'asian'),
+    ('BlackAfricanAmer', 'black_african_amer'),
+    ('HawaiianPacificIsl', 'hawaiian_pacific_isl'),
+    ('White', 'white'),
+    ('Migrant', 'migrant'),
+    ('Gifted', 'gifted'),
+    ('Services504', 'services_504'),
+    ('MilitaryChild', 'military_child'),
+    ('RefugeeStudent', 'refugee_student'),
+    ('Immigrant', 'immigrant'),
+    ('ReadingIntervention', 'reading_intervention'),
+    ('PassedCivicsExam', 'passed_civics_exam')
+]
+
+# Apply the function to each column in the list
+for col, dummy in columns_to_process:
+    df, model_df = student_bianary_columns(hs_student_table, df, model_df, col, dummy)
+
+model_df.head()
+
+
+#------------------------------------------------------------------------------------------------------------------------------
 ######################################################
 # If you add a column to df above, you need to add it to df_columns!!
 ######################################################
@@ -473,7 +526,10 @@ df = df.fillna(0)
 # Define the desired column order for df
 df_columns = [
     'student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa', 
-    'current_grade', 'current_school', 'days_attended', 'gender'
+    'current_grade', 'current_school', 'days_attended', 'gender', 'ethnicity',
+    'amerindian_alaskan', 'asian', 'black_african_amer', 'hawaiian_pacific_isl',
+    'white', 'migrant', 'gifted', 'services_504', 'military_child',
+    'refugee_student', 'immigrant', 'reading_intervention', 'passed_civics_exam'
 ] + [col for col in df.columns if col.startswith('teacher_')]
 
 df = df[df_columns]
@@ -483,7 +539,11 @@ df = df.drop_duplicates()
 
 df.head()
 
+
 #------------------------------------------------------------------------------------------------------------------------------
+######################################################
+# If you add a column(s) to model_df above, you need to add it to model_columns!!
+######################################################
 # Prepare the modeling data by joining data from df and the grids
 
 # Get the columns we want from df
@@ -491,7 +551,11 @@ columns_from_df = df[['student_number', 'ac_ind', 'overall_gpa', 'days_attended'
 model_df = pd.merge(model_df, columns_from_df, on='student_number', how='left')
 
 model_columns = (
-    ['student_number', 'ac_ind', 'overall_gpa', 'days_attended']
+    ['student_number', 'ac_ind', 'overall_gpa', 'days_attended', 'ethnicity_y', 
+     'amerindian_alaskan_y', 'asian_y', 'black_african_amer_y', 
+     'hawaiian_pacific_isl_y', 'white_y', 'migrant_y', 'gifted_y', 
+     'services_504_y', 'military_child_y', 'refugee_student_y', 'immigrant_y', 
+     'reading_intervention_y', 'passed_civics_exam_y']
  + [col for col in model_df.columns if col.startswith('current_grade')]
  + [col for col in model_df.columns if col.startswith('current_school')]
  + [col for col in model_df.columns if col.startswith('gender_')]

@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import warnings
+warnings.filterwarnings('ignore', category=pd.errors.SettingWithCopyWarning)
 
 # Data sheets
 student = pd.read_excel('data/2022 EOY Data - USU.xlsx', sheet_name='Student')

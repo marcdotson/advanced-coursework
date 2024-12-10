@@ -28,17 +28,18 @@ student_columns_to_drop = [
     "EarlyNumeracyStatusEOY", "EarlyNumeracyIntervention"
 ]
 
+# There are duplicate and null student_numbers in the student table. Therefore we want to begin our code with filtering out those rows
 # Create the table student_table
 student_table = student
 
 # Drop the columns we do not want
 student_table = student_table.drop(columns = student_columns_to_drop)
 
-# Drop rows where student_number is null
+# Drop rows with null or empty student_number as they cannot be matched in future steps
 student_table = student_table.dropna(subset=['student_number'])
 student_table = student_table[student_table['student_number'] != '']
 
-# Drop duplicate student_numbers but keep the row with the largest GradeLevel
+# Remove duplicate student_numbers, keeping only the row with the highest GradeLevel (most recent school year)
 student_table = student_table.loc[
     student_table.groupby('student_number')['GradeLevel'].idxmax()
 ]
@@ -422,39 +423,74 @@ df = pd.merge(df, current_attendance, on='student_number', how='left')
 
 
 #------------------------------------------------------------------------------------------------------------------------------
-# Add gender column to the df, and dummy code gender for the model data (Gender has 3 options: M, F, U)
+# Function to process categorical variable. Add non-dummied columns to df and dummy-coded columns to model_df
 
 # Create a table based on the student_table but that only includes high school students
-hs_student_table = student_table[student_table['GradeLevel'] > 8]
+hs_student_table = student_table[student_table['GradeLevel'] > 8].copy()
 
-student_gender = hs_student_table[['student_number', 'Gender']].rename(columns={'Gender': 'gender'})
+def process_categorical_column(df, model_df, reference_table, column_name, dummy_name, key_column='student_number'):
+    """
+    Processes a categorical column by adding the non-dummied column to df and dummy-coded columns to model_df.
 
-# Make sure student_number is a string
-student_gender['student_number'] = student_gender['student_number'].astype(str)
-df['student_number'] = df['student_number'].astype(str)
+    Parameters:
+        df (pd.DataFrame): DataFrame where the non-dummied column will be added.
+        model_df (pd.DataFrame): DataFrame where dummy-coded columns will be added.
+        reference_table (pd.DataFrame): The table containing the column to be processed.
+        column_name (str): The original name of the column in the reference table.
+        dummy_name (str): The desired name for the column in the df and model_df.
+        key_column (str): The column to use as the primary key for merging (default is 'student_number').
 
-# Add gender to the df
-df = pd.merge(df, student_gender, on='student_number', how='left')
+    Returns:
+        pd.DataFrame, pd.DataFrame: Updated df and model_df DataFrames.
+    """
+    # Extract and rename the column
+    temp_table = reference_table[[key_column, column_name]].rename(columns={column_name: dummy_name})
 
-gender_dummies = pd.get_dummies(student_gender['gender'], prefix='gender', dtype=int)
+    # Handle null values by filling with 'Unknown'
+    temp_table[dummy_name] = temp_table[dummy_name].fillna('nan')
 
-gender_dummies_table = pd.concat([student_gender['student_number'], gender_dummies], axis=1)
+    # Ensure the key column is a string in all DataFrames
+    temp_table[key_column] = temp_table[key_column].astype(str)
+    df[key_column] = df[key_column].astype(str)
+    model_df[key_column] = model_df[key_column].astype(str)
 
-# Rename dummy variable columns to lowercase
-gender_dummies_table = gender_dummies_table.rename(columns=lambda x: x.lower())
+    # Add the non-dummied column to df
+    df = pd.merge(df, temp_table, on=key_column, how='left')
 
-# Reorder columns to ensure 'student_number' is the first column
-gender_dummies_table = gender_dummies_table[['student_number'] + [col for col in gender_dummies_table.columns if col != 'student_number']]
+    # Generate dummy variables
+    dummies = pd.get_dummies(temp_table[dummy_name], prefix=dummy_name, dtype=int)
 
-# Make sure 'student_number' is a string
-gender_dummies_table['student_number'] = gender_dummies_table['student_number'].astype(str)
-model_df['student_number'] = model_df['student_number'].astype(str)
+    # Rename dummy columns to lowercase
+    dummies.columns = dummies.columns.str.lower()
 
-gender_dummies_table.head()
+    # Merge dummy variables into model_df
+    model_df = pd.merge(model_df, pd.concat([temp_table[key_column], dummies], axis=1), on=key_column, how='left')
 
-# Add grade_school_dummies to the model_df
-model_df = pd.merge(model_df, gender_dummies_table, on='student_number', how='left')
+    return df, model_df
 
+
+# Process Gender
+df, model_df = process_categorical_column(df, model_df, hs_student_table, 'Gender', 'gender')
+
+# Process LimitedEnglish
+df, model_df = process_categorical_column(df, model_df, hs_student_table, 'LimitedEnglish', 'limited_english')
+
+# Process PartTimeHomeSchool
+df, model_df = process_categorical_column(df, model_df, hs_student_table, 'PartTimeHomeSchool', 'part_time_home_school')
+
+# Process HighSchlComplStatus
+df, model_df = process_categorical_column(df, model_df, hs_student_table, 'HighSchlComplStatus', 'hs_complete_status')
+
+# Process ExitCode
+df, model_df = process_categorical_column(df, model_df, hs_student_table, 'ExitCode', 'exit_code')
+
+# Process SchoolMembership
+df, model_df = process_categorical_column(df, model_df, hs_student_table, 'SchoolMembership', 'school_membership')
+
+# Process HomeStatus
+df, model_df = process_categorical_column(df, model_df, hs_student_table, 'HomeStatus', 'home_status')
+
+df.head()
 model_df.head()
 
 
@@ -529,7 +565,8 @@ df_columns = [
     'current_grade', 'current_school', 'days_attended', 'gender', 'ethnicity',
     'amerindian_alaskan', 'asian', 'black_african_amer', 'hawaiian_pacific_isl',
     'white', 'migrant', 'gifted', 'services_504', 'military_child',
-    'refugee_student', 'immigrant', 'reading_intervention', 'passed_civics_exam'
+    'refugee_student', 'immigrant', 'reading_intervention', 'passed_civics_exam', 'limited_english', 'part_time_home_school',
+    'hs_complete_status', 'exit_code', 'school_membership', 'home_status'
 ] + [col for col in df.columns if col.startswith('teacher_')]
 
 df = df[df_columns]
@@ -556,6 +593,12 @@ model_columns = (
      'hawaiian_pacific_isl_y', 'white_y', 'migrant_y', 'gifted_y', 
      'services_504_y', 'military_child_y', 'refugee_student_y', 'immigrant_y', 
      'reading_intervention_y', 'passed_civics_exam_y']
+ + [col for col in model_df.columns if col.startswith('limited_english')]
+ + [col for col in model_df.columns if col.startswith('part_time')]
+ + [col for col in model_df.columns if col.startswith('hs_complete_status')]
+ + [col for col in model_df.columns if col.startswith('exit_code')]
+ + [col for col in model_df.columns if col.startswith('school_membership')]
+ + [col for col in model_df.columns if col.startswith('home_status')]
  + [col for col in model_df.columns if col.startswith('current_grade')]
  + [col for col in model_df.columns if col.startswith('current_school')]
  + [col for col in model_df.columns if col.startswith('gender_')]

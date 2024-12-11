@@ -446,7 +446,7 @@ def process_categorical_column(df, model_df, reference_table, column_name, dummy
     # Extract and rename the column
     temp_table = reference_table[[key_column, column_name]].rename(columns={column_name: dummy_name})
 
-    # Handle null values by filling with 'Unknown'
+    # Handle null values by filling with 'nan'
     temp_table[dummy_name] = temp_table[dummy_name].fillna('nan')
 
     # Ensure the key column is a string in all DataFrames
@@ -468,7 +468,6 @@ def process_categorical_column(df, model_df, reference_table, column_name, dummy
 
     return df, model_df
 
-
 # Process Gender
 df, model_df = process_categorical_column(df, model_df, hs_student_table, 'Gender', 'gender')
 
@@ -484,11 +483,23 @@ df, model_df = process_categorical_column(df, model_df, hs_student_table, 'HighS
 # Process ExitCode
 df, model_df = process_categorical_column(df, model_df, hs_student_table, 'ExitCode', 'exit_code')
 
-# Process SchoolMembership
-df, model_df = process_categorical_column(df, model_df, hs_student_table, 'SchoolMembership', 'school_membership')
-
 # Process HomeStatus
 df, model_df = process_categorical_column(df, model_df, hs_student_table, 'HomeStatus', 'home_status')
+
+# Process TribalAffiliation
+df, model_df = process_categorical_column(df, model_df, hs_student_table, 'TribalAffiliation', 'tribal_affiliation')
+
+# Process ELLNativeLanguage
+df, model_df = process_categorical_column(df, model_df, hs_student_table, 'EllNativeLanguage', 'ell_native_language')
+
+# Process ELLParentLanguage
+df, model_df = process_categorical_column(df, model_df, hs_student_table, 'EllParentLanguage', 'ell_parent_language')
+
+# Process EllInstructionType
+df, model_df = process_categorical_column(df, model_df, hs_student_table, 'EllInstructionType', 'ell_instruction_type')
+
+# Process EllInstructionType
+df, model_df = process_categorical_column(df, model_df, hs_student_table, 'ReadGradeLevel', 'read_grade_level')
 
 df.head()
 model_df.head()
@@ -496,31 +507,45 @@ model_df.head()
 
 #------------------------------------------------------------------------------------------------------------------------------
 # Function to process a column: add to df, replace nulls, and dummy code
-def student_bianary_columns(hs_student_table, df, model_df, column_name, dummy_name):
-    # Extract and rename the column
-    student_column = hs_student_table[['student_number', column_name]].rename(columns={column_name: dummy_name})
-    
-    # Replace null values with 'N'
-    student_column[dummy_name] = student_column[dummy_name].fillna('N')
-    
-    # Ensure student_number is a string in all dataframes
-    student_column['student_number'] = student_column['student_number'].astype(str)
-    df['student_number'] = df['student_number'].astype(str)
-    model_df['student_number'] = model_df['student_number'].astype(str)
-    
-    # Merge non-dummy column into df
-    df = pd.merge(df, student_column, on='student_number', how='left')
-    
-    # Create dummy variable (Y=1, N=0)
-    student_column[f"{dummy_name}_y"] = student_column[dummy_name].map({'Y': 1, 'N': 0})
-    
-    # Create a table containing only student_number and the dummy column
-    dummy_table = student_column[['student_number', f"{dummy_name}_y"]]
-    
-    # Merge dummy variable into model_df
-    model_df = pd.merge(model_df, dummy_table, on='student_number', how='left')
-    
-    # Return the updated df and model_df
+def student_binary_columns(df, model_df, reference_table, column_name, dummy_name, key_column='student_number'):
+    """
+    Processes a binary column from a reference DataFrame by adding the non-dummy column to df
+    and dummy-coded columns to model_df.
+
+    Parameters:
+        df (pd.DataFrame): DataFrame where the non-dummy column will be added.
+        model_df (pd.DataFrame): DataFrame where dummy-coded columns will be added.
+        reference_table (pd.DataFrame): The table containing the column to be processed.
+        column_name (str): The original name of the column in the reference table.
+        dummy_name (str): The desired name for the column in the df and model_df.
+        key_column (str): The column to use as the primary key for merging (default is 'student_number').
+
+    Returns:
+        pd.DataFrame, pd.DataFrame: Updated df and model_df DataFrames.
+    """
+    # Extract and rename the target column
+    temp_table = reference_table[[key_column, column_name]].rename(columns={column_name: dummy_name})
+
+    # Fill null values with 'N'
+    temp_table[dummy_name] = temp_table[dummy_name].fillna('N')
+
+    # Ensure the key column is a string in all DataFrames
+    temp_table[key_column] = temp_table[key_column].astype(str)
+    df[key_column] = df[key_column].astype(str)
+    model_df[key_column] = model_df[key_column].astype(str)
+
+    # Add the non-dummied column to df
+    df = pd.merge(df, temp_table, on=key_column, how='left')
+
+    # Create a binary dummy variable (Y=1, N=0)
+    temp_table[f"{dummy_name}_y"] = temp_table[dummy_name].map({'Y': 1, 'N': 0})
+
+    # Create a DataFrame containing only key_column and the dummy variable
+    dummy_table = temp_table[[key_column, f"{dummy_name}_y"]]
+
+    # Merge the dummy variable into model_df
+    model_df = pd.merge(model_df, dummy_table, on=key_column, how='left')
+
     return df, model_df
 
 # Apply the function to each column
@@ -543,8 +568,9 @@ columns_to_process = [
 
 # Apply the function to each column in the list
 for col, dummy in columns_to_process:
-    df, model_df = student_bianary_columns(hs_student_table, df, model_df, col, dummy)
+    df, model_df = student_binary_columns(df, model_df, hs_student_table, col, dummy)
 
+# Display the updated model DataFrame
 model_df.head()
 
 
@@ -566,7 +592,8 @@ df_columns = [
     'amerindian_alaskan', 'asian', 'black_african_amer', 'hawaiian_pacific_isl',
     'white', 'migrant', 'gifted', 'services_504', 'military_child',
     'refugee_student', 'immigrant', 'reading_intervention', 'passed_civics_exam', 'limited_english', 'part_time_home_school',
-    'hs_complete_status', 'exit_code', 'school_membership', 'home_status'
+    'hs_complete_status', 'exit_code', 'home_status', 'tribal_affiliation', 'ell_native_language', 
+    'ell_parent_language', 'ell_instruction_type', 'read_grade_level'
 ] + [col for col in df.columns if col.startswith('teacher_')]
 
 df = df[df_columns]
@@ -597,8 +624,12 @@ model_columns = (
  + [col for col in model_df.columns if col.startswith('part_time')]
  + [col for col in model_df.columns if col.startswith('hs_complete_status')]
  + [col for col in model_df.columns if col.startswith('exit_code')]
- + [col for col in model_df.columns if col.startswith('school_membership')]
  + [col for col in model_df.columns if col.startswith('home_status')]
+ + [col for col in model_df.columns if col.startswith('tribal_affiliation')]
+ + [col for col in model_df.columns if col.startswith('ell_native_language')]
+ + [col for col in model_df.columns if col.startswith('ell_parent_language')]
+ + [col for col in model_df.columns if col.startswith('ell_instruction_type')]
+ + [col for col in model_df.columns if col.startswith('read_grade_level')]
  + [col for col in model_df.columns if col.startswith('current_grade')]
  + [col for col in model_df.columns if col.startswith('current_school')]
  + [col for col in model_df.columns if col.startswith('gender_')]

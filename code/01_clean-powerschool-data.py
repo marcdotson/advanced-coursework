@@ -470,38 +470,24 @@ def process_categorical_column(df, model_df, reference_table, column_name, dummy
 
     return df, model_df
 
-# Process Gender
-df, model_df = process_categorical_column(df, model_df, hs_student_table, 'Gender', 'gender')
+# Define the list of categorical columns to process
+categorical_columns = [
+    ('Gender', 'gender'),
+    ('LimitedEnglish', 'limited_english'),
+    ('PartTimeHomeSchool', 'part_time_home_school'),
+    ('HighSchlComplStatus', 'hs_complete_status'),
+    ('ExitCode', 'exit_code'),
+    ('HomeStatus', 'home_status'),
+    ('TribalAffiliation', 'tribal_affiliation'),
+    ('EllNativeLanguage', 'ell_native_language'),
+    ('EllParentLanguage', 'ell_parent_language'),
+    ('EllInstructionType', 'ell_instruction_type'),
+    ('ReadGradeLevel', 'read_grade_level')
+]
 
-# Process LimitedEnglish
-df, model_df = process_categorical_column(df, model_df, hs_student_table, 'LimitedEnglish', 'limited_english')
-
-# Process PartTimeHomeSchool
-df, model_df = process_categorical_column(df, model_df, hs_student_table, 'PartTimeHomeSchool', 'part_time_home_school')
-
-# Process HighSchlComplStatus
-df, model_df = process_categorical_column(df, model_df, hs_student_table, 'HighSchlComplStatus', 'hs_complete_status')
-
-# Process ExitCode
-df, model_df = process_categorical_column(df, model_df, hs_student_table, 'ExitCode', 'exit_code')
-
-# Process HomeStatus
-df, model_df = process_categorical_column(df, model_df, hs_student_table, 'HomeStatus', 'home_status')
-
-# Process TribalAffiliation
-df, model_df = process_categorical_column(df, model_df, hs_student_table, 'TribalAffiliation', 'tribal_affiliation')
-
-# Process ELLNativeLanguage
-df, model_df = process_categorical_column(df, model_df, hs_student_table, 'EllNativeLanguage', 'ell_native_language')
-
-# Process ELLParentLanguage
-df, model_df = process_categorical_column(df, model_df, hs_student_table, 'EllParentLanguage', 'ell_parent_language')
-
-# Process EllInstructionType
-df, model_df = process_categorical_column(df, model_df, hs_student_table, 'EllInstructionType', 'ell_instruction_type')
-
-# Process EllInstructionType
-df, model_df = process_categorical_column(df, model_df, hs_student_table, 'ReadGradeLevel', 'read_grade_level')
+# Process each categorical column using the function
+for original_col, new_col in categorical_columns:
+    df, model_df = process_categorical_column(df, model_df, hs_student_table, original_col, new_col)
 
 df.head()
 model_df.head()
@@ -632,6 +618,65 @@ model_df, df = process_numeric_student_columns(hs_student_table, model_df, df, c
 
 
 #------------------------------------------------------------------------------------------------------------------------------
+# Add the transcript assessment data to the model_df and the df
+
+# Extract high school student_numbers and merge with assessment table (This way we only have student_numbers for hs students)
+assessment_table = hs_student_table[['student_number']].copy()
+assessment_table = pd.merge(assessment_table, assessment, on='student_number', how='left')
+
+# Drop LEANumber from the assessment_table. All values are the same making it useless.
+assessment_table = assessment_table.drop(columns='LEANumber', errors='ignore')
+
+# Rename columns for consistency
+assessment_table = assessment_table.rename(columns={
+    'TestName': 'test_name',
+    'TestDate': 'test_date',
+    'Subtest': 'subtest',
+    'TestScore': 'test_score'
+})
+
+# Ensure test_score is numeric to avoid aggregation issues
+assessment_table['test_score'] = pd.to_numeric(assessment_table['test_score'], errors='coerce')
+
+# Convert test_date to datetime format (not critical)
+assessment_table['test_date'] = pd.to_datetime(assessment_table['test_date'], errors='coerce')
+
+# Pivot table to turn subtest values into columns and fill with test scores
+# Include student_number, test_name and test_date in the pivot index since there is 
+# only one test_name and test_date per student, it does not matter which one we use.
+assessment_grid = assessment_table.pivot_table(
+    index=['student_number', 'test_name', 'test_date'],
+    columns='subtest',
+    values='test_score',
+)
+
+# Rename new columns created from the pivot for consistency
+assessment_grid = assessment_grid.rename(columns={
+    'Composite': 'composite_score',
+    'English': 'english_score',
+    'Math': 'math_score',
+    'Reading': 'reading_score',
+    'Science': 'science_score',
+    'Writing': 'writing_score'
+})
+
+# Reset the index to make student_number a column again
+assessment_grid = assessment_grid.reset_index()
+
+assessment_grid.head()
+
+# Make sure student_number is a string
+assessment_grid['student_number'] = assessment_grid['student_number'].astype(str)
+df['student_number'] = df['student_number'].astype(str)
+model_df['student_number'] = model_df['student_number'].astype(str)
+
+# Merge into df
+df = pd.merge(df, assessment_grid, on='student_number', how='left')
+
+# Merge into model_df
+model_df = pd.merge(model_df, assessment_grid, on='student_number', how='left')
+
+#------------------------------------------------------------------------------------------------------------------------------
 ######################################################
 # If you add a column to df above, you need to add it to df_columns!!
 ######################################################
@@ -650,7 +695,8 @@ df_columns = [
     'white', 'migrant', 'gifted', 'services_504', 'military_child',
     'refugee_student', 'immigrant', 'reading_intervention', 'passed_civics_exam', 'limited_english', 'part_time_home_school',
     'hs_complete_status', 'exit_code', 'home_status', 'tribal_affiliation', 'ell_native_language', 
-    'ell_parent_language', 'ell_instruction_type', 'read_grade_level'
+    'ell_parent_language', 'ell_instruction_type', 'read_grade_level', 
+    'test_name',	'test_date', 'composite_score', 'english_score', 'math_score', 'reading_score', 'science_score', 'writing_score'
 ] + [col for col in df.columns if col.startswith('teacher_')]
 
 df = df[df_columns]
@@ -673,10 +719,10 @@ model_df = pd.merge(model_df, columns_from_df, on='student_number', how='left')
 
 model_columns = (
     ['student_number', 'ac_ind', 'overall_gpa', 'days_attended', 'school_membership', 'excused_absences', 'unexcused_absences', 'absences_due_to_suspension',
-    'ethnicity_y', 'amerindian_alaskan_y', 'asian_y', 'black_african_amer_y', 
-     'hawaiian_pacific_isl_y', 'white_y', 'migrant_y', 'gifted_y', 
-     'services_504_y', 'military_child_y', 'refugee_student_y', 'immigrant_y', 
-     'reading_intervention_y', 'passed_civics_exam_y']
+    'ethnicity_y', 'amerindian_alaskan_y', 'asian_y', 'black_african_amer_y', 'hawaiian_pacific_isl_y', 'white_y', 'migrant_y', 'gifted_y', 
+     'services_504_y', 'military_child_y', 'refugee_student_y', 'immigrant_y', 'reading_intervention_y', 'passed_civics_exam_y',
+     'test_name',	'test_date', 'composite_score', 'english_score', 'math_score', 'reading_score', 'science_score', 'writing_score'
+]
  + [col for col in model_df.columns if col.startswith('limited_english')]
  + [col for col in model_df.columns if col.startswith('part_time')]
  + [col for col in model_df.columns if col.startswith('hs_complete_status')]

@@ -609,10 +609,11 @@ def process_numeric_student_columns(hs_student_table, model_df, df, columns, ren
     return model_df, df
 
 # Columns to process from the student table
-columns_to_process = ['SchoolMembership', 'ExcusedAbsences', 'UnexcusedAbsences', 'AbsencesDueToSuspension']
+columns_to_process = ['CumulativeGPA', 'SchoolMembership', 'ExcusedAbsences', 'UnexcusedAbsences', 'AbsencesDueToSuspension']
 
 # Specify the columns to process and rename the columns
 rename_map = {
+    'CumulativeGPA': 'overall_gpa',
     'SchoolMembership': 'school_membership',
     'ExcusedAbsences': 'excused_absences',
     'UnexcusedAbsences': 'unexcused_absences',

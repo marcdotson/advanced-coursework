@@ -106,3 +106,60 @@ df['ac_gpa'] = df['ac_gpa'].fillna(0)
 df['ac_gpa'] = df['ac_gpa'].astype(float).round(3)
 
 df.head()
+
+#------------------------------------------------------------------------------------------------------------------------------
+# Function to process numeric and date columns from the student table
+# SchoolMemebership tracks the number of days a student was enrolled in the school
+# There are quite a few students with a student_membership of 0 but with good attendance.
+
+def process_numeric_student_columns(hs_student_table, model_df, df, columns, rename_map):
+    """
+    Processes numeric columns from the student sheet, renames them, 
+    and merges them into the model_df and df DataFrames.
+
+    Parameters:
+    - hs_student_table (pd.DataFrame): DataFrame containing high school student data.
+    - model_df (pd.DataFrame): DataFrame to merge the processed columns into.
+    - df (pd.DataFrame): Another DataFrame to merge the processed columns into.
+    - columns (list): List of columns to process and merge, including 'student_number'.
+    - rename_map (dict): Dictionary mapping original column names to their new names.
+
+    Returns:
+    - model_df (pd.DataFrame): Updated model_df with the renamed columns merged.
+    - df (pd.DataFrame): Updated df with the renamed columns merged.
+    """
+    # Ensure 'student_number' is in the list of columns
+    if 'student_number' not in columns:
+        columns.insert(0, 'student_number')
+    
+    # Copy the required columns
+    selected_table = hs_student_table[columns].copy()
+    
+    # Rename columns
+    selected_table = selected_table.rename(columns=rename_map)
+    
+    # Ensure student_number is a string in all DataFrames
+    selected_table['student_number'] = selected_table['student_number'].astype(str)
+    model_df['student_number'] = model_df['student_number'].astype(str)
+    df['student_number'] = df['student_number'].astype(str)
+    
+    # Merge into model_df
+    model_df = pd.merge(model_df, selected_table, on='student_number', how='left')
+    
+    # Merge into df
+    df = pd.merge(df, selected_table, on='student_number', how='left')
+    
+    return model_df, df
+
+# Columns to process from the student table
+columns_to_process = ['CumulativeGPA', 'SchoolMembership', 'ExcusedAbsences', 'UnexcusedAbsences', 'AbsencesDueToSuspension']
+
+# Specify the columns to process and rename the columns
+rename_map = {
+    'CumulativeGPA': 'overall_gpa',
+    'SchoolMembership': 'school_membership',
+    'ExcusedAbsences': 'excused_absences',
+    'UnexcusedAbsences': 'unexcused_absences',
+    'AbsencesDueToSuspension': 'absences_due_to_suspension'
+}
+model_df, df = process_numeric_student_columns(hs_student_table, model_df, df, columns_to_process, rename_map)

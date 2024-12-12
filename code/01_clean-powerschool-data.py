@@ -563,7 +563,7 @@ model_df.head()
 
 
 #------------------------------------------------------------------------------------------------------------------------------
-# Function to process numeric columns from the student table
+# Function to process numeric and date columns from the student table
 # SchoolMemebership tracks the number of days a student was enrolled in the school
 # There are quite a few students with a student_membership of 0 but with good attendance.
 
@@ -608,6 +608,8 @@ def process_numeric_student_columns(hs_student_table, model_df, df, columns, ren
 
 # Columns to process from the student table
 columns_to_process = ['SchoolMembership', 'ExcusedAbsences', 'UnexcusedAbsences', 'AbsencesDueToSuspension']
+
+# Specify the columns to process and rename the columns
 rename_map = {
     'SchoolMembership': 'school_membership',
     'ExcusedAbsences': 'excused_absences',
@@ -615,6 +617,37 @@ rename_map = {
     'AbsencesDueToSuspension': 'absences_due_to_suspension'
 }
 model_df, df = process_numeric_student_columns(hs_student_table, model_df, df, columns_to_process, rename_map)
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+# Add the date columns from the student table to the model_df and the df
+# Only use student_numbers of high school students
+student_dates = hs_student_table[['student_number', 'EntryDate', 'FirstEnrollInUS', 'EllMonitoredEntryDate']]
+
+# Rename the following columns for consistency
+student_dates = student_dates.rename(columns={
+    'EntryDate': 'entry_date',
+    'FirstEnrollInUS': 'first_enroll_us',
+    'EllMonitoredEntryDate': 'ell_entry_date'
+})
+
+date_columns = ['entry_date', 'first_enroll_us', 'ell_entry_date']
+
+# Convert date columns into datetime format
+student_dates[date_columns] = student_dates[date_columns].apply(
+    lambda col: pd.to_datetime(col.astype(str).str.replace('-', ''), format='%Y%m%d', errors='coerce')
+)
+
+# Make sure student_number is a string
+student_dates['student_number'] = student_dates['student_number'].astype(str)
+df['student_number'] = df['student_number'].astype(str)
+model_df['student_number'] = model_df['student_number'].astype(str)
+
+# Merge into df
+df = pd.merge(df, student_dates, on='student_number', how='left')
+
+# Merge into model_df
+model_df = pd.merge(model_df, student_dates, on='student_number', how='left')
 
 
 #------------------------------------------------------------------------------------------------------------------------------
@@ -676,6 +709,7 @@ df = pd.merge(df, assessment_grid, on='student_number', how='left')
 # Merge into model_df
 model_df = pd.merge(model_df, assessment_grid, on='student_number', how='left')
 
+
 #------------------------------------------------------------------------------------------------------------------------------
 ######################################################
 # If you add a column to df above, you need to add it to df_columns!!
@@ -695,7 +729,7 @@ df_columns = [
     'white', 'migrant', 'gifted', 'services_504', 'military_child',
     'refugee_student', 'immigrant', 'reading_intervention', 'passed_civics_exam', 'limited_english', 'part_time_home_school',
     'hs_complete_status', 'exit_code', 'home_status', 'tribal_affiliation', 'ell_native_language', 
-    'ell_parent_language', 'ell_instruction_type', 'read_grade_level', 
+    'ell_parent_language', 'ell_instruction_type', 'ell_entry_date', 'read_grade_level', 'entry_date', 'first_enroll_us',
     'test_name',	'test_date', 'composite_score', 'english_score', 'math_score', 'reading_score', 'science_score', 'writing_score'
 ] + [col for col in df.columns if col.startswith('teacher_')]
 
@@ -721,6 +755,7 @@ model_columns = (
     ['student_number', 'ac_ind', 'overall_gpa', 'days_attended', 'school_membership', 'excused_absences', 'unexcused_absences', 'absences_due_to_suspension',
     'ethnicity_y', 'amerindian_alaskan_y', 'asian_y', 'black_african_amer_y', 'hawaiian_pacific_isl_y', 'white_y', 'migrant_y', 'gifted_y', 
      'services_504_y', 'military_child_y', 'refugee_student_y', 'immigrant_y', 'reading_intervention_y', 'passed_civics_exam_y',
+     'entry_date', 'first_enroll_us', 'ell_entry_date',
      'test_name',	'test_date', 'composite_score', 'english_score', 'math_score', 'reading_score', 'science_score', 'writing_score'
 ]
  + [col for col in model_df.columns if col.startswith('limited_english')]

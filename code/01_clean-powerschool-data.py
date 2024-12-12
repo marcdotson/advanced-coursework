@@ -6,12 +6,14 @@ student = pd.read_excel('data/2022 EOY Data - USU.xlsx', sheet_name='Student')
 master = pd.read_excel('data/2022 EOY Data - USU.xlsx', sheet_name='Course Master')
 membership = pd.read_excel('data/2022 EOY Data - USU.xlsx', sheet_name='Course Membership')
 courses = pd.read_excel('data/2022 EOY Data - USU.xlsx', sheet_name='Transcript Courses')
+assesment = pd.read_excel('data/2022 EOY Data - USU.xlsx', sheet_name='Transcript Assessments')
 
 
 # Rename 'StudentNumber' to 'student_number'
 courses = courses.rename(columns={'StudentNumber': 'student_number'})
 membership = membership.rename(columns={'StudentNumber': 'student_number'})
 student = student.rename(columns={'StudentNumber': 'student_number'})
+assessment = assesment.rename(columns={'StudentNumber': 'student_number'})
 
 # Create the df
 df = pd.DataFrame()
@@ -575,6 +577,61 @@ model_df.head()
 
 
 #------------------------------------------------------------------------------------------------------------------------------
+# Function to process numeric columns from the student table
+# SchoolMemebership tracks the number of days a student was enrolled in the school
+# There are quite a few students with a student_membership of 0 but with good attendance.
+
+def process_numeric_student_columns(hs_student_table, model_df, df, columns, rename_map):
+    """
+    Processes numeric columns from the student sheet, renames them, 
+    and merges them into the model_df and df DataFrames.
+
+    Parameters:
+    - hs_student_table (pd.DataFrame): DataFrame containing high school student data.
+    - model_df (pd.DataFrame): DataFrame to merge the processed columns into.
+    - df (pd.DataFrame): Another DataFrame to merge the processed columns into.
+    - columns (list): List of columns to process and merge, including 'student_number'.
+    - rename_map (dict): Dictionary mapping original column names to their new names.
+
+    Returns:
+    - model_df (pd.DataFrame): Updated model_df with the renamed columns merged.
+    - df (pd.DataFrame): Updated df with the renamed columns merged.
+    """
+    # Ensure 'student_number' is in the list of columns
+    if 'student_number' not in columns:
+        columns.insert(0, 'student_number')
+    
+    # Copy the required columns
+    selected_table = hs_student_table[columns].copy()
+    
+    # Rename columns
+    selected_table = selected_table.rename(columns=rename_map)
+    
+    # Ensure student_number is a string in all DataFrames
+    selected_table['student_number'] = selected_table['student_number'].astype(str)
+    model_df['student_number'] = model_df['student_number'].astype(str)
+    df['student_number'] = df['student_number'].astype(str)
+    
+    # Merge into model_df
+    model_df = pd.merge(model_df, selected_table, on='student_number', how='left')
+    
+    # Merge into df
+    df = pd.merge(df, selected_table, on='student_number', how='left')
+    
+    return model_df, df
+
+# Columns to process from the student table
+columns_to_process = ['SchoolMembership', 'ExcusedAbsences', 'UnexcusedAbsences', 'AbsencesDueToSuspension']
+rename_map = {
+    'SchoolMembership': 'school_membership',
+    'ExcusedAbsences': 'excused_absences',
+    'UnexcusedAbsences': 'unexcused_absences',
+    'AbsencesDueToSuspension': 'absences_due_to_suspension'
+}
+model_df, df = process_numeric_student_columns(hs_student_table, model_df, df, columns_to_process, rename_map)
+
+
+#------------------------------------------------------------------------------------------------------------------------------
 ######################################################
 # If you add a column to df above, you need to add it to df_columns!!
 ######################################################
@@ -588,8 +645,8 @@ df = df.fillna(0)
 # Define the desired column order for df
 df_columns = [
     'student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa', 
-    'current_grade', 'current_school', 'days_attended', 'gender', 'ethnicity',
-    'amerindian_alaskan', 'asian', 'black_african_amer', 'hawaiian_pacific_isl',
+    'current_grade', 'current_school', 'days_attended', 'school_membership', 'excused_absences', 'unexcused_absences', 'absences_due_to_suspension', 
+    'gender', 'ethnicity', 'amerindian_alaskan', 'asian', 'black_african_amer', 'hawaiian_pacific_isl',
     'white', 'migrant', 'gifted', 'services_504', 'military_child',
     'refugee_student', 'immigrant', 'reading_intervention', 'passed_civics_exam', 'limited_english', 'part_time_home_school',
     'hs_complete_status', 'exit_code', 'home_status', 'tribal_affiliation', 'ell_native_language', 
@@ -615,8 +672,8 @@ columns_from_df = df[['student_number', 'ac_ind', 'overall_gpa', 'days_attended'
 model_df = pd.merge(model_df, columns_from_df, on='student_number', how='left')
 
 model_columns = (
-    ['student_number', 'ac_ind', 'overall_gpa', 'days_attended', 'ethnicity_y', 
-     'amerindian_alaskan_y', 'asian_y', 'black_african_amer_y', 
+    ['student_number', 'ac_ind', 'overall_gpa', 'days_attended', 'school_membership', 'excused_absences', 'unexcused_absences', 'absences_due_to_suspension',
+    'ethnicity_y', 'amerindian_alaskan_y', 'asian_y', 'black_african_amer_y', 
      'hawaiian_pacific_isl_y', 'white_y', 'migrant_y', 'gifted_y', 
      'services_504_y', 'military_child_y', 'refugee_student_y', 'immigrant_y', 
      'reading_intervention_y', 'passed_civics_exam_y']

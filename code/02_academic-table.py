@@ -1,22 +1,21 @@
 import pandas as pd
 import numpy as np
-import warnings
-warnings.filterwarnings('ignore', category=pd.errors.SettingWithCopyWarning)
 
 # Data sheets
-student = pd.read_excel('data/2022 EOY Data - USU.xlsx', sheet_name='Student')
 master = pd.read_excel('data/2022 EOY Data - USU.xlsx', sheet_name='Course Master')
 membership = pd.read_excel('data/2022 EOY Data - USU.xlsx', sheet_name='Course Membership')
-courses = pd.read_excel('data/2022 EOY Data - USU.xlsx', sheet_name='Transcript Courses')
 
 # Rename 'StudentNumber' to 'student_number'
-courses = courses.rename(columns={'StudentNumber': 'student_number'})
 membership = membership.rename(columns={'StudentNumber': 'student_number'})
-student = student.rename(columns={'StudentNumber': 'student_number'})
 
 # Import student_table and high_school_student (for now)
 student_table = pd.read_csv('data/student_table.csv')
 high_school_students = pd.read_csv('data/high_school_students.csv')
+
+
+###########################################################################
+# df will represent the exploratory data, and model_df will represent the model data
+# If we decided to filter at the end, all we need to do is change high_school_students to student_table when creating the df's below
 
 # Create the df from the high_school_student student_numbers
 df = high_school_students[['student_number']]
@@ -24,21 +23,12 @@ df = high_school_students[['student_number']]
 # Create the model_df from the high_school_student student_numbers
 model_df = high_school_students[['student_number']]
 
-###########################################################################
 
-# Add CumulativeGPA from the student table to the df
-cumulative_gpa = student_table[['student_number', 'CumulativeGPA']]
+######################################################################################################################################################
+# Determine if a class is an advanced course, determine if a student has taken an ac (ac_ind)
+# and count the number of ac classes a student has taken (ac_count).
+# df will include all new columns while model_df will only include ac_ind
 
-# Make sure student_number is a string
-cumulative_gpa['student_number'] = cumulative_gpa['student_number'].astype(str)
-df['student_number'] = df['student_number'].astype(str)
-
-df = pd.merge(df, cumulative_gpa, on='student_number', how='left')
-df = df.rename(columns={'CumulativeGPA': 'overall_gpa'})
-
-df.head()
-
-#------------------------------------------------------------------------------------------------------------------------------
 # Merge membership and master data on the CourseRecordID from the membership table
 membership_filtered = membership[['student_number', 'CourseRecordID', 'ConcurrEnrolled', 'GradeEarned']]
 master_filtered = master[['CourseTitle', 'CollegeGrantingCr', 'WhereTaughtCampus', 'CourseRecordID']]
@@ -63,20 +53,30 @@ advanced_summary = advanced_courses.groupby('student_number', as_index=False).ag
     ac_count=('advanced_course', 'sum')  # Total advanced courses
 )
 
+# Dropping any duplicate rows from advanced_summary just in case any remain.
+advanced_summary = advanced_summary.drop_duplicates()
+
 # Make sure student_number is a string
 advanced_summary['student_number'] = advanced_summary['student_number'].astype(str)
 df['student_number'] = df['student_number'].astype(str)
+model_df['student_number'] = model_df['student_number'].astype(str)
+
+# Add ac_ind to model_df
+model_df = pd.merge(model_df, advanced_summary[['student_number','ac_ind']], on='student_number', how='left')
 
 # Add the advanced_summary data to the df
 df = pd.merge(df, advanced_summary, on='student_number', how='left')
 
 # Fill null values with 0
-df[['overall_gpa','ac_ind', 'ac_count']] = df[['overall_gpa', 'ac_ind', 'ac_count']].fillna(0)
+df[['ac_ind', 'ac_count']] = df[['ac_ind', 'ac_count']].fillna(0)
+model_df['ac_ind'] = model_df['ac_ind'].fillna(0)
+
 df.head()
+model_df.head()
 
 
-#------------------------------------------------------------------------------------------------------------------------------
-# Calculate students gpa in advanced courses
+######################################################################################################################################################
+# Calculate students gpa in advanced courses (ac_gpa)
 # Filter for advanced courses based on the advanced_courses list
 ac_grade = advanced_courses[advanced_courses['advanced_course'] == 1][['student_number', 'GradeEarned']].copy()
 
@@ -107,18 +107,20 @@ df['ac_gpa'] = df['ac_gpa'].astype(float).round(3)
 
 df.head()
 
-#------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################
 # Function to process numeric and date columns from the student table
 # SchoolMemebership tracks the number of days a student was enrolled in the school
 # There are quite a few students with a student_membership of 0 but with good attendance.
+# All of the data will be left joined with the df and model_df, therefore we can use the student_table
 
-def process_numeric_student_columns(hs_student_table, model_df, df, columns, rename_map):
+def process_numeric_student_columns(student_table, model_df, df, columns, rename_map):
     """
     Processes numeric columns from the student sheet, renames them, 
     and merges them into the model_df and df DataFrames.
 
     Parameters:
-    - hs_student_table (pd.DataFrame): DataFrame containing high school student data.
+    - student_table (pd.DataFrame): DataFrame containing student data.
     - model_df (pd.DataFrame): DataFrame to merge the processed columns into.
     - df (pd.DataFrame): Another DataFrame to merge the processed columns into.
     - columns (list): List of columns to process and merge, including 'student_number'.
@@ -133,7 +135,7 @@ def process_numeric_student_columns(hs_student_table, model_df, df, columns, ren
         columns.insert(0, 'student_number')
     
     # Copy the required columns
-    selected_table = hs_student_table[columns].copy()
+    selected_table = student_table[columns].copy()
     
     # Rename columns
     selected_table = selected_table.rename(columns=rename_map)
@@ -151,15 +153,38 @@ def process_numeric_student_columns(hs_student_table, model_df, df, columns, ren
     
     return model_df, df
 
-# Columns to process from the student table
-columns_to_process = ['CumulativeGPA', 'SchoolMembership', 'ExcusedAbsences', 'UnexcusedAbsences', 'AbsencesDueToSuspension']
+# Columns to process from the student_table
+columns_to_process = ['DaysAttended', 'CumulativeGPA', 'SchoolMembership', 'ExcusedAbsences', 'UnexcusedAbsences', 'AbsencesDueToSuspension']
 
-# Specify the columns to process and rename the columns
+# Specify the columns to process and rename
 rename_map = {
+    'DaysAttended': 'days_attended',
     'CumulativeGPA': 'overall_gpa',
     'SchoolMembership': 'school_membership',
     'ExcusedAbsences': 'excused_absences',
     'UnexcusedAbsences': 'unexcused_absences',
     'AbsencesDueToSuspension': 'absences_due_to_suspension'
 }
-model_df, df = process_numeric_student_columns(hs_student_table, model_df, df, columns_to_process, rename_map)
+model_df, df = process_numeric_student_columns(student_table, model_df, df, columns_to_process, rename_map)
+
+
+######################################################################################################################################################
+# Prepare the data for export
+# Specify the column order for the df
+df_columns = ['student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa', 'days_attended', 
+            'excused_absences', 'unexcused_absences', 'absences_due_to_suspension', 'school_membership']
+
+df = df[df_columns]
+
+# Specify the column order for the model_df
+model_columns = ['student_number', 'ac_ind', 'overall_gpa', 'days_attended', 
+                'excused_absences', 'unexcused_absences', 'absences_due_to_suspension', 'school_membership']
+
+model_df = model_df[model_columns]
+
+df.head()
+model_df.head()
+
+# Export both files
+df.to_csv('./data/academic_exploratory_data.csv', index=False)
+model_df.to_csv('./data/academic_modeling_data.csv', index=False)

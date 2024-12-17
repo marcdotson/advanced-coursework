@@ -4,16 +4,18 @@ import numpy as np
 # Data sheets
 master = pd.read_excel('data/2022 EOY Data - USU.xlsx', sheet_name='Course Master')
 membership = pd.read_excel('data/2022 EOY Data - USU.xlsx', sheet_name='Course Membership')
+scram = pd.read_excel('data/2022 EOY Data - USU.xlsx', sheet_name='SCRAM')
 
 # Rename 'StudentNumber' to 'student_number'
 membership = membership.rename(columns={'StudentNumber': 'student_number'})
+scram = scram.rename(columns={'StudentNumber': 'student_number'})
 
 # Import student_table and high_school_student (for now)
 student_table = pd.read_csv('data/student_table.csv')
 high_school_students = pd.read_csv('data/high_school_students.csv')
 
 
-###########################################################################
+######################################################################################################################################################
 # df will represent the exploratory data, and model_df will represent the model data
 # If we decided to filter at the end, all we need to do is change high_school_students to student_table when creating the df's below
 
@@ -109,7 +111,7 @@ df.head()
 
 
 ######################################################################################################################################################
-# Function to process numeric and date columns from the student table
+# Function to process numeric columns for the academic table
 # SchoolMemebership tracks the number of days a student was enrolled in the school
 # There are quite a few students with a student_membership of 0 but with good attendance.
 # All of the data will be left joined with the df and model_df, therefore we can use the student_table
@@ -169,16 +171,131 @@ model_df, df = process_numeric_student_columns(student_table, model_df, df, colu
 
 
 ######################################################################################################################################################
+# Add the scram data to df and model_df
+# We need to remove duplicate student_numbers by keeping the row with the max ScramMembership
+# Fill null ScramMembership values with 0
+scram['ScramMembership'] = scram['ScramMembership'].fillna(0)
+
+# We need to remove duplicate student_numbers by keeping the row with the max ScramMembership
+scram = scram.loc[scram.groupby('student_number')['ScramMembership'].idxmax()]
+scram.reset_index(drop=True, inplace=True)
+
+# Make sure student_number is a string
+scram['student_number'] = scram['student_number'].astype(str)
+
+# We will merge with df['student_number'] at the begigning to only work with the filtered student_numbers
+# This way we can adjust the student numbers at the top on the script once.
+scram = pd.merge(df['student_number'], scram, on='student_number', how='left')
+
+# Rename columns
+scram_columns = {
+    'ScramMembership': 'scram_membership',
+    'RegularPercent': 'regular_percent',
+    'Environment': 'environment',
+    'IsOnePercent': 'is_one_percent',
+    'ExtendedSchoolYear': 'extended_school_year'
+}
+scram = scram.rename(columns=scram_columns)
+
+#---------------------------------------------------
+# Dummy code the scram data (regular_percent, environment, is_one_percent and extended_school_year)
+# Create a dataframe for dummy variables. scram_membership is a number from 0-180 so it doesn't need to be dummied.
+scram_dummies = scram[['student_number', 'scram_membership']].copy()
+
+#---------------------------------------------------
+# Dummy code regular_percent (regular_percent_1.0, regular_percent_2.0, regular_percent_3.0 and regular_percent_nan)
+################################################################
+# I'm not sure if or how the null values should be classified, therefore I have not dropped a column
+# Check with Jeremy
+################################################################
+regular_percent_dummies = pd.get_dummies(scram['regular_percent'].astype(str), prefix='regular_percent').astype(int)
+
+# Concat with scram_dummies table
+scram_dummies = pd.concat([scram_dummies, regular_percent_dummies], axis=1)
+
+scram_dummies.head()
+
+#---------------------------------------------------
+# Dummy code environment (environment_v = 1)
+# There are only two students in environment_h
+################################################################
+# I'm assuming that null values would be classified as environment_v (regular school setting)
+# Check with Jeremy
+################################################################
+
+environment_dummies = pd.get_dummies(scram['environment'].fillna('V').astype(str), prefix='environment').astype(int)
+
+# Lowercase column titles
+environment_dummies.columns = environment_dummies.columns.str.lower()
+
+# Drop the environment_h column
+environment_dummies.drop('environment_h', axis=1, inplace=True)
+
+# Concat with scram_dummies table
+scram_dummies = pd.concat([scram_dummies, environment_dummies], axis=1)
+
+scram_dummies.head()
+
+#---------------------------------------------------
+# Dummy code is_one_percent (is_one_percent_y = 1)
+################################################################
+# I'm assuming that null values would be classified as is_one_percent_n (No severe disability)
+# Check with Jeremy
+################################################################
+one_percent_dummies = pd.get_dummies(scram['is_one_percent'].replace(0, 'n'), prefix='is_one_percent').astype(int)
+
+# Lowercase column titles
+one_percent_dummies.columns = one_percent_dummies.columns.str.lower()
+
+# Concat with scram_dummies table
+scram_dummies = pd.concat([scram_dummies, one_percent_dummies], axis=1)
+
+scram_dummies.head()
+
+#---------------------------------------------------
+# Dummy code extended_school_year (extended_school_year_y = 1)
+################################################################
+# I'm assuming that null values would be classified as extended_school_year_n (No extended school year)
+# Check with Jeremy
+################################################################
+# Dummy code extended_school_year (extended_school_year_y)
+extended_year_dummies = pd.get_dummies(scram['extended_school_year'].replace(0, 'n'), prefix='extended_school_year').astype(int)
+
+# Lowercase column titles
+extended_year_dummies.columns = extended_year_dummies.columns.str.lower()
+
+# Concat with scram_dummies table
+scram_dummies = pd.concat([scram_dummies, extended_year_dummies], axis=1)
+
+scram_dummies.head()
+
+#---------------------------------------------------
+# Merge the scram data with the df and model_df
+# Make sure student_number is a string
+scram['student_number'] = scram['student_number'].astype(str)
+scram_dummies['student_number'] = scram_dummies['student_number'].astype(str)
+
+# Merge the non-dummied data with the df
+df = pd.merge(df, scram, on='student_number', how='left')
+
+# Merge the dummied data with the model_df
+model_df = pd.merge(model_df, scram_dummies, on='student_number', how='left')
+
+
+######################################################################################################################################################
 # Prepare the data for export
 # Specify the column order for the df
 df_columns = ['student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa', 'days_attended', 
-            'excused_absences', 'unexcused_absences', 'absences_due_to_suspension', 'school_membership']
+            'excused_absences', 'unexcused_absences', 'absences_due_to_suspension', 'school_membership',
+            'scram_membership', 'regular_percent', 'environment', 'is_one_percent', 'extended_school_year']
 
 df = df[df_columns]
 
 # Specify the column order for the model_df
-model_columns = ['student_number', 'ac_ind', 'overall_gpa', 'days_attended', 
-                'excused_absences', 'unexcused_absences', 'absences_due_to_suspension', 'school_membership']
+model_columns = (['student_number', 'ac_ind', 'overall_gpa', 'days_attended', 
+                'excused_absences', 'unexcused_absences', 'absences_due_to_suspension', 'school_membership',
+                'environment_v', 'is_one_percent_y', 'extended_school_year_y']
+ + [col for col in model_df.columns if col.startswith('regular_percent')])
 
 model_df = model_df[model_columns]
 
@@ -188,3 +305,5 @@ model_df.head()
 # Export both files
 df.to_csv('./data/academic_exploratory_data.csv', index=False)
 model_df.to_csv('./data/academic_modeling_data.csv', index=False)
+
+print("Data exported successfully!")

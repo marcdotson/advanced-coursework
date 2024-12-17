@@ -156,10 +156,11 @@ def process_numeric_student_columns(student_table, model_df, df, columns, rename
     return model_df, df
 
 # Columns to process from the student_table
-columns_to_process = ['DaysAttended', 'CumulativeGPA', 'SchoolMembership', 'ExcusedAbsences', 'UnexcusedAbsences', 'AbsencesDueToSuspension']
+columns_to_process = ['GradeLevel', 'DaysAttended', 'CumulativeGPA', 'SchoolMembership', 'ExcusedAbsences', 'UnexcusedAbsences', 'AbsencesDueToSuspension']
 
 # Specify the columns to process and rename
 rename_map = {
+    'GradeLevel': 'current_grade',
     'DaysAttended': 'days_attended',
     'CumulativeGPA': 'overall_gpa',
     'SchoolMembership': 'school_membership',
@@ -285,14 +286,14 @@ model_df = pd.merge(model_df, scram_dummies, on='student_number', how='left')
 ######################################################################################################################################################
 # Prepare the data for export
 # Specify the column order for the df
-df_columns = ['student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa', 'days_attended', 
+df_columns = ['student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa', 'days_attended', 'current_grade',
             'excused_absences', 'unexcused_absences', 'absences_due_to_suspension', 'school_membership',
             'scram_membership', 'regular_percent', 'environment', 'is_one_percent', 'extended_school_year']
 
 df = df[df_columns]
 
 # Specify the column order for the model_df
-model_columns = (['student_number', 'ac_ind', 'overall_gpa', 'days_attended', 
+model_columns = (['student_number', 'ac_ind', 'overall_gpa', 'days_attended', 'current_grade',
                 'excused_absences', 'unexcused_absences', 'absences_due_to_suspension', 'school_membership',
                 'environment_v', 'is_one_percent_y', 'extended_school_year_y']
  + [col for col in model_df.columns if col.startswith('regular_percent')])

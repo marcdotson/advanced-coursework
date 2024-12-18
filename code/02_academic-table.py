@@ -1,3 +1,5 @@
+# The code will output two data files: academic_exploratory_data.csv and academic_modeling_data.csv
+
 import pandas as pd
 import numpy as np
 

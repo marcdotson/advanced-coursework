@@ -170,7 +170,7 @@ model_df.head()
 
 ######################################################################################################################################################
 # Add the date columns from the student table to the model_df and the df (entry_date, first_enroll_us....)
-# I am still unsure of the best way format the dates, possibly a count since the date or something else.
+# I am still unsure of the best way format the dates, possibly a count since a specific date or something else.
 # Only use student_numbers of high school students
 student_dates = student_table[['student_number', 'EntryDate', 'FirstEnrollInUS', 'EllMonitoredEntryDate']]
 
@@ -242,4 +242,4 @@ df.head()
 df.to_csv('./data/demographic_exploratory_data.csv', index=False)
 model_df.to_csv('./data/demographic_modeling_data.csv', index=False)
 
-print("Data exported successfully!")
+print("Demographic data exported successfully!")

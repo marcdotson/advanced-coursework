@@ -309,4 +309,4 @@ model_df.head()
 df.to_csv('./data/academic_exploratory_data.csv', index=False)
 model_df.to_csv('./data/academic_modeling_data.csv', index=False)
 
-print("Data exported successfully!")
+print("Academic data exported successfully!")

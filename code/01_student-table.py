@@ -1,3 +1,5 @@
+# The code will output two data files: student_table.csv and high_school_students.csv
+
 import pandas as pd
 import numpy as np
 
@@ -46,4 +48,4 @@ high_school_students.head()
 student_table.to_csv('./data/student_table.csv', index=False)
 high_school_students.to_csv('./data/high_school_students.csv', index=False)
 
-print("Data exported successfully!")
+print("Student data exported successfully!")

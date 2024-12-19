@@ -22,10 +22,10 @@ high_school_students = pd.read_csv('data/high_school_students.csv')
 # If we decided to filter at the end, all we need to do is change high_school_students to student_table when creating the df's below
 
 # Create the df from the high_school_student student_numbers
-df = high_school_students[['student_number']]
+df = high_school_students[['student_number']].copy()
 
 # Create the model_df from the high_school_student student_numbers
-model_df = high_school_students[['student_number']]
+model_df = high_school_students[['student_number']].copy()
 
 
 ######################################################################################################################################################
@@ -295,7 +295,7 @@ df_columns = ['student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa', '
 df = df[df_columns]
 
 # Specify the column order for the model_df
-model_columns = (['student_number', 'ac_ind', 'overall_gpa', 'days_attended', 'current_grade',
+model_columns = (['student_number', 'ac_ind', 'overall_gpa', 'days_attended',
                 'excused_absences', 'unexcused_absences', 'absences_due_to_suspension', 'school_membership',
                 'environment_v', 'is_one_percent_y', 'extended_school_year_y']
  + [col for col in model_df.columns if col.startswith('regular_percent')])

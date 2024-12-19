@@ -36,9 +36,11 @@ assessment_table = assessment_table.drop(columns='LEANumber', errors='ignore')
 # Drop all rows where TestName does not begin with ACT. This will filter out SAT scores
 assessment_table = assessment_table[assessment_table['TestName'].str.startswith('ACT', na=False)]
 
+# Drop the TestName column as all values are the same
+assessment_table.drop(columns='TestName', inplace=True, errors='ignore')
+
 # Rename columns for consistency
 assessment_table = assessment_table.rename(columns={
-    'TestName': 'test_name',
     'TestDate': 'test_date',
     'Subtest': 'subtest',
     'TestScore': 'test_score'
@@ -54,7 +56,7 @@ assessment_table['test_date'] = pd.to_datetime(assessment_table['test_date'], er
 # Include student_number, test_name and test_date in the pivot index since there is 
 # only one test_name and test_date per test, it does not matter which one we use.
 assessment_grid = assessment_table.pivot_table(
-    index=['student_number', 'test_name', 'test_date'],
+    index=['student_number', 'test_date'],
     columns='subtest',
     values='test_score',
 )
@@ -71,9 +73,6 @@ assessment_grid = assessment_grid.rename(columns={
 
 # Reset the index to make student_number a column again
 assessment_grid = assessment_grid.reset_index()
-
-# Drop the test_name column as all values are the same
-assessment_grid.drop(columns='test_name', inplace=True, errors='ignore')
 
 # Make sure student_number is a string
 assessment_grid['student_number'] = assessment_grid['student_number'].astype(str)

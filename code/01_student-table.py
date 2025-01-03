@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 
 ##########################################################################################################################################################
-# Columns to drop if they exist in the student table
+# Columns to drop if they exist in the student_table. Some years are missing columns.
 # Not all the columns below exist in every year
 columns_to_drop = [
     "ExitDate", "ResidentStatus", "KindergartenType", "EarlyGrad", "ReadGradeLevelFall", 
@@ -33,6 +33,7 @@ for year in years:
 
     ##########################################################################################################################################################
     # Filter the student table down to 1 row per student. This will make everything easier moving forward
+    # This is handling one year of data at a time, so this is filtering to one student_number per year
 
     # Drop the columns from the list above. If the data does not contain that column ignore the error and continue.
     student_table = student.drop(columns=[col for col in columns_to_drop if col in student.columns], errors='ignore')
@@ -55,13 +56,11 @@ for year in years:
     student_table.head()
     high_school_students.head()
 
-    print(f"Unique student_numbers in student_table for year {year}: {student_table['student_number'].nunique()}")
-    print(f"Unique student_numbers in high_school_students for year {year}: {high_school_students['student_number'].nunique()}")
 
     ##########################################################################################################################################################
     # Export both tables for the specific year
-    #student_table.to_csv(f'./data/student_table_{year}.csv', index=False)
-    #high_school_students.to_csv(f'./data/high_school_students_{year}.csv', index=False)
+    student_table.to_csv(f'./data/student_table_{year}.csv', index=False)
+    high_school_students.to_csv(f'./data/high_school_students_{year}.csv', index=False)
 
     print(f"Student data for year {year} exported successfully!")
 

@@ -66,4 +66,7 @@ model_df['student_number'] = model_df['student_number'].astype(str)
 # Add teacher_dummies to the model_df
 model_df = pd.merge(model_df, teacher_dummies, on='student_number', how='left')
 
+# Save the model_df to a CSV file in the data folder
+model_df.to_csv('../data/teacher_2022.csv', index=False)
+
 model_df.head()

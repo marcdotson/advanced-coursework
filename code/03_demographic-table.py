@@ -8,32 +8,9 @@ import numpy as np
 # column I drop is a column in every year of the data.
 ####################################################################
 
-# Data sheets
-student = pd.read_excel('data/2022 EOY Data - USU.xlsx', sheet_name='Student')
-
-# Rename 'StudentNumber' to 'student_number'
-student = student.rename(columns={'StudentNumber': 'student_number'})
-
-# Import student_table and high_school_student (for now)
-student_table = pd.read_csv('data/student_table.csv')
-high_school_students = pd.read_csv('data/high_school_students.csv')
-
 
 ######################################################################################################################################################
-####################################################################
-# df will represent the exploratory data, and model_df will represent the model data
-# If we decided to filter at the end, all we need to do is change high_school_students to student_table 
-# when creating the df's below. The next two lines are the only lines that need to be adjusted.
-####################################################################
-
-# Create the df from the high_school_student student_numbers
-df = high_school_students[['student_number']].copy()
-
-# Create the model_df from the high_school_student student_numbers
-model_df = high_school_students[['student_number']].copy()
-
-
-######################################################################################################################################################
+# Functions Need to be defined before the for loop
 # Function to process categorical variables. Add non-dummied columns to df and dummy-coded columns to model_df
 
 def process_categorical_column(df, model_df, reference_table, column_name, dummy_name, key_column='student_number'):
@@ -75,27 +52,6 @@ def process_categorical_column(df, model_df, reference_table, column_name, dummy
     model_df = pd.merge(model_df, pd.concat([temp_table[key_column], dummies], axis=1), on=key_column, how='left')
 
     return df, model_df
-
-# Define the list of categorical columns to process
-categorical_columns = [
-    ('Gender', 'gender'),
-    ('LimitedEnglish', 'limited_english'),
-    ('PartTimeHomeSchool', 'part_time_home_school'),
-    ('HighSchlComplStatus', 'hs_complete_status'),
-    ('ExitCode', 'exit_code'),
-    ('HomeStatus', 'home_status'),
-    ('TribalAffiliation', 'tribal_affiliation'),
-    ('EllNativeLanguage', 'ell_native_language'),
-    ('EllParentLanguage', 'ell_parent_language'),
-    ('EllInstructionType', 'ell_instruction_type')
-]
-
-# Process each categorical column using the function
-for original_col, new_col in categorical_columns:
-    df, model_df = process_categorical_column(df, model_df, student_table.copy(), original_col, new_col)
-
-df.head()
-model_df.head()
 
 
 ######################################################################################################################################################
@@ -141,63 +97,244 @@ def student_binary_columns(df, model_df, reference_table, column_name, dummy_nam
 
     return df, model_df
 
-# Apply the function to each binary column
-columns_to_process = [
-    ('Ethnicity', 'ethnicity'),
-    ('AmerIndianAlaskan', 'amerindian_alaskan'),
-    ('Asian', 'asian'),
-    ('BlackAfricanAmer', 'black_african_amer'),
-    ('HawaiianPacificIsl', 'hawaiian_pacific_isl'),
-    ('White', 'white'),
-    ('Migrant', 'migrant'),
-    ('Gifted', 'gifted'),
-    ('Services504', 'services_504'),
-    ('MilitaryChild', 'military_child'),
-    ('RefugeeStudent', 'refugee_student'),
-    ('Immigrant', 'immigrant'),
-    ('ReadingIntervention', 'reading_intervention'),
-    ('PassedCivicsExam', 'passed_civics_exam'),
-    ('ReadGradeLevel', 'read_grade_level')
-]
 
-# Apply the function to each column in the list
-for col, dummy in columns_to_process:
-    df, model_df = student_binary_columns(df, model_df, student_table, col, dummy)
+######################################################################################################################################################
+# Begin the for loop to process all the years of data
+# Define the list of years to process
+years = [2017, 2018, 2022, 2023, 2024]
 
-# Display the updated model DataFrame
+# Create two empty dictionaries to store df and model_df for each year: df_dict and model_dict
+df_dict = {}
+model_dict = {}
+
+# Loop through each year
+for year in years:
+    print(f"Processing demographic data for year {year}...")
+
+    ######################################################################################################################################################
+    # File Paths (import student_table and high_school_student (for now))
+    student_file = f'data/{year} EOY Data - USU.xlsx'
+    student_table_file = f'data/student_table_{year}.csv'
+    high_school_students_file = f'data/high_school_students_{year}.csv'
+
+    # Load Data
+    student = pd.read_excel(student_file, sheet_name='Student')
+
+    # low_memory=False removes the warning for mixed data types
+    student_table = pd.read_csv(student_table_file, low_memory=False)
+    high_school_students = pd.read_csv(high_school_students_file, low_memory=False)
+
+    # Rename columns for consistency
+    student = student.rename(columns={'StudentNumber': 'student_number'})
+
+
+    ######################################################################################################################################################
+    # df will represent the exploratory data, and model_df will represent the model data
+    ####################################################################
+    # If we decided to filter at the end, all we need to do is change high_school_students to student_table when creating the df and model_df below
+    ####################################################################
+
+    # Create the df from the high_school_student student_numbers
+    df = high_school_students[['student_number']].copy()
+
+    # Create the model_df from the high_school_student student_numbers
+    model_df = high_school_students[['student_number']].copy()
+
+
+    ######################################################################################################################################################
+    # Define the list of categorical columns to process using the function above (process_categorical_column)
+    categorical_columns = [
+        ('Gender', 'gender'),
+        ('LimitedEnglish', 'limited_english'),
+        ('PartTimeHomeSchool', 'part_time_home_school'),
+        ('HighSchlComplStatus', 'hs_complete_status'),
+        ('ExitCode', 'exit_code'),
+        ('HomeStatus', 'home_status'),
+        ('TribalAffiliation', 'tribal_affiliation'),
+        ('EllNativeLanguage', 'ell_native_language'),
+        ('EllParentLanguage', 'ell_parent_language'),
+        ('EllInstructionType', 'ell_instruction_type')
+    ]
+
+    # Apply the function to each column in the list if the column exists
+    for original_col, new_col in categorical_columns:
+        if original_col in student_table.columns:
+            df, model_df = process_categorical_column(df, model_df, student_table.copy(), original_col, new_col)
+        
+        # If the column does not exist, print which column is missing for what year
+        else:
+            print(f"Column '{original_col}' not found in the '{year}' student_table. Skipping...")
+
+
+
+    ######################################################################################################################################################
+    # Define the list of binary columns to process using the function above (student_binary_columns)
+    columns_to_process = [
+        ('Ethnicity', 'ethnicity'),
+        ('AmerIndianAlaskan', 'amerindian_alaskan'),
+        ('Asian', 'asian'),
+        ('BlackAfricanAmer', 'black_african_amer'),
+        ('HawaiianPacificIsl', 'hawaiian_pacific_isl'),
+        ('White', 'white'),
+        ('Migrant', 'migrant'),
+        ('Gifted', 'gifted'),
+        ('Services504', 'services_504'),
+        ('MilitaryChild', 'military_child'),
+        ('RefugeeStudent', 'refugee_student'),
+        ('Immigrant', 'immigrant'),
+        ('ReadingIntervention', 'reading_intervention'),
+        ('PassedCivicsExam', 'passed_civics_exam'),
+        ('ReadGradeLevel', 'read_grade_level')
+    ]
+
+    # Apply the function to each column in the list if the column exists
+    for original_col, new_col in columns_to_process:
+        if original_col in student_table.columns:
+            df, model_df = student_binary_columns(df, model_df, student_table, original_col, new_col)
+        
+        # If the column does not exist, print which column is missing for what year
+        else:
+            print(f"Column '{original_col}' not found in the '{year}' student_table. Skipping...")
+
+
+    ######################################################################################################################################################
+    # Add the date columns from the student table to the model_df and the df (entry_date, first_enroll_us....)
+    # I am still unsure of the best way format the dates, possibly a count since a specific date or something else.
+    # Only use student_numbers of high school students
+    student_dates = student_table[['student_number', 'EntryDate', 'FirstEnrollInUS', 'EllMonitoredEntryDate']]
+
+    # Rename the following columns for consistency
+    student_dates = student_dates.rename(columns={
+        'EntryDate': 'entry_date',
+        'FirstEnrollInUS': 'first_enroll_us',
+        'EllMonitoredEntryDate': 'ell_entry_date'
+    })
+
+    date_columns = ['entry_date', 'first_enroll_us', 'ell_entry_date']
+
+    # Convert date columns into datetime format
+    student_dates[date_columns] = student_dates[date_columns].apply(
+        lambda col: pd.to_datetime(col.astype(str).str.replace('-', ''), format='%Y%m%d', errors='coerce')
+    )
+
+    # Make sure student_number is a string
+    student_dates['student_number'] = student_dates['student_number'].astype(str)
+    df['student_number'] = df['student_number'].astype(str)
+    model_df['student_number'] = model_df['student_number'].astype(str)
+
+    # Merge into df
+    df = pd.merge(df, student_dates, on='student_number', how='left')
+
+    # Merge into model_df
+    model_df = pd.merge(model_df, student_dates, on='student_number', how='left')
+
+
+    ######################################################################################################################################################
+    # Store the resulting DataFrames in dictionaries (i.e. df_2017, model_df_2017)
+    df_dict[f'df_{year}'] = df.copy()
+    model_dict[f'model_df_{year}'] = model_df.copy()
+
+    # Add a year column to df_dict. This may be important later
+    df_dict[f'df_{year}']['year'] = year
+    model_dict[f'model_df_{year}']['year'] = year
+
+
+######################################################################################################################################################
+# Concatenate data from multiple years into two main DataFrames:
+# - df keeps one row per student per year, preserving yearly details
+# - concat_model combines all years of model data to later aggregate to one row per student
+
+df = pd.concat(df_dict.values(), ignore_index=True)
+concat_model = pd.concat(model_dict.values(), ignore_index=True)
+
+# Remove duplicate rows if there are any
+df = df.drop_duplicates(keep='first')
+concat_model = concat_model.drop_duplicates(keep='first')
+
+df.head()
+concat_model.head()
+
+
+######################################################################################################################################################
+# Create model_df as a base for aggregated data
+# Extracts unique student numbers from concat_model
+# model_df will contain one row per student, making it suitable for merging aggregated metrics
+
+model_df = concat_model[['student_number']].copy()
+
+# Make sure model_df has one row per student_number
+model_df = model_df.drop_duplicates(keep='first')
 model_df.head()
 
 
 ######################################################################################################################################################
-# Add the date columns from the student table to the model_df and the df (entry_date, first_enroll_us....)
-# I am still unsure of the best way format the dates, possibly a count since a specific date or something else.
-# Only use student_numbers of high school students
-student_dates = student_table[['student_number', 'EntryDate', 'FirstEnrollInUS', 'EllMonitoredEntryDate']]
+# Retrieve the binary and categorical data associated with the students' most recent year they attended school for the model_df
+# Specify the columns to exclude from this step
+exclude_columns = ['ell_entry_date', 'entry_date', 'first_enroll_us']
 
-# Rename the following columns for consistency
-student_dates = student_dates.rename(columns={
-    'EntryDate': 'entry_date',
-    'FirstEnrollInUS': 'first_enroll_us',
-    'EllMonitoredEntryDate': 'ell_entry_date'
-})
+# Create a copy of concat_model to work with
+binary_catagerical_data = concat_model.copy()
 
-date_columns = ['entry_date', 'first_enroll_us', 'ell_entry_date']
+# Drop the excluded columns from the data
+binary_catagerical_data = binary_catagerical_data.drop(columns= exclude_columns)
 
-# Convert date columns into datetime format
-student_dates[date_columns] = student_dates[date_columns].apply(
-    lambda col: pd.to_datetime(col.astype(str).str.replace('-', ''), format='%Y%m%d', errors='coerce')
-)
+# Sort the data by the year column in descending order
+binary_catagerical_data = binary_catagerical_data.sort_values(by='year', ascending=False)
+
+# Remove duplicate rows based on the 'student_number' column to keep the row with the most recent year
+binary_catagerical_data = binary_catagerical_data.drop_duplicates(subset='student_number', keep='first')
+
+# Drop the year column from the data
+binary_catagerical_data = binary_catagerical_data.drop(columns='year')
 
 # Make sure student_number is a string
-student_dates['student_number'] = student_dates['student_number'].astype(str)
-df['student_number'] = df['student_number'].astype(str)
+binary_catagerical_data['student_number'] = binary_catagerical_data['student_number'].astype(str)
 model_df['student_number'] = model_df['student_number'].astype(str)
 
-# Merge into df
-df = pd.merge(df, student_dates, on='student_number', how='left')
+binary_catagerical_data.head()
 
-# Merge into model_df
-model_df = pd.merge(model_df, student_dates, on='student_number', how='left')
+# Merge the binary and categorical data with the model_df
+model_df = pd.merge(model_df, binary_catagerical_data, on='student_number', how='left')
+
+model_df.head()
+
+
+######################################################################################################################################################
+# Add the date columns to the model_df keeping the oldest (earliest) date for each student
+# Retain the oldest (earliest) date for each student in the specified columns
+# Columns to process
+date_columns = ['ell_entry_date', 'entry_date', 'first_enroll_us']
+
+# Create a DataFrame to hold the results
+earliest_dates = model_df[['student_number']].copy()
+
+# Ensure the date columns are in datetime format and process each column separately
+for col in date_columns:
+    # Create a DataFrame with student_number and the current date column
+    temp_date = concat_model[['student_number', col]].copy()
+    
+    # Ensure the column is in datetime format
+    temp_date[col] = pd.to_datetime(temp_date[col], errors='coerce')
+    
+    # Sort by student_number and the date column in ascending order
+    temp_date = temp_date.sort_values(by=['student_number', col], ascending=[True, True])
+    
+    # Drop duplicates to keep the earliest date for each student
+    temp_date = temp_date.drop_duplicates(subset='student_number', keep='first')
+    
+    # Merge the earliest date back into the results DataFrame
+    earliest_dates = pd.merge(earliest_dates, temp_date, on='student_number', how='left')
+
+# Ensure student_number is a string
+earliest_dates['student_number'] = earliest_dates['student_number'].astype(str)
+
+earliest_dates.head()
+
+# Merge the earliest dates into model_df
+model_df = pd.merge(model_df, earliest_dates, on='student_number', how='left')
+
+# Preview the updated model_df
+model_df.head()
 
 
 ######################################################################################################################################################
@@ -239,7 +376,10 @@ model_df.head()
 df.head()
 
 # Export both files
-df.to_csv('./data/demographic_exploratory_data.csv', index=False)
-model_df.to_csv('./data/demographic_modeling_data.csv', index=False)
+#df.to_csv('./data/demographic_exploratory_data.csv', index=False)
+#model_df.to_csv('./data/demographic_modeling_data.csv', index=False)
 
 print("Demographic data exported successfully!")
+
+
+

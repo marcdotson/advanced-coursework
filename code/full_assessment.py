@@ -26,7 +26,7 @@ df_dict = {}
 for year in years:
     print(f"Processing assessment data for year {year}...")
 
-    # File Paths
+    # File Paths (import student_table and high_school_student (for now))
     assessment_file = f'data/{year} EOY Data - USU.xlsx'
     student_table_file = f'data/student_table_{year}.csv'
     high_school_students_file = f'data/high_school_students_{year}.csv'

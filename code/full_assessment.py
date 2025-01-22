@@ -11,10 +11,17 @@ years = [2017, 2018, 2022, 2023, 2024]
 df_dict = {}
 
 ######################################################################################################################################################
-# Begin the for loop
-# The logic will take the student_number from the assessment table, and left join with the student_number from the high_school_students_[year] for each year.
-# After the data has been filtered down to students highest composite_score per year, that data will be stored in the df_dict as assessment_[year]
-# After the loop we will concatinate the data and filter to only include the highest composite score per student.
+# Begin the for loop:
+# For each year, the logic will:
+# 1. Take 'student_number' from the assessment table and perform a left join with 'student_number' 
+#    from the corresponding 'high_school_students_[year]' table.
+# 2. Filter the data to retain only the highest 'composite_score' per student for that year.
+# 3. Store the filtered data in the 'df_dict' dictionary with the key formatted as 'assessment_[year]'.
+# 
+# After the loop completes:
+# - Concatenate the data from all years into a single DataFrame.
+# - Further filter the combined data to include only the highest 'composite_score' per student across all years.
+
 
 for year in years:
     print(f"Processing assessment data for year {year}...")

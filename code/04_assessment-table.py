@@ -1,4 +1,5 @@
-# The code will output one data file: assessment_data.csv
+# The code will output two data files: assessment_data.csv
+# I need to figure out what we want the exploratory data to look like, if we want it to be different than the modeling data.
 
 import pandas as pd
 import numpy as np
@@ -141,6 +142,6 @@ df.head()
 
 ######################################################################################################################################################
 # Export the data
-# df.to_csv('./data/assessment_data.csv', index=False)
+df.to_csv('./data/assessment_data.csv', index=False)
 
 print("Assessment data exported successfully!")

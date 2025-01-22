@@ -595,7 +595,7 @@ df.head()
 model_df.head()
 
 # Export both files
-# df.to_csv('./data/academic_exploratory_data.csv', index=False)
-# model_df.to_csv('./data/academic_modeling_data.csv', index=False)
+df.to_csv('./data/academic_exploratory_data.csv', index=False)
+model_df.to_csv('./data/academic_modeling_data.csv', index=False)
 
 print("Academic data exported successfully!")

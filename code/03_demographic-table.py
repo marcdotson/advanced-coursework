@@ -376,8 +376,8 @@ model_df.head()
 df.head()
 
 # Export both files
-#df.to_csv('./data/demographic_exploratory_data.csv', index=False)
-#model_df.to_csv('./data/demographic_modeling_data.csv', index=False)
+df.to_csv('./data/demographic_exploratory_data.csv', index=False)
+model_df.to_csv('./data/demographic_modeling_data.csv', index=False)
 
 print("Demographic data exported successfully!")
 

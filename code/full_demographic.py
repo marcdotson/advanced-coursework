@@ -130,7 +130,9 @@ for year in years:
 
     ######################################################################################################################################################
     # df will represent the exploratory data, and model_df will represent the model data
-    # If we decided to filter at the end, all we need to do is change high_school_students to student_table when creating the df's below
+    ####################################################################
+    # If we decided to filter at the end, all we need to do is change high_school_students to student_table when creating the df and model_df below
+    ####################################################################
 
     # Create the df from the high_school_student student_numbers
     df = high_school_students[['student_number']].copy()

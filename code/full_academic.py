@@ -90,7 +90,9 @@ for year in years:
 
     ######################################################################################################################################################
     # df will represent the exploratory data, and model_df will represent the model data
-    # If we decided to filter at the end, all we need to do is change high_school_students to student_table when creating the df's below
+    ####################################################################
+    # If we decided to filter at the end, all we need to do is change high_school_students to student_table when creating the df and model_df below
+    ####################################################################
 
     # Create the df from the high_school_student student_numbers
     df = high_school_students[['student_number']].copy()
@@ -322,7 +324,7 @@ for year in years:
     df_dict[f'df_{year}'] = df.copy()
     model_dict[f'model_df_{year}'] = model_df.copy()
 
-    # Add a year column to df_dict. This will be important later in the script
+    # Add a year column to df_dict. This may be important later
     df_dict[f'df_{year}']['year'] = year
 
 

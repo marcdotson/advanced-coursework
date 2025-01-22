@@ -12,6 +12,9 @@ df_dict = {}
 
 ######################################################################################################################################################
 # Begin the for loop
+# The logic will take the student_number from the assessment table, and left join with the student_number from the high_school_students_[year] for each year.
+# After the data has been filtered down to students highest composite_score per year, that data will be stored in the df_dict as assessment_[year]
+# After the loop we will concatinate the data and filter to only include the highest composite score per student.
 
 for year in years:
     print(f"Processing assessment data for year {year}...")
@@ -28,7 +31,7 @@ for year in years:
     student_table = pd.read_csv(student_table_file, low_memory=False)
     high_school_students = pd.read_csv(high_school_students_file, low_memory=False)
 
-    # Rename 'StudentNumber' to 'student_number'
+    # Rename 'StudentNumber' to 'student_number' in the assessment table
     assessment = assessment.rename(columns={'StudentNumber': 'student_number'})
 
     ####################################################################
@@ -39,7 +42,7 @@ for year in years:
 
     ######################################################################################################################################################
     # Add the transcript assessment data to the df
-    # We want to start with student_numbers that are included in the df
+    # We only want to include student_numbers that are in the high_school_students table
     assessment_table = df[['student_number']].copy()
 
     # Merge the assessment table with the df to return student_numbers from the df
@@ -68,8 +71,9 @@ for year in years:
     assessment_table['test_date'] = pd.to_datetime(assessment_table['test_date'], errors='coerce')
 
     # Pivot table to turn subtest values into columns and fill with test scores
-    # Include student_number, test_name and test_date in the pivot index since there is 
-    # only one test_name and test_date per test, it does not matter which one we use.
+    # Include 'test_date' in the pivot index because each test has the same 'test_date' across all its subtests. This means that regardless 
+    # of which subtest we reference, the associated 'test_date' will always be the same.
+
     assessment_grid = assessment_table.pivot_table(
         index=['student_number', 'test_date'],
         columns='subtest',
@@ -96,39 +100,37 @@ for year in years:
     # Merge assessment_grid into the df
     df = pd.merge(df, assessment_grid, on='student_number', how='left')
 
-    # Some students have taken the ACT multiple times. We want to keep the row with the highest composite score.
+    # Some students have taken the ACT multiple times. We only want to keep the row with the highest composite score.
     # Create a list of students with multiple test enteries
     duplicates = df[df.duplicated(subset='student_number', keep=False)]
 
-    # Sort duplicates by highest composite_score
-    duplicates = duplicates.sort_values(by='composite_score', ascending=False)
+    # Sort the df by highest composite_score
+    df = df.sort_values(by='composite_score', ascending=False)
 
     # Drop all but the row with the highest composite score per student_number
-    duplicates = duplicates.drop_duplicates(subset='student_number', keep='first')
-
-    # Drop all duplicate rows from the df
-    df = df[~df.duplicated(subset='student_number', keep=False)].reset_index(drop=True)
-
-    # Add cleaned duplicates back to the df
-    df = pd.concat([df, duplicates], ignore_index=True).reset_index(drop=True)
+    # Because the df is ordered by composite_score in descending order, we can drop all duplicate rows while keeping the first instance
+    df = df.drop_duplicates(subset='student_number', keep='first')
 
     # Store the resulting DataFrame in a dictionary
+    # Results stored as assessment_[year]
     df_dict[f'assessment_{year}'] = df.copy()
 
     print(f"Assessment data processed for {year}...")
 
 
 ######################################################################################################################################################
+# Since students may have taken the test multiple times across different years, we will apply the same filtering process as above.
 # Concatenate all data into df.
 df = pd.concat(df_dict.values(), ignore_index=True)
 
-# We only want to keep row associated with the highest composite score per student
+# We only want to keep the row associated with the highest composite score per student
 # Sort df by composite score descending
 df = df.sort_values(by = 'composite_score', ascending=False)
 
 # Drop all duplicate rows, and only keep the first instance of the duplicate
 df = df.drop_duplicates(subset='student_number', keep = 'first')
 
+df.head()
 
 ######################################################################################################################################################
 # Export the data

@@ -1,3 +1,5 @@
+# This code with compile all of the modeling data into one table: 'model_data.csv'
+
 import pandas as pd
 
 # Load in the datasets that will be joined later
@@ -53,3 +55,4 @@ df.head()
 # Export the data
 # df.to_csv('/data/output/model_data.csv', index=False)
 
+print('Modeling data exported!')

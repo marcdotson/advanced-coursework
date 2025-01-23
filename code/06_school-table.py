@@ -1,7 +1,6 @@
-# The code will output two data files: school_exploratory_data.csv and school_modeling_data.csv
+# The code will output two data files: 06_school_exploratory_data.csv and 06_school_modeling_data.csv
 
 import pandas as pd
-import numpy as np
 
 # Define the years to process
 years = [2017, 2018, 2022, 2023, 2024]
@@ -27,12 +26,12 @@ for year in years:
     
     # low_memory=False removes the warning for mixed data types
     student_table_year = pd.read_csv(
-        f'data/student_table_{year}.csv', usecols=student_table_columns.keys(), dtype=student_table_columns, low_memory=False
+        f'data/01_student_table_{year}.csv', usecols=student_table_columns.keys(), dtype=student_table_columns, low_memory=False
         ).drop_duplicates()
     
     # low_memory=False removes the warning for mixed data types
     hs_students_year = pd.read_csv(
-        f'data/high_school_students_{year}.csv', usecols=hs_students_columns.keys(), dtype=hs_students_columns, low_memory=False
+        f'data/01_high_school_students_{year}.csv', usecols=hs_students_columns.keys(), dtype=hs_students_columns, low_memory=False
         ).drop_duplicates()
 
     # Append year-specific data to the respective lists
@@ -48,7 +47,7 @@ student_table = pd.concat(all_student_tables, ignore_index=True)
 hs_students = pd.concat(all_hs_students, ignore_index=True)
 
 # Rename column names in membership table
-membership = membership.rename(columns={'StudentNumber': 'student_number', 'SchoolNumber': 'school_number', 'CourseRecordID': 'course_record_id'})
+membership = membership.rename(columns={'StudentNumber': 'student_number', 'SchoolNumber': 'school_number'})
 
 # Remove all duplicates from the dataframes after the data is concatinated
 membership = membership.drop_duplicates(keep='first')
@@ -119,7 +118,7 @@ df.head()
 
 ######################################################################################################################################################
 # Export the data
-df.to_csv('./data/school_exploratory_data.csv', index=False)
-model_df.to_csv('./data/school_modeling_data.csv', index=False)
+df.to_csv('./data/06_school_exploratory_data.csv', index=False)
+model_df.to_csv('./data/06_school_modeling_data.csv', index=False)
 
 print('School data exported successfully!')

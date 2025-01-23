@@ -1,4 +1,4 @@
-# The code will output two data files: academic_exploratory_data.csv and academic_modeling_data.csv
+# The code will output two data files: 02_academic_exploratory_data.csv and 02_academic_modeling_data.csv
 # Exploratory data will have one row per student per year
 # Modeling data will have one row per student
 
@@ -71,8 +71,8 @@ for year in years:
     master_file = f'data/{year} EOY Data - USU.xlsx'
     membership_file = f'data/{year} EOY Data - USU.xlsx'
     scram_file = f'data/{year} EOY Data - USU.xlsx'
-    student_table_file = f'data/student_table_{year}.csv'
-    high_school_students_file = f'data/high_school_students_{year}.csv'
+    student_table_file = f'data/01_student_table_{year}.csv'
+    high_school_students_file = f'data/01_high_school_students_{year}.csv'
 
     # Load Data
     master = pd.read_excel(master_file, sheet_name='Course Master')
@@ -595,7 +595,8 @@ df.head()
 model_df.head()
 
 # Export both files
-df.to_csv('./data/academic_exploratory_data.csv', index=False)
-model_df.to_csv('./data/academic_modeling_data.csv', index=False)
+df.to_csv('./data/02_academic_exploratory.csv', index=False)
+model_df.to_csv('./data/02_academic_modeling.csv', index=False)
+
 
 print("Academic data exported successfully!")

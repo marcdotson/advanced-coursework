@@ -1,4 +1,4 @@
-# The code will output two data files per year: student_table_[year].csv and high_school_students_[year].csv
+# The code will output two data files per year: 01_student_table_[year].csv and 01_high_school_students_[year].csv
 
 import pandas as pd
 import numpy as np
@@ -59,8 +59,8 @@ for year in years:
 
     ##########################################################################################################################################################
     # Export both tables for the specific year
-    student_table.to_csv(f'./data/student_table_{year}.csv', index=False)
-    high_school_students.to_csv(f'./data/high_school_students_{year}.csv', index=False)
+    student_table.to_csv(f'./data/01_student_table_{year}.csv', index=False)
+    high_school_students.to_csv(f'./data/01_high_school_students_{year}.csv', index=False)
 
     print(f"Student data for year {year} exported successfully!")
 

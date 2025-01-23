@@ -3,10 +3,11 @@
 import pandas as pd
 
 # Load in the datasets that will be joined later
-academic_table = pd.read_csv('data/academic_modeling_data.csv')
-demographic_table = pd.read_csv('data/demographic_modeling_data.csv')
-assessment_table = pd.read_csv('data/assessment_data.csv')
-school_table = pd.read_csv('data/school_modeling_data.csv')
+academic_table = pd.read_csv('data/02_academic_modeling.csv')
+demographic_table = pd.read_csv('data/03_demographic_modeling.csv')
+assessment_table = pd.read_csv('data/04_assessment_data.csv')
+teacher_table = pd.read_csv('data/05_teacher_modeling_data.csv')
+school_table = pd.read_csv('data/06_school_modeling_data.csv')
 
 
 ######################################################################################################################################################
@@ -21,8 +22,8 @@ years = [2017, 2018, 2022, 2023, 2024]
 for year in years:
     # Load the student_table_[year] and high_school_students_table_[year]
     # low_memory=False removes the warning for mixed data types
-    student_table = pd.read_csv(f'data/student_table_{year}.csv', low_memory=False)
-    high_school_student = pd.read_csv(f'data/high_school_students_{year}.csv')
+    student_table = pd.read_csv(f'data/01_student_table_{year}.csv', low_memory=False)
+    high_school_student = pd.read_csv(f'data/01_high_school_students_{year}.csv')
     
     # Add the student_number to the all_students and hs_students list
     all_students.append(student_table[['student_number']])
@@ -47,6 +48,7 @@ df.head()
 df = pd.merge(df, academic_table, on='student_number', how='left')
 df = pd.merge(df, demographic_table, on='student_number', how='left')
 df = pd.merge(df, assessment_table, on='student_number', how='left')
+df = pd.merge(df, teacher_table, on='student_number', how='left')
 df = pd.merge(df, school_table, on='student_number', how='left')
 
 df.head()
@@ -55,6 +57,6 @@ df.head()
 
 ######################################################################################################################################################
 # Export the data
-# df.to_csv('/data/output/model_data.csv', index=False)
+df.to_csv('./data/08_combined_modeling_data.csv', index=False)
 
 print('Modeling data exported successfully!')

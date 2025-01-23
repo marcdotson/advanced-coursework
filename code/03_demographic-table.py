@@ -1,4 +1,4 @@
-# The code will output two data files: demographic_exploratory_data.csv and demographic_modeling_data.csv
+# The code will output two data files: 03_demographic_exploratory_data.csv and 03_demographic_modeling_data.csv
 
 import pandas as pd
 import numpy as np
@@ -114,8 +114,8 @@ for year in years:
     ######################################################################################################################################################
     # File Paths (import student_table and high_school_student (for now))
     student_file = f'data/{year} EOY Data - USU.xlsx'
-    student_table_file = f'data/student_table_{year}.csv'
-    high_school_students_file = f'data/high_school_students_{year}.csv'
+    student_table_file = f'data/01_student_table_{year}.csv'
+    high_school_students_file = f'data/01_high_school_students_{year}.csv'
 
     # Load Data
     student = pd.read_excel(student_file, sheet_name='Student')
@@ -376,8 +376,9 @@ model_df.head()
 df.head()
 
 # Export both files
-df.to_csv('./data/demographic_exploratory_data.csv', index=False)
-model_df.to_csv('./data/demographic_modeling_data.csv', index=False)
+df.to_csv('./data/03_demographic_exploratory.csv', index=False)
+model_df.to_csv('./data/03_demographic_modeling.csv', index=False)
+
 
 print("Demographic data exported successfully!")
 

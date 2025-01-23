@@ -3,7 +3,9 @@
 # I had to use Anacdona Prompt to install PyMC. I did conda activate pymc_env
 # Make sure to use the Python Interpreter of pymc_env that I made
 
-# this is an example from ChatGPT
+# This code is an example from ChatGPT
+
+# From studying logistic regression, it seems that we need to set up prior distributions
 
 import pymc as pm
 import numpy as np

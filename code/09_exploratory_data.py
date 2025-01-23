@@ -6,6 +6,8 @@ import pandas as pd
 academic_table = pd.read_csv('data/academic_exploratory_data.csv')
 demographic_table = pd.read_csv('data/demographic_exploratory_data.csv')
 assessment_table = pd.read_csv('data/assessment_data.csv')
+school_table = pd.read_csv('data/school_exploratory_data.csv')
+
 
 
 ######################################################################################################################################################
@@ -46,6 +48,7 @@ df.head()
 df = pd.merge(df, academic_table, on='student_number', how='left')
 df = pd.merge(df, demographic_table, on='student_number', how='left')
 df = pd.merge(df, assessment_table, on='student_number', how='left')
+df = pd.merge(df, school_table, on='student_number', how='left')
 
 # After everything has been merged we want to drop duplicate rows and keep the first instance of the duplicate
 df = df.drop_duplicates(keep = 'first')
@@ -57,4 +60,4 @@ df.head()
 # Export the data
 # df.to_csv('/data/output/exploratory_data.csv', index=False)
 
-print('Exploratory data exported!')
+print('Exploratory data exported successfully!')

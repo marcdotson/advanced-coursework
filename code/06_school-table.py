@@ -1,61 +1,77 @@
+# The code will output two data files: school_exploratory_data.csv and school_modeling_data.csv
+
 import pandas as pd
 import numpy as np
 
-# Data sheets
-membership = pd.read_excel('data/2022 EOY Data - USU.xlsx', sheet_name='Course Membership')
-master = pd.read_excel('data/2022 EOY Data - USU.xlsx', sheet_name='Course Master')
-courses = pd.read_excel('data/2022 EOY Data - USU.xlsx', sheet_name='Transcript Courses')
+# Define the years to process
+years = [2017, 2018, 2022, 2023, 2024]
 
-# Rename 'StudentNumber' to 'student_number'
-courses = courses.rename(columns={'StudentNumber': 'student_number'})
-membership = membership.rename(columns={'StudentNumber': 'student_number'})
+# Specify the columns and their corresponding data types for each dataset to speed up the concatenation
+membership_columns = {'StudentNumber': 'int32', 'SchoolNumber': 'int16'}
+student_table_columns = {'student_number':'int32'}
+hs_students_columns = {'student_number': 'int32'}
 
-# Import student_table and high_school_student (for now)
-student_table = pd.read_csv('data/student_table.csv')
-high_school_students = pd.read_csv('data/high_school_students.csv')
+# Concatenate all years of data for each dataset into single DataFrames
+# This combines data from all years to create a complete record of the schools attended by students
 
+# Initialize empty lists to store year-specific DataFrames
+all_membership = []
+all_student_tables = []
+all_hs_students = []
+
+# Loop through each year and load the data and drop duplicates immediatly to clean the data and speed up the loop
+for year in years:
+    membership_year = pd.read_excel(
+        f'data/{year} EOY Data - USU.xlsx', sheet_name='Course Membership', usecols=membership_columns.keys(), dtype=membership_columns
+        ).drop_duplicates()
+    
+    # low_memory=False removes the warning for mixed data types
+    student_table_year = pd.read_csv(
+        f'data/student_table_{year}.csv', usecols=student_table_columns.keys(), dtype=student_table_columns, low_memory=False
+        ).drop_duplicates()
+    
+    # low_memory=False removes the warning for mixed data types
+    hs_students_year = pd.read_csv(
+        f'data/high_school_students_{year}.csv', usecols=hs_students_columns.keys(), dtype=hs_students_columns, low_memory=False
+        ).drop_duplicates()
+
+    # Append year-specific data to the respective lists
+    all_membership.append(membership_year)
+    all_student_tables.append(student_table_year[['student_number']])
+    all_hs_students.append(hs_students_year[['student_number']])
+
+
+######################################################################################################################################################
+# Concatenate and clean the DataFrames for each dataset across all years
+membership = pd.concat(all_membership, ignore_index=True)
+student_table = pd.concat(all_student_tables, ignore_index=True)
+hs_students = pd.concat(all_hs_students, ignore_index=True)
+
+# Rename column names in membership table
+membership = membership.rename(columns={'StudentNumber': 'student_number', 'SchoolNumber': 'school_number', 'CourseRecordID': 'course_record_id'})
+
+# Remove all duplicates from the dataframes after the data is concatinated
+membership = membership.drop_duplicates(keep='first')
+student_table = student_table.drop_duplicates(keep='first')
+hs_students = hs_students.drop_duplicates(keep='first')
+
+####################################################################
+# If we decided to filter at the end, all we need to do is change hs_students to student_table
+# when creating the df below. The next line is the only line that needs to be adjusted.
+####################################################################
 # Create the df from the high_school_student student_numbers
-df = high_school_students[['student_number']].copy()
+# - df: exploratory data
+# - model_df: model data
+df = hs_students[['student_number']].copy()
+model_df = hs_students[['student_number']].copy()
 
-# Create the model_df from the high_school_student student_numbers
-model_df = high_school_students[['student_number']].copy()
-
-###########################################################################
-
-
-#------------------------------------------------------------------------------------------------------------------------------
-# Get the current grade level and school for each student. Then dummy code school and grade columns
-
-# Rename SchoolNumber to school_number on the membership table
-membership = membership.rename(columns={'SchoolNumber': 'school_number', 'CourseNumber': 'course_number'})
-courses = courses.rename(columns={'CourseNumber': 'course_number', 'GradeLevel': 'grade_level', 'SchoolYear': 'school_year'})
-master = master.rename(columns={'CourseSection': 'course_number'})
-
-membership.duplicated().sum()
-master.duplicated().sum()
-master = master.drop_duplicates(keep = 'first')
-
-student_membership = membership[['student_number', 'school_number', 'CourseRecordID']].copy()
-student_membership.duplicated().sum()
-student_membership = student_membership.drop_duplicates(keep='first')
-
-student_master = master[['course_number', 'CourseRecordID']].copy()
-student_master.duplicated().sum()
-student_master = student_master.drop_duplicates(keep='first')
-
-student_master['CourseRecordID'] = student_master['CourseRecordID'].astype(str)
-student_membership['CourseRecordID'] = student_membership['CourseRecordID'].astype(str)
-
-student_school = pd.merge(student_master, student_membership, on='CourseRecordID', how='left')
+# Merge model_df and the membership table
+student_school = pd.merge(model_df, membership, on='student_number', how='left')
 student_school.head()
-student_school.duplicated(subset=['student_number', 'school_number']).sum()
-student_school = student_school.drop_duplicates(subset=['student_number', 'school_number'], keep= 'first')
-student_school.duplicated(subset='student_number').sum()
 
-student_school = student_school.drop(columns=['CourseRecordID', 'course_number'])
-student_school['school_number'].value_counts()
 
-# Pivot the table to create a grid of student_number by school_number
+######################################################################################################################################################
+# Pivot the merged table to create a grid of student_numbers by school_number
 school_grid = student_school.pivot_table(
     index='student_number',
     columns='school_number',
@@ -64,28 +80,46 @@ school_grid = student_school.pivot_table(
     fill_value=0             # Fill missing values with 0 to indicate no attendance
 )
 
-# Rename the columns to make them more descriptive
+# Rename the columns to make them more descriptive (i.e. school_[x])
 school_grid.columns = [f'school_{int(col)}' for col in school_grid.columns]
 
-# Reset the index to include student_number as a column if needed
+# Reset the index to include student_number as a column for merging
 school_grid = school_grid.reset_index()
 
-# View the resulting DataFrame
 school_grid.head()
 
 # Add a column to count the number of schools attended by each student
 school_grid['school_count'] = school_grid.iloc[:, 1:].sum(axis=1)
 
-# Filter for students who attended more than 1 school
-students_with_multiple_schools = school_grid[school_grid['school_count'] > 2]
+# Merge school_grid with the model_df
+model_df = pd.merge(model_df, school_grid, on='student_number', how='left')
 
-# View the results
-print(students_with_multiple_schools)
-
-school_grid['school_count'].value_counts()
-
-school_grid.duplicated(subset='student_number').sum()
+model_df.head()
 
 
-courses['school_year'].value_counts()
-courses.columns
+######################################################################################################################################################
+# Create a list of all the schools a student has attended for the exploratory data
+# This will create a column named schools_attended with a list of all the schools students have attended for the exploratory data
+student_school_list = (
+    student_school.groupby('student_number')['school_number']
+    .apply(list)  # Aggregate school_number as a list
+    .reset_index()
+    .rename(columns={'school_number': 'schools_attended'})
+)
+
+# Merge the school_count column into the exploratory data (student_school_list)
+student_school_list = pd.merge(
+    student_school_list, school_grid[['student_number', 'school_count']], on='student_number', how='left')
+
+# Merge the student_school_list with the df
+df = pd.merge(df, student_school_list, on='student_number', how='left')
+
+df.head()
+
+
+######################################################################################################################################################
+# Export the data
+df.to_csv('./data/school_exploratory_data.csv', index=False)
+model_df.to_csv('./data/school_modeling_data.csv', index=False)
+
+print('School data exported successfully!')

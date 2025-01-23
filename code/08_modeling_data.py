@@ -6,6 +6,7 @@ import pandas as pd
 academic_table = pd.read_csv('data/academic_modeling_data.csv')
 demographic_table = pd.read_csv('data/demographic_modeling_data.csv')
 assessment_table = pd.read_csv('data/assessment_data.csv')
+school_table = pd.read_csv('data/school_modeling_data.csv')
 
 
 ######################################################################################################################################################
@@ -46,6 +47,7 @@ df.head()
 df = pd.merge(df, academic_table, on='student_number', how='left')
 df = pd.merge(df, demographic_table, on='student_number', how='left')
 df = pd.merge(df, assessment_table, on='student_number', how='left')
+df = pd.merge(df, school_table, on='student_number', how='left')
 
 df.head()
 
@@ -55,4 +57,4 @@ df.head()
 # Export the data
 # df.to_csv('/data/output/model_data.csv', index=False)
 
-print('Modeling data exported!')
+print('Modeling data exported successfully!')

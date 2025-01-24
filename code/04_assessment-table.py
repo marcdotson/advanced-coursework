@@ -109,7 +109,7 @@ for year in years:
     df = pd.merge(df, assessment_grid, on='student_number', how='left')
 
     # Some students have taken the ACT multiple times. We only want to keep the row with the highest composite score.
-    # Create a list of students with multiple test enteries
+    # Create a list of students with multiple test entries
     duplicates = df[df.duplicated(subset='student_number', keep=False)]
 
     # Sort the df by highest composite_score

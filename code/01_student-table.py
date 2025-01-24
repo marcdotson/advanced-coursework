@@ -1,3 +1,6 @@
+###########################################################################
+# Start here!
+###########################################################################
 # The code will output two data files per year: 01_student_table_[year].csv and 01_high_school_students_[year].csv
 
 import pandas as pd
@@ -46,7 +49,7 @@ for year in years:
 
 
     ##########################################################################################################################################################
-    # Create a table that contains all the columns as the student_table but only inlcudes student_numbers for high school students.
+    # Create a table that contains all the columns as the student_table but only includes student_numbers for high school students.
     # Ensure GradeLevel is numeric
     student_table['GradeLevel'] = pd.to_numeric(student_table['GradeLevel'], errors='coerce')
 

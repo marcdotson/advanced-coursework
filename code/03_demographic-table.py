@@ -273,28 +273,28 @@ model_df.head()
 exclude_columns = ['ell_entry_date', 'entry_date', 'first_enroll_us']
 
 # Create a copy of concat_model to work with
-binary_catagerical_data = concat_model.copy()
+binary_categorical_data = concat_model.copy()
 
 # Drop the excluded columns from the data
-binary_catagerical_data = binary_catagerical_data.drop(columns= exclude_columns)
+binary_categorical_data = binary_categorical_data.drop(columns= exclude_columns)
 
 # Sort the data by the year column in descending order
-binary_catagerical_data = binary_catagerical_data.sort_values(by='year', ascending=False)
+binary_categorical_data = binary_categorical_data.sort_values(by='year', ascending=False)
 
 # Remove duplicate rows based on the 'student_number' column to keep the row with the most recent year
-binary_catagerical_data = binary_catagerical_data.drop_duplicates(subset='student_number', keep='first')
+binary_categorical_data = binary_categorical_data.drop_duplicates(subset='student_number', keep='first')
 
 # Drop the year column from the data
-binary_catagerical_data = binary_catagerical_data.drop(columns='year')
+binary_categorical_data = binary_categorical_data.drop(columns='year')
 
 # Make sure student_number is a string
-binary_catagerical_data['student_number'] = binary_catagerical_data['student_number'].astype(str)
+binary_categorical_data['student_number'] = binary_categorical_data['student_number'].astype(str)
 model_df['student_number'] = model_df['student_number'].astype(str)
 
-binary_catagerical_data.head()
+binary_categorical_data.head()
 
 # Merge the binary and categorical data with the model_df
-model_df = pd.merge(model_df, binary_catagerical_data, on='student_number', how='left')
+model_df = pd.merge(model_df, binary_categorical_data, on='student_number', how='left')
 
 model_df.head()
 

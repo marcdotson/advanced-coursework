@@ -49,7 +49,7 @@ hs_students = pd.concat(all_hs_students, ignore_index=True)
 # Rename column names in membership table
 membership = membership.rename(columns={'StudentNumber': 'student_number', 'SchoolNumber': 'school_number'})
 
-# Remove all duplicates from the dataframes after the data is concatinated
+# Remove all duplicates from the dataframes after the data is concatenated
 membership = membership.drop_duplicates(keep='first')
 student_table = student_table.drop_duplicates(keep='first')
 hs_students = hs_students.drop_duplicates(keep='first')

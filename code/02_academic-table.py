@@ -223,7 +223,7 @@ for year in years:
     # Make sure student_number is a string
     scram['student_number'] = scram['student_number'].astype(str)
 
-    # We will merge with df['student_number'] at the begigning to only work with the filtered student_numbers
+    # We will merge with df['student_number'] at the beginning to only work with the filtered student_numbers
     # This way we can adjust the student numbers at the top on the script once.
     scram = pd.merge(df['student_number'], scram, on='student_number', how='left')
 
@@ -335,9 +335,9 @@ for year in years:
 # For years where these columns are missing, the provided school_membership column seems to be more accurate
 # The logic will calculate absences differently based on the availability of these columns:
 # - If absence columns exist: Calculate school_membership as the sum of attendance and absence columns
-# - If absence columns are missing: Use the existing school_membership column to calculate absences by subtracticting days_attended from school_membership
+# - If absence columns are missing: Use the existing school_membership column to calculate absences by subtracting days_attended from school_membership
 # The days_absent column is created to standardize the representation of total absences across all years
-# This will be done seperatly for df_dict and model_dict
+# This will be done separately for df_dict and model_dict
 
 for year in years:
     #-------------------------------------------------------------------------------------------------------------
@@ -556,7 +556,7 @@ combined_scram = combined_scram.drop_duplicates(subset='student_number', keep='f
 combined_scram = combined_scram.drop(columns='regular_percent_nan')
 
 ###################################
-# A enviroment column needs to be dropped, but some years have v, h, and r, while others only have v so I do not know which column to drop
+# A environment column needs to be dropped, but some years have v, h, and r, while others only have v so I do not know which column to drop
 ###################################
 
 # Make sure student number is a string

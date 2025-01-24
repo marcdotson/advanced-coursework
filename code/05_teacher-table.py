@@ -59,7 +59,7 @@ membership = membership.rename(columns={'StudentNumber': 'student_number', 'Cour
 master = master.rename(columns={'Teacher1ID': 'teacher_id', 'CourseRecordID': 'course_record_id'})
 
 
-# Remove all duplicates from the dataframes after the data is concatinated
+# Remove all duplicates from the dataframes after the data is concatenated
 membership = membership.drop_duplicates(keep='first')
 master = master.drop_duplicates(keep='first')
 student_table = student_table.drop_duplicates(keep='first')

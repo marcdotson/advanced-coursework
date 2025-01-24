@@ -1,4 +1,4 @@
-# This code with compile all of the modeling data into one table: 'model_data.csv'
+# This code will compile all of the modeling data into one table: 'model_data.csv'
 
 import pandas as pd
 

@@ -3,6 +3,7 @@
 import pandas as pd
 
 # Load in the modeling datasets that will be joined later
+# []_model represents modeling files
 academic_model = pd.read_csv('data/02_academic_modeling.csv')
 demographic_model = pd.read_csv('data/03_demographic_modeling.csv')
 assessment_model = pd.read_csv('data/04_assessment_data.csv')
@@ -10,6 +11,7 @@ teacher_model = pd.read_csv('data/05_teacher_modeling_data.csv')
 school_model = pd.read_csv('data/06_school_modeling_data.csv')
 
 # Load in the exploratory datasets that will be joined later
+# []_df represents exploratory files
 academic_df = pd.read_csv('data/02_academic_exploratory.csv')
 demographic_df = pd.read_csv('data/03_demographic_exploratory.csv')
 assessment_df = pd.read_csv('data/04_assessment_data.csv')

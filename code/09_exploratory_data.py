@@ -3,11 +3,11 @@
 import pandas as pd
 
 # Load in the datasets that will be joined later
-academic_df = pd.read_csv('data/02_academic_exploratory.csv')
-demographic_df = pd.read_csv('data/03_demographic_exploratory.csv')
-assessment_df = pd.read_csv('data/04_assessment_data.csv')
-teacher_df = pd.read_csv('data/05_teacher_exploratory_data.csv')
-school_df = pd.read_csv('data/06_school_exploratory_data.csv')
+academic_table = pd.read_csv('data/02_academic_exploratory.csv')
+demographic_table = pd.read_csv('data/03_demographic_exploratory.csv')
+assessment_table = pd.read_csv('data/04_assessment_data.csv')
+teacher_table = pd.read_csv('data/05_teacher_exploratory_data.csv')
+school_table = pd.read_csv('data/06_school_exploratory_data.csv')
 
 
 ######################################################################################################################################################
@@ -31,7 +31,7 @@ for year in years:
 
 
 ######################################################################################################################################################
-# Concatenate all of the student_numbers from the high_school_students tables into df. Everything will be built by left joining with the df.
+# Concatinate all of the student_numbers from the high_school_students tables into df. Everything will be built by left joining with the df.
 ####################################################################
 # If we decided to filter at the end, all we need to do is change hs_students to all_students 
 # when creating the df below. The next line is the only line that needs to be adjusted.
@@ -45,11 +45,11 @@ df.head()
 
 # Left join the df with all the datasets from above
 # Left join ensures that we keep all students in df, even if they have missing data in other tables.
-df = pd.merge(df, academic_df, on='student_number', how='left')
-df = pd.merge(df, demographic_df, on='student_number', how='left')
-df = pd.merge(df, assessment_df, on='student_number', how='left')
-df = pd.merge(df, teacher_df, on='student_number', how='left')
-df = pd.merge(df, school_df, on='student_number', how='left')
+df = pd.merge(df, academic_table, on='student_number', how='left')
+df = pd.merge(df, demographic_table, on='student_number', how='left')
+df = pd.merge(df, assessment_table, on='student_number', how='left')
+df = pd.merge(df, teacher_table, on='student_number', how='left')
+df = pd.merge(df, school_table, on='student_number', how='left')
 
 # After everything has been merged we want to drop duplicate rows and keep the first instance of the duplicate
 df = df.drop_duplicates(keep = 'first')
@@ -59,6 +59,6 @@ df.head()
 
 ######################################################################################################################################################
 # Export the data
-df.to_csv('./data/08_combined_exploratory_data.csv', index=False)
+df.to_csv('./data/09_combined_exploratory_data.csv', index=False)
 
 print('Exploratory data exported successfully!')

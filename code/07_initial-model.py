@@ -20,7 +20,7 @@ def remove_highly_correlated_features(df, threshold=0.95):
 # Step 1: Load and Prepare the Data
 # =================================================
 # Load dataset and handle missing/invalid values
-df = pd.read_csv('data/01_modeling_powerschool_data.csv')
+df = pd.read_csv('data/08_combined_modeling_data.csv', low_memory=False)
 df = df.apply(pd.to_numeric, errors='coerce').fillna(0)
 
 # Display original column names for reference

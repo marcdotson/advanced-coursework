@@ -21,8 +21,6 @@ years = [2017, 2018, 2022, 2023, 2024]
 
 # Start the for loop
 for year in years:
-    print(f"Processing data for year {year}...")
-
     # Load the Excel file for the specific year
     file_path = f'data/{year} EOY Data - USU.xlsx'
     student = pd.read_excel(file_path, sheet_name='Student')
@@ -65,7 +63,7 @@ for year in years:
     student_table.to_csv(f'./data/01_student_table_{year}.csv', index=False)
     high_school_students.to_csv(f'./data/01_high_school_students_{year}.csv', index=False)
 
-    print(f"Student data for year {year} exported successfully!")
-
-print("Student data exported successfully!")
-
+print('===========================================')
+print("Student tables exported successfully!")
+print("Next, run: 02_academic-table.py")
+print('===========================================')

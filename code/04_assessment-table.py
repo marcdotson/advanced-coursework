@@ -25,8 +25,6 @@ df_dict = {}
 
 
 for year in years:
-    print(f"Processing assessment data for year {year}...")
-
     # File Paths
     assessment_file = f'data/{year} EOY Data - USU.xlsx'
     student_table_file = f'data/01_student_table_{year}.csv'
@@ -123,8 +121,6 @@ for year in years:
     # Results stored as assessment_[year]
     df_dict[f'assessment_{year}'] = df.copy()
 
-    print(f"Assessment data processed for {year}...")
-
 
 ######################################################################################################################################################
 # Since students may have taken the test multiple times across different years, we will apply the same filtering process as above.
@@ -144,4 +140,7 @@ df.head()
 # Export the data
 df.to_csv('./data/04_assessment_data.csv', index=False)
 
+print('===========================================')
 print("Assessment data exported successfully!")
+print("Next, run: 05_teacher-table.py")
+print('===========================================')

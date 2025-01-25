@@ -97,7 +97,7 @@ def student_binary_columns(df, model_df, reference_table, column_name, dummy_nam
 
     return df, model_df
 
-
+print('===========================================')
 ######################################################################################################################################################
 # Begin the for loop to process all the years of data
 # Define the list of years to process
@@ -109,7 +109,6 @@ model_dict = {}
 
 # Loop through each year
 for year in years:
-    print(f"Processing demographic data for year {year}...")
 
     ######################################################################################################################################################
     # File Paths (import student_table and high_school_student (for now))
@@ -381,6 +380,5 @@ model_df.to_csv('./data/03_demographic_modeling.csv', index=False)
 
 
 print("Demographic data exported successfully!")
-
-
-
+print("Next, run: 04_assessment-table.py")
+print('===========================================')

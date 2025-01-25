@@ -62,8 +62,8 @@ df_dict = {}
 model_dict = {}
 
 for year in years:
-    print(f"Processing data for year {year}...")
-    
+
+    # Reset the df and model_df after each iteration
     df = None
     model_df = None
     ######################################################################################################################################################
@@ -157,8 +157,9 @@ for year in years:
     # Filter for advanced courses based on the advanced_courses list
     ac_grade = advanced_courses[advanced_courses['advanced_course'] == 1][['student_number', 'GradeEarned']].copy()
 
-    # Replace 'P' and 'F' with numeric values
-    ac_grade['GradeEarned'] = ac_grade['GradeEarned'].replace({'P': 4.0, 'F': 0.0})
+    # Exclude 'P' from the calculation as it does not get factored into the GPA and replace 'F' with 0.0
+    ac_grade = ac_grade[ac_grade['GradeEarned'] != 'P']
+    ac_grade['GradeEarned'] = ac_grade['GradeEarned'].replace({'F': 0.0})
 
     # Ensure GradeEarned is numeric
     ac_grade['GradeEarned'] = pd.to_numeric(ac_grade['GradeEarned'], errors='coerce')
@@ -598,5 +599,7 @@ model_df.head()
 df.to_csv('./data/02_academic_exploratory.csv', index=False)
 model_df.to_csv('./data/02_academic_modeling.csv', index=False)
 
-
+print('===========================================')
 print("Academic data exported successfully!")
+print("Next, run: 03_demographic-table.py")
+print('===========================================')

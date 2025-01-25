@@ -103,9 +103,6 @@ teacher_grid = teacher_grid.reset_index()
 
 teacher_grid.head()
 
-# Add a column to count the number of teachers each student had
-teacher_grid['teacher_count'] = teacher_grid.iloc[:, 1:].sum(axis=1)
-
 # Merge teacher_grid with the model_df
 model_df = pd.merge(model_df, teacher_grid, on='student_number', how='left')
 
@@ -122,9 +119,8 @@ student_teacher_list = (
     .rename(columns={'teacher_id': 'teachers_had'})
 )
 
-# Merge the school_count column into the exploratory data (student_teacher_list)
-student_teacher_list = pd.merge(
-    student_teacher_list, teacher_grid[['student_number', 'teacher_count']], on='student_number', how='left')
+# Add a column to count the number of teachers each student had
+student_teacher_list['teacher_count'] = teacher_grid.iloc[:, 1:].sum(axis=1)
 
 # Merge the student_school_list with the df
 df = pd.merge(df, student_teacher_list, on='student_number', how='left')
@@ -137,4 +133,7 @@ df.head()
 df.to_csv('./data/05_teacher_exploratory_data.csv', index=False)
 model_df.to_csv('./data/05_teacher_modeling_data.csv', index=False)
 
+print('===========================================')
 print('Teacher data exported successfully!')
+print("Next, run: 06_school-table.py")
+print('===========================================')

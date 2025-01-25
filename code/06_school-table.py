@@ -87,9 +87,6 @@ school_grid = school_grid.reset_index()
 
 school_grid.head()
 
-# Add a column to count the number of schools attended by each student
-school_grid['school_count'] = school_grid.iloc[:, 1:].sum(axis=1)
-
 # Merge school_grid with the model_df
 model_df = pd.merge(model_df, school_grid, on='student_number', how='left')
 
@@ -106,9 +103,8 @@ student_school_list = (
     .rename(columns={'school_number': 'schools_attended'})
 )
 
-# Merge the school_count column into the exploratory data (student_school_list)
-student_school_list = pd.merge(
-    student_school_list, school_grid[['student_number', 'school_count']], on='student_number', how='left')
+# Add a column to count the number of schools attended by each student
+student_school_list['school_count'] = school_grid.iloc[:, 1:].sum(axis=1)
 
 # Merge the student_school_list with the df
 df = pd.merge(df, student_school_list, on='student_number', how='left')
@@ -121,4 +117,7 @@ df.head()
 df.to_csv('./data/06_school_exploratory_data.csv', index=False)
 model_df.to_csv('./data/06_school_modeling_data.csv', index=False)
 
+print('===========================================')
 print('School data exported successfully!')
+print("Next, run: 07_combine_data-table.py")
+print('===========================================')

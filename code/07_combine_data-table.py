@@ -82,9 +82,18 @@ df.head()
 
 
 ######################################################################################################################################################
+#===========================================
+
+# This is where I will add code to drop columns from the modeling data
+
+#===========================================
+######################################################################################################################################################
 # Export the data
 df.to_csv('./data/07_combined_exploratory_data.csv', index=False)
 model_df.to_csv('./data/07_combined_modeling_data.csv', index=False)
 
+print('===========================================')
 print('Modeling data exported successfully!')
 print('Exploratory data exported successfully!')
+print("The workflow is complete!")
+print('===========================================')

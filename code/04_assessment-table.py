@@ -3,7 +3,7 @@
 
 import pandas as pd
 import numpy as np
-
+import pickle
 # Define the list of years to process
 years = [2017, 2018, 2022, 2023, 2024]
 
@@ -23,19 +23,20 @@ df_dict = {}
 # - Concatenate the data from all years into a single DataFrame.
 # - Further filter the combined data to include only the highest 'composite_score' per student across all years.
 
+# Load the pickled data (student_tables)
+with open('./data/01_student_data.pkl', 'rb') as f:
+    student_tables, high_school_students_tables = pickle.load(f)
 
 for year in years:
     # File Paths
     assessment_file = f'data/{year} EOY Data - USU.xlsx'
-    student_table_file = f'data/01_student_table_{year}.csv'
-    high_school_students_file = f'data/01_high_school_students_{year}.csv'
 
     # Load Data
     assessment = pd.read_excel(assessment_file, sheet_name='Transcript Assessments')
     
-    # low_memory=False removes the warning for mixed data types
-    student_table = pd.read_csv(student_table_file, low_memory=False)
-    high_school_students = pd.read_csv(high_school_students_file, low_memory=False)
+    # Retrieve the data for the specified year from the student_tables and high_school_students_tables dictionaries
+    student_table = student_tables[year]
+    high_school_students = high_school_students_tables[year]
 
     # Rename 'StudentNumber' to 'student_number' in the assessment table
     assessment = assessment.rename(columns={'StudentNumber': 'student_number'})

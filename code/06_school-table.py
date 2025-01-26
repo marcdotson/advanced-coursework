@@ -1,14 +1,17 @@
 # The code will output two data files: 06_school_exploratory_data.csv and 06_school_modeling_data.csv
 
 import pandas as pd
+import pickle
 
 # Define the years to process
 years = [2017, 2018, 2022, 2023, 2024]
 
 # Specify the columns and their corresponding data types for each dataset to speed up the concatenation
 membership_columns = {'StudentNumber': 'int32', 'SchoolNumber': 'int16'}
-student_table_columns = {'student_number':'int32'}
-hs_students_columns = {'student_number': 'int32'}
+
+# Load the pickled data (student_tables)
+with open('./data/01_student_data.pkl', 'rb') as f:
+    student_tables, high_school_students_tables = pickle.load(f)
 
 # Concatenate all years of data for each dataset into single DataFrames
 # This combines data from all years to create a complete record of the schools attended by students
@@ -24,15 +27,9 @@ for year in years:
         f'data/{year} EOY Data - USU.xlsx', sheet_name='Course Membership', usecols=membership_columns.keys(), dtype=membership_columns
         ).drop_duplicates()
     
-    # low_memory=False removes the warning for mixed data types
-    student_table_year = pd.read_csv(
-        f'data/01_student_table_{year}.csv', usecols=student_table_columns.keys(), dtype=student_table_columns, low_memory=False
-        ).drop_duplicates()
-    
-    # low_memory=False removes the warning for mixed data types
-    hs_students_year = pd.read_csv(
-        f'data/01_high_school_students_{year}.csv', usecols=hs_students_columns.keys(), dtype=hs_students_columns, low_memory=False
-        ).drop_duplicates()
+    # Retrieve the data for the specified year from the student_tables and high_school_students_tables dictionaries
+    student_table_year = student_tables[year]
+    hs_students_year = high_school_students_tables[year]
 
     # Append year-specific data to the respective lists
     all_membership.append(membership_year)

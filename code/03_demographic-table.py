@@ -1,7 +1,7 @@
 # The code will output two data files: 03_demographic_exploratory_data.csv and 03_demographic_modeling_data.csv
 
 import pandas as pd
-import numpy as np
+import pickle
 
 ####################################################################
 # I have not dropped any categorical columns from the dummied data. I need to make sure the 
@@ -107,24 +107,20 @@ years = [2017, 2018, 2022, 2023, 2024]
 df_dict = {}
 model_dict = {}
 
+# Load the pickled data
+# 'rb' opens the file in binary read mode (required for pickle).
+# 'as f' assigns the file object to 'f' for use within the block.
+# pickle.load(f) loads the saved Python objects (two dictionaries of DataFrames).
+with open('./data/01_student_data.pkl', 'rb') as f:
+    student_tables, high_school_students_tables = pickle.load(f)
+
 # Loop through each year
 for year in years:
 
     ######################################################################################################################################################
-    # File Paths (import student_table and high_school_student (for now))
-    student_file = f'data/{year} EOY Data - USU.xlsx'
-    student_table_file = f'data/01_student_table_{year}.csv'
-    high_school_students_file = f'data/01_high_school_students_{year}.csv'
-
-    # Load Data
-    student = pd.read_excel(student_file, sheet_name='Student')
-
-    # low_memory=False removes the warning for mixed data types
-    student_table = pd.read_csv(student_table_file, low_memory=False)
-    high_school_students = pd.read_csv(high_school_students_file, low_memory=False)
-
-    # Rename columns for consistency
-    student = student.rename(columns={'StudentNumber': 'student_number'})
+    # Retrieve the data for the specified year from the student_tables and high_school_students_tables dictionaries
+    student_table = student_tables[year]
+    high_school_students = high_school_students_tables[year]
 
 
     ######################################################################################################################################################

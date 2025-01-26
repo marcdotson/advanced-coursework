@@ -1,10 +1,26 @@
 ###########################################################################
-# Start here!
+# Start here!!!!!!!
 ###########################################################################
-# The code will output two data files per year: 01_student_table_[year].csv and 01_high_school_students_[year].csv
+# The code will output a single pickle file containing all student tables: 01_student_data.pkl
+# This file includes two dictionaries:
+# 1. student_tables:
+#    - A dictionary where:
+#      - Keys: Years (e.g., 2017, 2018, 2022, etc.).
+#      - Values: DataFrames containing the full student table for each year.
+#    - Example: student_tables[2017] provides the full student table for 2017.
+# 2. high_school_students_tables:
+#    - A dictionary where:
+#      - Keys: Years (e.g., 2017, 2018, 2022, etc.).
+#      - Values: DataFrames containing only high school students for each year.
+#    - Example: high_school_students_tables[2017] provides the high school student table for 2017.
+#############################################################################
+# Filter at the end of all of the data wrangling??????
+# The code currently uses high_school_students_tables for processing.
+# If filtering is moved to the end instead of the beginning,  only 1-2 lines of code per script would need to be adjusted.
+#############################################################################
 
 import pandas as pd
-import numpy as np
+import pickle
 
 ##########################################################################################################################################################
 # Columns to drop if they exist in the student_table. Some years are missing columns.
@@ -19,6 +35,10 @@ columns_to_drop = [
 # List of years to process
 years = [2017, 2018, 2022, 2023, 2024]
 
+# Initialize dictionaries to store tables for all years
+student_tables = {} # Stores all students for each year
+high_school_students_tables = {} # Stores high school students for each year
+
 # Start the for loop
 for year in years:
     # Load the Excel file for the specific year
@@ -28,9 +48,6 @@ for year in years:
     # Rename 'StudentNumber' to 'student_number' in all tables that contain 'student_number'
     student = student.rename(columns={'StudentNumber': 'student_number'})
 
-#############################################################################
-# Filter at the end of all of the data wrangling?
-#############################################################################
 
     ##########################################################################################################################################################
     # Filter the student table down to 1 row per student. This will make everything easier moving forward
@@ -59,9 +76,18 @@ for year in years:
 
 
     ##########################################################################################################################################################
-    # Export both tables for the specific year
-    student_table.to_csv(f'./data/01_student_table_{year}.csv', index=False)
-    high_school_students.to_csv(f'./data/01_high_school_students_{year}.csv', index=False)
+    # Add the processed tables to their respective dictionaries
+    student_tables[year] = student_table
+    high_school_students_tables[year] = high_school_students
+
+
+##########################################################################################################################################################
+# Save the dictionaries into a single pickle file (01_student_data.pkl)
+# 'wb' opens the file in binary write mode (required for pickle).
+# 'as f' assigns the file object to 'f' for use within the block.
+# pickle.dump((student_tables, high_school_students_tables), f) saves the two dictionaries 
+with open('./data/01_student_data.pkl', 'wb') as f:
+    pickle.dump((student_tables, high_school_students_tables), f)
 
 print('===========================================')
 print("Student tables exported successfully!")

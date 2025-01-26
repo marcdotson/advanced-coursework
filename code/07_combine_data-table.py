@@ -1,6 +1,7 @@
-# This code with compile all of the modeling and exploratory data into two tables: '07_model_data.csv', '07_exploratory_data.csv'
+# This code compiles all of the modeling and exploratory data into two tables: '07_model_data.csv', '07_exploratory_data.csv'
 
 import pandas as pd
+import pickle
 
 # Load in the modeling datasets that will be joined later
 # []_model represents modeling files
@@ -18,6 +19,9 @@ assessment_df = pd.read_csv('data/04_assessment_data.csv')
 teacher_df = pd.read_csv('data/05_teacher_exploratory_data.csv')
 school_df = pd.read_csv('data/06_school_exploratory_data.csv')
 
+# Load the pickled data (student_tables)
+with open('./data/01_student_data.pkl', 'rb') as f:
+    student_tables, high_school_students_tables = pickle.load(f)
 
 ######################################################################################################################################################
 # Initialize empty list to store the student_numbers from the for loop
@@ -29,10 +33,10 @@ years = [2017, 2018, 2022, 2023, 2024]
 
 # Iterate through each of the student_tables and high_school_student_tables to make a list of all student_numbers across all years
 for year in years:
-    # Load the student_table_[year] and high_school_students_table_[year]
-    # low_memory=False removes the warning for mixed data types
-    student_table = pd.read_csv(f'data/01_student_table_{year}.csv', low_memory=False)
-    high_school_student = pd.read_csv(f'data/01_high_school_students_{year}.csv')
+    # Load the student_table and high_school_students for the specific year from the pickle data
+    student_table = student_tables[year]  # Use the student_tables dictionary
+    high_school_student = high_school_students_tables[year]  # Use the high_school_students_tables dictionary
+    
     
     # Add the student_number to the all_students and hs_students list
     all_students.append(student_table[['student_number']])
@@ -84,7 +88,7 @@ df.head()
 ######################################################################################################################################################
 #===========================================
 
-# This is where I will add code to drop columns from the modeling data
+# This is where I will add the code to remove columns from the data.
 
 #===========================================
 ######################################################################################################################################################

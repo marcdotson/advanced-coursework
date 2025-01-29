@@ -55,25 +55,6 @@ accuracy = accuracy_score(y_test, y_pred)
 print(f"Accuracy: {accuracy:.2f}")
 print(classification_report(y_test, y_pred))
 
-# Plotting the decision boundary
-plt.figure(figsize=(8, 6))
-plt.scatter(X_test['X1'], X_test['X2'], c=y_test, cmap='coolwarm', s=50, edgecolor='k', alpha=0.7)
-plt.title('Logistic Regression Decision Boundary')
-plt.xlabel('X1')
-plt.ylabel('X2')
-
-# Plot the decision boundary
-xx, yy = np.meshgrid(np.linspace(X_test['X1'].min(), X_test['X1'].max(), 100),
-                     np.linspace(X_test['X2'].min(), X_test['X2'].max(), 100))
-Z = log_reg.predict(np.c_[xx.ravel(), yy.ravel()])
-Z = Z.reshape(xx.shape)
-plt.contourf(xx, yy, Z, alpha=0.2, cmap='coolwarm')
-
-plt.show()
-
-
-
-
 
 #----------------------------------------------------------------------------------------------------------
                                         #Logistic Regression using PyMc

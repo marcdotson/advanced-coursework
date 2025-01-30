@@ -81,8 +81,8 @@ for year in years:
 
 ##########################################################################################################################################################
 # Save the dictionaries into a single pickle file (student_data.pkl)
-# 'wb' opens the file in binary write mode (required for pickle).
-# 'as f' assigns the file object to 'f' for use within the block.
+# 'wb' opens the file in binary write mode (required for pickle)
+# 'as f' assigns the file object to 'f' for use within the block
 # pickle.dump((student_tables, high_school_students_tables), f) saves the two dictionaries 
 with open('./data/student_data.pkl', 'wb') as f:
     pickle.dump((student_tables, high_school_students_tables), f)

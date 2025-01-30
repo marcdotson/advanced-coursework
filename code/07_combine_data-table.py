@@ -86,15 +86,14 @@ df.head()
 
 
 ######################################################################################################################################################
-#===========================================
 
-# This is where I will add the code to remove columns from the data.
+# TODO: This is where I will add the code to remove columns from the data.
 
-#===========================================
 ######################################################################################################################################################
+
 # Export the data
-df.to_csv('./data/07_combined_exploratory_data.csv', index=False)
-model_df.to_csv('./data/07_combined_modeling_data.csv', index=False)
+df.to_csv('./data/exploratory_data.csv', index=False)
+model_df.to_csv('./data/modeling_data.csv', index=False)
 
 print('===========================================')
 print('Modeling data exported successfully!')

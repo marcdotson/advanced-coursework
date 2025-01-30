@@ -1,9 +1,10 @@
 # The code will output one data file: 04_assessment_data.csv
-# I need to figure out what we want the exploratory data to look like, if we want it to be different than the modeling data.
+# TODO: I need to figure out what we want the exploratory data to look like, if we want it to be different than the modeling data.
 
 import pandas as pd
 import numpy as np
 import pickle
+
 # Define the list of years to process
 years = [2017, 2018, 2022, 2023, 2024]
 

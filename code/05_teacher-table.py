@@ -55,7 +55,6 @@ hs_students = pd.concat(all_hs_students, ignore_index=True)
 membership = membership.rename(columns={'StudentNumber': 'student_number', 'CourseRecordID': 'course_record_id'})
 master = master.rename(columns={'Teacher1ID': 'teacher_id', 'CourseRecordID': 'course_record_id'})
 
-
 # Remove all duplicates from the dataframes after the data is concatenated
 membership = membership.drop_duplicates(keep='first')
 master = master.drop_duplicates(keep='first')

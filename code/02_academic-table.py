@@ -7,10 +7,8 @@ import numpy as np
 import pickle
 
 ######################################################################################################################################################
-# Function needs to be defined before the for loop
-# Function to process numeric columns for the academic table
-# This needs to be placed before the for loop begins
-# All of the data will be left joined with the df and model_df, therefore we can use the student_table rather than the high_school_students table (if we don't want to filter before)
+# All of the data will be left joined with the df and model_df, therefore we can use the student_table rather than the high_school_students table 
+# (if we don't want to filter before)
 
 def process_numeric_student_columns(student_table, model_df, df, columns, rename_map):
     """
@@ -28,6 +26,7 @@ def process_numeric_student_columns(student_table, model_df, df, columns, rename
     - model_df (pd.DataFrame): Updated model_df with the renamed columns merged.
     - df (pd.DataFrame): Updated df with the renamed columns merged.
     """
+    
     # Ensure 'student_number' is in the list of columns
     if 'student_number' not in columns:
         columns.insert(0, 'student_number')
@@ -52,9 +51,7 @@ def process_numeric_student_columns(student_table, model_df, df, columns, rename
     return model_df, df
 
 
-
 ######################################################################################################################################################
-# Begin the for loop to process all the years of data
 # Define the list of years to process
 years = [2017, 2018, 2022, 2023, 2024]
 
@@ -69,11 +66,12 @@ model_dict = {}
 with open('./data/student_data.pkl', 'rb') as f:
     student_tables, high_school_students_tables = pickle.load(f)
 
+# Begin the for loop to process all the years of data
 for year in years:
-
     # Reset the df and model_df after each iteration
     df = None
     model_df = None
+
     ######################################################################################################################################################
     # File Paths (import student_table and high_school_student (for now))
     master_file = f'data/{year} EOY Data - USU.xlsx'
@@ -93,7 +91,6 @@ for year in years:
     membership = membership.rename(columns={'StudentNumber': 'student_number'})
     scram = scram.rename(columns={'StudentNumber': 'student_number'})
 
-
     ######################################################################################################################################################
     # df will represent the exploratory data, and model_df will represent the model data
     ####################################################################
@@ -105,7 +102,6 @@ for year in years:
 
     # Create the model_df from the high_school_student student_numbers
     model_df = high_school_students[['student_number']].copy()
-
 
     ######################################################################################################################################################
     # Determine if a class is an advanced course, determine if a student has taken an ac (ac_ind)
@@ -244,16 +240,17 @@ for year in years:
     }
     scram = scram.rename(columns=scram_columns)
 
-    #---------------------------------------------------
+    ################################################################
     # Dummy code the scram data (regular_percent, environment, is_one_percent and extended_school_year)
     # Create a dataframe for dummy variables. scram_membership is a number from 0-180 so it doesn't need to be dummied.
     scram_dummies = scram[['student_number', 'scram_membership']].copy()
 
-    #---------------------------------------------------
+    ################################################################
     # Dummy code regular_percent (regular_percent_1.0, regular_percent_2.0, regular_percent_3.0 and regular_percent_nan)
+    
     ################################################################
     # I'm not sure if or how the null values should be classified, therefore I have not dropped a column
-    # Check with Jeremy
+    # TODO: Check with Jeremy
     ################################################################
     regular_percent_dummies = pd.get_dummies(scram['regular_percent'].astype(str), prefix='regular_percent').astype(int)
 
@@ -262,12 +259,13 @@ for year in years:
 
     scram_dummies.head()
 
-    #---------------------------------------------------
+    ################################################################
     # Dummy code environment (environment_v = 1)
     # There are only two students in environment_h
+
     ################################################################
     # I'm assuming that null values would be classified as environment_v (regular school setting)
-    # Check with Jeremy
+    # TODO: Check with Jeremy
     ################################################################
 
     environment_dummies = pd.get_dummies(scram['environment'].fillna('V').astype(str), prefix='environment').astype(int)
@@ -280,11 +278,12 @@ for year in years:
 
     scram_dummies.head()
 
-    #---------------------------------------------------
+    ################################################################
     # Dummy code is_one_percent (is_one_percent_y = 1)
+    
     ################################################################
     # I'm assuming that null values would be classified as is_one_percent_n (No severe disability)
-    # Check with Jeremy
+    # TODO: Check with Jeremy
     ################################################################
     one_percent_dummies = pd.get_dummies(scram['is_one_percent'].replace(0, 'n'), prefix='is_one_percent').astype(int)
 
@@ -296,11 +295,12 @@ for year in years:
 
     scram_dummies.head()
 
-    #---------------------------------------------------
+    ################################################################
     # Dummy code extended_school_year (extended_school_year_y = 1)
+    
     ################################################################
     # I'm assuming that null values would be classified as extended_school_year_n (No extended school year)
-    # Check with Jeremy
+    # TODO: Check with Jeremy
     ################################################################
     # Dummy code extended_school_year (extended_school_year_y)
     extended_year_dummies = pd.get_dummies(scram['extended_school_year'].replace(0, 'n'), prefix='extended_school_year').astype(int)
@@ -313,7 +313,7 @@ for year in years:
 
     scram_dummies.head()
 
-    #---------------------------------------------------
+    ################################################################
     # Merge the scram data with the df and model_df
     # Make sure student_number is a string
     scram['student_number'] = scram['student_number'].astype(str)
@@ -324,7 +324,6 @@ for year in years:
 
     # Merge the dummied data with the model_df
     model_df = pd.merge(model_df, scram_dummies, on='student_number', how='left')
-
 
     ######################################################################################################################################################
     # Store the resulting DataFrames in dictionaries (i.e. df_2017, model_df_2017)
@@ -347,7 +346,7 @@ for year in years:
 # This will be done separately for df_dict and model_dict
 
 for year in years:
-    #-------------------------------------------------------------------------------------------------------------
+    ################################################################
     # Process df_dict for the current year
     df_year = df_dict[f'df_{year}']
 
@@ -375,7 +374,7 @@ for year in years:
     # Save the updated DataFrame back to the dictionary
     df_dict[f'df_{year}'] = df_year
 
-    #-------------------------------------------------------------------------------------------------------------
+    ################################################################
     # Process model_dict for the current year
     model_year = model_dict[f'model_df_{year}']
 
@@ -557,7 +556,7 @@ combined_scram = combined_scram.drop_duplicates(subset='student_number', keep='f
 #combined_scram = combined_scram.drop(columns='current_grade')
 
 ###################################
-# I am assuming that regular_percent_nan does not need to be reclassified, therefore I will drop this column
+# TODO: I am assuming that regular_percent_nan does not need to be reclassified, therefore I will drop this column
 ###################################
 # Drop the regular_percent_nan column
 combined_scram = combined_scram.drop(columns='regular_percent_nan')

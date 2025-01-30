@@ -4,15 +4,12 @@ import pandas as pd
 import pickle
 
 ####################################################################
-# I have not dropped any categorical columns from the dummied data. I need to make sure the 
+# TODO: I have not dropped any categorical columns from the dummied data. I need to make sure the 
 # column I drop is a column in every year of the data.
 ####################################################################
 
-
 ######################################################################################################################################################
-# Functions Need to be defined before the for loop
 # Function to process categorical variables. Add non-dummied columns to df and dummy-coded columns to model_df
-
 def process_categorical_column(df, model_df, reference_table, column_name, dummy_name, key_column='student_number'):
     """
     Processes a categorical column by adding the non-dummied column to df and dummy-coded columns to model_df.
@@ -97,9 +94,7 @@ def student_binary_columns(df, model_df, reference_table, column_name, dummy_nam
 
     return df, model_df
 
-print('===========================================')
 ######################################################################################################################################################
-# Begin the for loop to process all the years of data
 # Define the list of years to process
 years = [2017, 2018, 2022, 2023, 2024]
 
@@ -114,14 +109,12 @@ model_dict = {}
 with open('./data/student_data.pkl', 'rb') as f:
     student_tables, high_school_students_tables = pickle.load(f)
 
-# Loop through each year
+# Begin the for loop to process all the years of data
 for year in years:
-
     ######################################################################################################################################################
     # Retrieve the data for the specified year from the student_tables and high_school_students_tables dictionaries
     student_table = student_tables[year]
     high_school_students = high_school_students_tables[year]
-
 
     ######################################################################################################################################################
     # df will represent the exploratory data, and model_df will represent the model data

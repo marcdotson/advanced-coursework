@@ -83,15 +83,23 @@ district to implement to achieve the desired outcomes.
 - `/output` Output from model runs, not pushed.
 - `/presentations` Presentation slides.
 - `/private` A catch-all folder for miscellaneous files, not pushed.
-- `/venv` Project library.
-- `/writing` Case studies and the paper.
+- `/writing` Reports, posts, and case studies.
+- `/.venv` Hidden project library, not pushed.
+- `.gitignore` Hidden Git instructions file.
+- `.python-version` Hidden Python version for the reproducible
+  environment.
 - `requirements.txt` Information on the reproducible environment.
 
 ## Reproducible Environment
 
-Every package you install lives in your system library, accessible to
-all projects. However, packages change. Add a reproducible environment
-by creating a project library using venv.
+After cloning this repository, go to the project’s terminal in Positron
+and run `python -m venv .venv` to create the `/.venv` project library,
+followed by `pip install -r requirements.txt` to install the specified
+library versions.
+
+Whenever you install new libraries or decide to update the versions of
+libraries you use, run `pip freeze > requirements.txt` to update
+`requirements.txt`.
 
 For more details on using GitHub, Quarto, etc. see [ASC
 Training](https://github.com/marcdotson/asc-training).

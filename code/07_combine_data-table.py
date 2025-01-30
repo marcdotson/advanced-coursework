@@ -20,7 +20,7 @@ teacher_df = pd.read_csv('data/05_teacher_exploratory_data.csv')
 school_df = pd.read_csv('data/06_school_exploratory_data.csv')
 
 # Load the pickled data (student_tables)
-with open('./data/01_student_data.pkl', 'rb') as f:
+with open('./data/student_data.pkl', 'rb') as f:
     student_tables, high_school_students_tables = pickle.load(f)
 
 ######################################################################################################################################################

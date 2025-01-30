@@ -66,7 +66,7 @@ model_dict = {}
 # 'rb' opens the file in binary read mode (required for pickle).
 # 'as f' assigns the file object to 'f' for use within the block.
 # pickle.load(f) loads the saved Python objects (two dictionaries of DataFrames).
-with open('./data/01_student_data.pkl', 'rb') as f:
+with open('./data/student_data.pkl', 'rb') as f:
     student_tables, high_school_students_tables = pickle.load(f)
 
 for year in years:

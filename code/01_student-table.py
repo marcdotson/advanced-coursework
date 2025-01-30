@@ -1,7 +1,5 @@
 ###########################################################################
-# Start here!!!!!!!
-###########################################################################
-# The code will output a single pickle file containing all student tables: 01_student_data.pkl
+# The code will output a single pickle file containing all student tables: student_data.pkl
 # This file includes two dictionaries:
 # 1. student_tables:
 #    - A dictionary where:
@@ -14,9 +12,9 @@
 #      - Values: DataFrames containing only high school students for each year.
 #    - Example: high_school_students_tables[2017] provides the high school student table for 2017.
 #############################################################################
-# Filter at the end of all of the data wrangling??????
+# TODO: Decide on how to filter for high school students only at the end of the data
 # The code currently uses high_school_students_tables for processing.
-# If filtering is moved to the end instead of the beginning,  only 1-2 lines of code per script would need to be adjusted.
+# If filtering is moved to the end instead of the beginning, only 1-2 lines of code per script would need to be adjusted.
 #############################################################################
 
 import pandas as pd
@@ -82,11 +80,11 @@ for year in years:
 
 
 ##########################################################################################################################################################
-# Save the dictionaries into a single pickle file (01_student_data.pkl)
+# Save the dictionaries into a single pickle file (student_data.pkl)
 # 'wb' opens the file in binary write mode (required for pickle).
 # 'as f' assigns the file object to 'f' for use within the block.
 # pickle.dump((student_tables, high_school_students_tables), f) saves the two dictionaries 
-with open('./data/01_student_data.pkl', 'wb') as f:
+with open('./data/student_data.pkl', 'wb') as f:
     pickle.dump((student_tables, high_school_students_tables), f)
 
 print('===========================================')

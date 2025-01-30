@@ -24,7 +24,7 @@ df_dict = {}
 # - Further filter the combined data to include only the highest 'composite_score' per student across all years.
 
 # Load the pickled data (student_tables)
-with open('./data/01_student_data.pkl', 'rb') as f:
+with open('./data/student_data.pkl', 'rb') as f:
     student_tables, high_school_students_tables = pickle.load(f)
 
 for year in years:

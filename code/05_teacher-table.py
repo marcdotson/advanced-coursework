@@ -11,7 +11,7 @@ membership_columns = {'StudentNumber': 'int32', 'CourseRecordID': 'string'}
 master_columns = {'Teacher1ID': 'int32', 'CourseRecordID': 'string'}
 
 # Load the pickled data (student_tables)
-with open('./data/01_student_data.pkl', 'rb') as f:
+with open('./data/student_data.pkl', 'rb') as f:
     student_tables, high_school_students_tables = pickle.load(f)
 
 # Concatenate all years of data for each dataset into single DataFrames

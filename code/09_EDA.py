@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 #This is a very rough start to the EDA
 
@@ -14,17 +15,25 @@ data = pd.read_csv("../data/07_combined_exploratory_data.csv")
 #We also need them to show the ac trend from year to year, or if we want any year specific evaluations
 # print(data['year'].unique())
 
+# Display summary statistics
+print("Summary Statistics:")
 data.describe(include='all')
-print(data.head().to_string(), "\n")
-print("Columns:\n", data.columns)
-data.isna().sum()
 
-#Not sure if we need this
-# # Missing value analysis
-# #plt.figure(figsize=(8, 6))
-# sns.heatmap(data.isnull(), cbar=False)
-# plt.title('Missing Value Heatmap')
-# plt.show()
+# Display the first few rows of the data
+print("\nFirst few rows of the data:")
+print(data.head().to_string(), "\n")
+
+# Display the column names
+print("Columns in the data:")
+print(data.columns)
+
+# Display the count of missing values in each column
+print("\nCount of missing values in each column:")
+print(data.isna().sum())
+
+#Count the number of zeros in ac_gpa
+num_zeros_ac_gpa = (data['ac_gpa'] == 0).sum()
+print(f"Number of zeros in AC GPA: {num_zeros_ac_gpa}"," \n")
 
 # Create a pie chart for AC vs non-AC students
 plt.figure(figsize=(8, 6))
@@ -33,11 +42,21 @@ labels = ['Non-AC', 'AC']
 sizes = [ac_counts[0], ac_counts[1]]
 colors = ['blue', 'steelblue']
 
-plt.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%')
+plt.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
 plt.title('Distribution of AC and Non-AC Students')
-plt.axis('equal')  # Equal aspect ratio ensures that pie is circular.
+plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 plt.show()
 
+#Not sure if we need this
+# # Missing value analysis
+# #plt.figure(figsize=(8, 6))
+# sns.heatmap(data.isnull(), cbar=False)
+# plt.title('Missing Value Heatmap')
+# plt.show()
+
+#teacher_count              833
+#schools_attended             0
+#school_count               833
 
 # Print the overall proportion of AC students
 ac_proportion = ac_counts[1] / data.shape[0]
@@ -68,12 +87,12 @@ print("#########################################################################
 #should i do grade distributions by school? Bar chart?
 
 
-# Boxplot of days attended with flipped axes
-plt.figure(figsize=(8, 6))
-plt.boxplot(data['days_attended'], vert=False)
-plt.title('Days Attended')
-plt.xlabel('Days Attended')
-plt.show()
+# # Boxplot of days attended with flipped axes
+# plt.figure(figsize=(8, 6))
+# plt.boxplot(data['days_attended'], vert=False)
+# plt.title('Days Attended')
+# plt.xlabel('Days Attended')
+# plt.show()
 
 # Histogram for days attended distribution
 plt.figure(figsize=(8, 6))
@@ -82,6 +101,18 @@ plt.title('Days Attended Distribution')
 plt.xlabel('Days Attended')
 plt.ylabel('Frequency')
 plt.xlim(0, 180)
+plt.show()
+
+
+
+# Histogram for ac_gpa distribution
+# Drop all of the zero values (fail, pass, na) in ac gpa
+data_ac_gpa = data[data['ac_gpa'] != 0]
+plt.figure(figsize=(8, 6))
+plt.hist(data['ac_gpa'], bins=np.arange(0.0, 4.1, 0.5), color='blue', edgecolor='black')
+plt.title('AC GPA Distribution')
+plt.xlabel('AC GPA')
+plt.ylabel('Frequency')
 plt.show()
 
 # Average days attended
@@ -96,6 +127,21 @@ print(f"Median days attended: {median_days_attended:.2f}")
 sd_days_attended = data['days_attended'].std()
 print(f"Standard deviation of days attended: {sd_days_attended:.2f}")
 print("###################################################################################################\n")
+
+# Pair plot for selected numerical variables
+numerical_vars = ['overall_gpa', 'days_attended', 'ac_gpa']
+sns.pairplot(data[numerical_vars])
+plt.suptitle('Pair Plot of Selected Numerical Variables', y=1.02)
+plt.show()
+
+# Scatter plot for overall_gpa vs days_attended
+plt.figure(figsize=(10, 6))
+sns.scatterplot(data=data, x='overall_gpa', y='days_attended', hue='ac_ind', palette='viridis')
+plt.title('Scatter Plot of Overall GPA vs Days Attended')
+plt.xlabel('Overall GPA')
+plt.ylabel('Days Attended')
+plt.legend(title='AC Indicator', loc='upper right', labels=['Non-AC', 'AC'])
+plt.show()
 
 # # Add counts on top of each bar
 # counts, bins, patches = plt.hist(data['days_attended'], bins=range(0, 190, 10), color='lightblue', edgecolor='black')

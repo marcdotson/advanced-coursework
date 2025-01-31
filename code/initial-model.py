@@ -20,7 +20,7 @@ def remove_highly_correlated_features(df, threshold=0.95):
 # Step 1: Load and Prepare the Data
 # =================================================
 # Load dataset and handle missing/invalid values
-df = pd.read_csv('data/08_combined_modeling_data.csv', low_memory=False)
+df = pd.read_csv('data/modeling_data.csv', low_memory=False)
 df = df.apply(pd.to_numeric, errors='coerce').fillna(0)
 
 # Display original column names for reference
@@ -29,24 +29,24 @@ print("Original Columns in Dataset:\n", df.columns.tolist())
 # Define target variable (y) and feature set (X)
 y = df['ac_ind']  # Target variable: academic indicator
 
-# List of required columns for modeling
-required_columns = [
-    'overall_gpa', 'days_attended', 'ethnicity_y', 'amerindian_alaskan_y', 'asian_y', 
-    'black_african_amer_y', 'hawaiian_pacific_isl_y', 'white_y', 'migrant_y', 'gifted_y', 
-    'services_504_y', 'military_child_y', 'refugee_student_y', 'immigrant_y', 
-    'reading_intervention_y', 'passed_civics_exam_y', 'gender_f', 'gender_m', 'gender_u'
-]
+# # List of required columns for modeling
+# required_columns = [
+#     'overall_gpa', 'days_attended', 'ethnicity_y', 'amerindian_alaskan_y', 'asian_y', 
+#     'black_african_amer_y', 'hawaiian_pacific_isl_y', 'white_y', 'migrant_y', 'gifted_y', 
+#     'services_504_y', 'military_child_y', 'refugee_student_y', 'immigrant_y', 
+#     'reading_intervention_y', 'passed_civics_exam_y', 'gender_f', 'gender_m', 'gender_u'
+# ]
 
 # Select only the required columns for the feature set
-X = df[required_columns]
+X = df.drop(columns=['ac_ind'])
 print("\nSelected Features for Initial Model:\n", X.columns.tolist())
 
 # =================================================
 # Step 2: Remove Highly Correlated Features
 # =================================================
 # Drop features with a high correlation threshold (default: 0.95)
-X, dropped_columns = remove_highly_correlated_features(X)
-print("\nDropped Model Columns Due to High Correlation:\n", dropped_columns)
+# X, dropped_columns = remove_highly_correlated_features(X)S
+# print("\nDropped Model Columns Due to High Correlation:\n", dropped_columns)
 
 # =================================================
 # Step 3: Standardize Features
@@ -105,9 +105,7 @@ df_coefficients = df_coefficients.sort_values(by='coefficient', ascending=False)
 print("\nTop 10 Most Important Features:\n")
 df_top10 = df_coefficients.reset_index(drop=True).assign(rank=lambda x: x.index + 1)[['rank', 'feature', 'coefficient']]
 df_top10['coefficient'] = df_top10['coefficient'].apply(lambda x: f"{x:.2e}")
-print(df_top10.head(10))
+print(df_top10)
 
-# -------------------------------
-# Discussion and Future Questions
-# -------------------------------
-# - How can we add teacher and grade columns effectively?
+
+df_top10.to_csv("data/log_reg_initial_results_all_columns.csv", index=False)

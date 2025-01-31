@@ -54,8 +54,14 @@ for year in years:
     # Drop the columns from the list above. If the data does not contain that column ignore the error and continue.
     student_table = student.drop(columns=[col for col in columns_to_drop if col in student.columns], errors='ignore')
 
-    # Drop rows with null or empty student_numbers
+    # Ensure GradeLevel is numeric
+    student_table['GradeLevel'] = pd.to_numeric(student_table['GradeLevel'], errors='coerce')
+
+    # Drop rows with null or empty student_numbers and GradeLevels
     student_table.dropna(subset=['student_number'], inplace=True)
+    student_table = student_table.dropna(subset=['GradeLevel'])
+
+    student_table['GradeLevel'] = student_table['GradeLevel'].astype(int)
 
     # Drop duplicate student_numbers but keep the row with the largest GradeLevel
     student_table = student_table.loc[student_table.groupby('student_number')['GradeLevel'].idxmax()].reset_index(drop=True)
@@ -63,8 +69,6 @@ for year in years:
 
     ##########################################################################################################################################################
     # Create a table that contains all the columns as the student_table but only includes student_numbers for high school students.
-    # Ensure GradeLevel is numeric
-    student_table['GradeLevel'] = pd.to_numeric(student_table['GradeLevel'], errors='coerce')
 
     # Filter the student_table to only include student_numbers for students in grades > 8
     high_school_students = student_table[student_table['GradeLevel'] > 8].copy()

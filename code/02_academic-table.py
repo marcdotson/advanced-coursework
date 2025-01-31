@@ -444,12 +444,13 @@ model_attendance = model_attendance.groupby('student_number', as_index=False).su
 # Create percent_days_attended to calculate overall attendance percentage: days_attended divided by school_membership
 # If school_membership is 0 it is replaced with NA to avoid division issues.
 # This might be pointless.
-model_attendance['percent_days_attended'] = (
-    model_attendance['days_attended'] / model_attendance['school_membership'].replace(0, pd.NA)
-) * 100
+# If school_membership = 0 then percent_days_attended = 0 (avoid dividing by 0)
+model_attendance.loc[model_attendance['school_membership'] == 0, 'percent_days_attended'] = np.nan
 
-# Round percent_days_attended to two decimal places
-model_attendance['percent_days_attended'] = pd.to_numeric(model_attendance['percent_days_attended'], errors='coerce')
+# Perform the calculation
+model_attendance['percent_days_attended'] = (model_attendance['days_attended'] / model_attendance['school_membership']) * 100
+
+# Round the result to two decimal places
 model_attendance['percent_days_attended'] = model_attendance['percent_days_attended'].round(2)
 
 model_attendance.head()
@@ -468,9 +469,14 @@ model_df.head()
 # Calculate the percent_days_attended column for the df. This will be the percentage of days each student attended each year.
 # If school_membership is 0 it is replaced with NA to avoid division issues.
 # This might be pointless.
-df['percent_days_attended'] = (
-    df['days_attended'] / df['school_membership'].replace(0, pd.NA)
-) * 100
+# If school_membership = 0 then percent_days_attended = 0 (avoid dividing by 0)
+df.loc[df['school_membership'] == 0, 'percent_days_attended'] = np.nan  # Avoid division by zero
+
+# Perform the calculation
+df['percent_days_attended'] = (df['days_attended'] / df['school_membership']) * 100
+
+# Round the result to two decimal places
+df['percent_days_attended'] = df['percent_days_attended'].round(2) 
 
 # Round percent_days_attended to two decimal places
 df['percent_days_attended'] = pd.to_numeric(df['percent_days_attended'], errors='coerce')

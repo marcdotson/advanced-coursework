@@ -91,6 +91,10 @@ df.head()
 
 ######################################################################################################################################################
 
+# Fill NaN values with 0 before exporting
+df.fillna(0, inplace=True)
+model_df.fillna(0, inplace=True)
+
 # Export the data
 df.to_csv('./data/exploratory_data.csv', index=False)
 model_df.to_csv('./data/modeling_data.csv', index=False)

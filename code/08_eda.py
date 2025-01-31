@@ -9,7 +9,7 @@ print("Cache County School District")
 print("Powerschool Exploratory Data Analysis\n")
 
 # Load the data from a CSV file
-data = pd.read_csv("../data/07_combined_exploratory_data.csv")
+data = pd.read_csv("./data/exploratory_data.csv")
 
 #we need year values before we can do this
 #We also need them to show the ac trend from year to year, or if we want any year specific evaluations

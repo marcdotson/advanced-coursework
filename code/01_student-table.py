@@ -6,17 +6,10 @@
 #      - Keys: Years (e.g., 2017, 2018, 2022, etc.).
 #      - Values: DataFrames containing the full student table for each year.
 #    - Example: student_tables[2017] provides the full student table for 2017.
-# 2. high_school_students_tables:
-#    - A dictionary where:
-#      - Keys: Years (e.g., 2017, 2018, 2022, etc.).
-#      - Values: DataFrames containing only high school students for each year.
-#    - Example: high_school_students_tables[2017] provides the high school student table for 2017.
-#############################################################################
-# TODO: Decide on how to filter for high school students only at the end of the data
-# The code currently uses high_school_students_tables for processing.
-# If filtering is moved to the end instead of the beginning, only 1-2 lines of code per script would need to be adjusted.
-#############################################################################
 
+#======================================================
+# Filtering has been moved to the end of the process
+#======================================================
 import pandas as pd
 import pickle
 
@@ -35,7 +28,6 @@ years = [2017, 2018, 2022, 2023, 2024]
 
 # Initialize dictionaries to store tables for all years
 student_tables = {} # Stores all students for each year
-high_school_students_tables = {} # Stores high school students for each year
 
 # Start the for loop
 for year in years:
@@ -68,28 +60,17 @@ for year in years:
 
 
     ##########################################################################################################################################################
-    # Create a table that contains all the columns as the student_table but only includes student_numbers for high school students.
-
-    # Filter the student_table to only include student_numbers for students in grades > 8
-    high_school_students = student_table[student_table['GradeLevel'] > 8].copy()
-
-    student_table.head()
-    high_school_students.head()
-
-
-    ##########################################################################################################################################################
     # Add the processed tables to their respective dictionaries
     student_tables[year] = student_table
-    high_school_students_tables[year] = high_school_students
 
 
 ##########################################################################################################################################################
 # Save the dictionaries into a single pickle file (student_data.pkl)
 # 'wb' opens the file in binary write mode (required for pickle)
 # 'as f' assigns the file object to 'f' for use within the block
-# pickle.dump((student_tables, high_school_students_tables), f) saves the two dictionaries 
+# pickle.dump((student_tables), f) saves the dictionary
 with open('./data/student_data.pkl', 'wb') as f:
-    pickle.dump((student_tables, high_school_students_tables), f)
+    pickle.dump((student_tables), f)
 
 print('===========================================')
 print("Student tables exported successfully!")

@@ -11,7 +11,7 @@ membership_columns = {'StudentNumber': 'int32', 'SchoolNumber': 'int16'}
 
 # Load the pickled data (student_tables)
 with open('./data/student_data.pkl', 'rb') as f:
-    student_tables, high_school_students_tables = pickle.load(f)
+    student_tables = pickle.load(f)
 
 # Concatenate all years of data for each dataset into single DataFrames
 # This combines data from all years to create a complete record of the schools attended by students
@@ -19,7 +19,6 @@ with open('./data/student_data.pkl', 'rb') as f:
 # Initialize empty lists to store year-specific DataFrames
 all_membership = []
 all_student_tables = []
-all_hs_students = []
 
 # Loop through each year and load the data and drop duplicates immediatly to clean the data and speed up the loop
 for year in years:
@@ -27,34 +26,28 @@ for year in years:
         f'data/{year} EOY Data - USU.xlsx', sheet_name='Course Membership', usecols=membership_columns.keys(), dtype=membership_columns
         ).drop_duplicates()
     
-    # Retrieve the data for the specified year from the student_tables and high_school_students_tables dictionaries
+    # Retrieve the data for the specified year from the student_tables dictionaries
     student_table_year = student_tables[year]
-    hs_students_year = high_school_students_tables[year].copy()
 
     # Assign the year to student_table_year table
     # I will later use this to join with students current school, to make sure data is accurate on yearly basis
-    hs_students_year['year'] = year
     student_table_year['year'] = year  
     membership_year['year'] = year
     
     # Ensure year is an integer
     student_table_year['year'] = student_table_year['year'].astype(int)
-    hs_students_year['year'] = hs_students_year['year'].astype(int)
     membership_year['year'] = membership_year['year'].astype(int)
 
     # Append year-specific data to the respective lists
     all_membership.append(membership_year)
     all_student_tables.append(student_table_year[['student_number', 'year']])
-    all_hs_students.append(hs_students_year[['student_number', 'year']])
 
 
 ######################################################################################################################################################
 # Concatenate and clean the DataFrames for each dataset across all years
 membership = pd.concat(all_membership, ignore_index=True)
 student_table = pd.concat(all_student_tables, ignore_index=True)
-hs_students = pd.concat(all_hs_students, ignore_index=True)
-# Change this line when we change the filtering process
-student_current_school = pd.concat(all_hs_students, ignore_index=True) # I will use this to create the df
+student_current_school = pd.concat(all_student_tables, ignore_index=True) # I will use this to create the df
 
 # Rename column names in membership table
 membership = membership.rename(columns={'StudentNumber': 'student_number', 'SchoolNumber': 'school_number'})
@@ -62,21 +55,15 @@ membership = membership.rename(columns={'StudentNumber': 'student_number', 'Scho
 # Remove all duplicates from the dataframes after the data is concatenated
 membership = membership.drop_duplicates(keep='first')
 student_table = student_table.drop_duplicates(keep='first')
-hs_students = hs_students.drop_duplicates(keep='first')
 
 # I want to keep one student_number per year so we can track students current_school
 student_current_school = student_current_school.drop_duplicates(subset=['student_number', 'year'], keep='first')
 
-
-####################################################################
-# If we decided to filter at the end, all we need to do is change hs_students to student_table
-# when creating the df below. The next line is the only line that needs to be adjusted.
-####################################################################
-# Create the df from the high_school_student student_numbers
+# Create the df from the student_table and student_current_school student_numbers
 # - df: exploratory data (created from the student_current_school)
-# - model_df: model data (created from high_school_student)
+# - model_df: model data (created from student_table)
 df = student_current_school[['student_number', 'year']].copy()
-model_df = hs_students[['student_number']].copy()
+model_df = student_table[['student_number']].copy()
 
 # Merge model_df and the membership table
 student_school = pd.merge(model_df, membership, on='student_number', how='left')

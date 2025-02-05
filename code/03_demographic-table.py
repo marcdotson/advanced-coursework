@@ -107,26 +107,22 @@ model_dict = {}
 # 'as f' assigns the file object to 'f' for use within the block.
 # pickle.load(f) loads the saved Python objects (two dictionaries of DataFrames).
 with open('./data/student_data.pkl', 'rb') as f:
-    student_tables, high_school_students_tables = pickle.load(f)
+    student_tables = pickle.load(f)
 
 # Begin the for loop to process all the years of data
 for year in years:
     ######################################################################################################################################################
-    # Retrieve the data for the specified year from the student_tables and high_school_students_tables dictionaries
+    # Retrieve the data for the specified year from the student_tables dictionary
     student_table = student_tables[year]
-    high_school_students = high_school_students_tables[year]
 
     ######################################################################################################################################################
     # df will represent the exploratory data, and model_df will represent the model data
-    ####################################################################
-    # If we decided to filter at the end, all we need to do is change high_school_students to student_table when creating the df and model_df below
-    ####################################################################
 
-    # Create the df from the high_school_student student_numbers
-    df = high_school_students[['student_number']].copy()
+    # Create the df from the student_table student_numbers
+    df = student_table[['student_number']].copy()
 
-    # Create the model_df from the high_school_student student_numbers
-    model_df = high_school_students[['student_number']].copy()
+    # Create the model_df from the student_table student_numbers
+    model_df = student_table[['student_number']].copy()
 
 
     ######################################################################################################################################################
@@ -187,8 +183,7 @@ for year in years:
 
     ######################################################################################################################################################
     # Add the date columns from the student table to the model_df and the df (entry_date, first_enroll_us....)
-    # I am still unsure of the best way format the dates, possibly a count since a specific date or something else.
-    # Only use student_numbers of high school students
+    # TODO I am still unsure of the best way format the dates, possibly a count since a specific date or something else.
     student_dates = student_table[['student_number', 'EntryDate', 'FirstEnrollInUS', 'EllMonitoredEntryDate']]
 
     # Rename the following columns for consistency

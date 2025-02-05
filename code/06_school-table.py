@@ -29,12 +29,23 @@ for year in years:
     
     # Retrieve the data for the specified year from the student_tables and high_school_students_tables dictionaries
     student_table_year = student_tables[year]
-    hs_students_year = high_school_students_tables[year]
+    hs_students_year = high_school_students_tables[year].copy()
+
+    # Assign the year to student_table_year table
+    # I will later use this to join with students current school, to make sure data is accurate on yearly basis
+    hs_students_year['year'] = year
+    student_table_year['year'] = year  
+    membership_year['year'] = year
+    
+    # Ensure year is an integer
+    student_table_year['year'] = student_table_year['year'].astype(int)
+    hs_students_year['year'] = hs_students_year['year'].astype(int)
+    membership_year['year'] = membership_year['year'].astype(int)
 
     # Append year-specific data to the respective lists
     all_membership.append(membership_year)
-    all_student_tables.append(student_table_year[['student_number']])
-    all_hs_students.append(hs_students_year[['student_number']])
+    all_student_tables.append(student_table_year[['student_number', 'year']])
+    all_hs_students.append(hs_students_year[['student_number', 'year']])
 
 
 ######################################################################################################################################################
@@ -42,6 +53,8 @@ for year in years:
 membership = pd.concat(all_membership, ignore_index=True)
 student_table = pd.concat(all_student_tables, ignore_index=True)
 hs_students = pd.concat(all_hs_students, ignore_index=True)
+# Change this line when we change the filtering process
+student_current_school = pd.concat(all_hs_students, ignore_index=True) # I will use this to create the df
 
 # Rename column names in membership table
 membership = membership.rename(columns={'StudentNumber': 'student_number', 'SchoolNumber': 'school_number'})
@@ -51,19 +64,55 @@ membership = membership.drop_duplicates(keep='first')
 student_table = student_table.drop_duplicates(keep='first')
 hs_students = hs_students.drop_duplicates(keep='first')
 
+# I want to keep one student_number per year so we can track students current_school
+student_current_school = student_current_school.drop_duplicates(subset=['student_number', 'year'], keep='first')
+
+
 ####################################################################
 # If we decided to filter at the end, all we need to do is change hs_students to student_table
 # when creating the df below. The next line is the only line that needs to be adjusted.
 ####################################################################
 # Create the df from the high_school_student student_numbers
-# - df: exploratory data
-# - model_df: model data
-df = hs_students[['student_number']].copy()
+# - df: exploratory data (created from the student_current_school)
+# - model_df: model data (created from high_school_student)
+df = student_current_school[['student_number', 'year']].copy()
 model_df = hs_students[['student_number']].copy()
 
 # Merge model_df and the membership table
 student_school = pd.merge(model_df, membership, on='student_number', how='left')
+
+# Drop year from student_school as it is not needed for the modeling data. It is used to find the current school.
+student_school.drop(columns=['year'], inplace=True)
 student_school.head()
+
+
+######################################################################################################################################################
+# Count the number of times each school is attended per student per year
+# Because the data might indicate that a student attended multiple schools per year (if they took a course at another school)
+# I will count the number of times a student 
+# attended a school for each year, then I will keep the row with the max 'school_count' per year.
+school_counts = (
+    membership.groupby(['student_number', 'year', 'school_number'])
+    .size()  # Count occurrences
+    .reset_index(name='school_count')  # Rename the count column
+)
+
+# Rename school_number to current_school
+school_counts = school_counts.rename(columns={'school_number': 'current_school'})
+
+# Find the school with the maximum count per student per year
+max_school_count = school_counts.loc[
+    school_counts.groupby(['student_number', 'year'])['school_count'].idxmax()
+]
+
+# Drop the school_count column as it counts schools by students per year. 
+# Later I will calculate the number of schools a student has attended in ccsd(not by year).
+max_school_count.drop(columns=['school_count'], inplace=True)
+
+# Merge max_school_count with the df
+df = pd.merge(df, max_school_count, on=['student_number', 'year'], how='left')
+
+df.head()
 
 
 ######################################################################################################################################################
@@ -106,9 +155,10 @@ student_school_list['school_count'] = school_grid.iloc[:, 1:].sum(axis=1)
 # Merge the student_school_list with the df
 df = pd.merge(df, student_school_list, on='student_number', how='left')
 
+
 df.head()
 
-
+df.duplicated(subset=['student_number', 'year']).sum()
 ######################################################################################################################################################
 # Export the data
 df.to_csv('./data/06_school_exploratory_data.csv', index=False)

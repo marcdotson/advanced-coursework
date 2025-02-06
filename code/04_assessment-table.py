@@ -16,7 +16,7 @@ df_dict = {}
 # Begin the for loop:
 # For each year, the logic will:
 # 1. Take 'student_number' from the assessment table and perform a left join with 'student_number' 
-#    from the corresponding 'high_school_students_[year]' table.
+#    from the corresponding 'student_table[year]' table.
 # 2. Filter the data to retain only the highest 'composite_score' per student for that year.
 # 3. Store the filtered data in the 'df_dict' dictionary with the key formatted as 'assessment_[year]'.
 # 
@@ -26,7 +26,7 @@ df_dict = {}
 
 # Load the pickled data (student_tables)
 with open('./data/student_data.pkl', 'rb') as f:
-    student_tables, high_school_students_tables = pickle.load(f)
+    student_tables = pickle.load(f)
 
 for year in years:
     # File Paths
@@ -35,22 +35,17 @@ for year in years:
     # Load Data
     assessment = pd.read_excel(assessment_file, sheet_name='Transcript Assessments')
     
-    # Retrieve the data for the specified year from the student_tables and high_school_students_tables dictionaries
+    # Retrieve the data for the specified year from the student_tables dictionary
     student_table = student_tables[year]
-    high_school_students = high_school_students_tables[year]
 
     # Rename 'StudentNumber' to 'student_number' in the assessment table
     assessment = assessment.rename(columns={'StudentNumber': 'student_number'})
 
-    ####################################################################
-    # If we decided to filter at the end, all we need to do is change high_school_students to student_table 
-    # when creating the df below. The next line is the only line that needs to be adjusted.
-    ####################################################################
-    df = high_school_students[['student_number']].copy()
+    df = student_table[['student_number']].copy()
 
     ######################################################################################################################################################
     # Add the transcript assessment data to the df
-    # We only want to include student_numbers that are in the high_school_students table
+    # We only want to include student_numbers that are in the student_table table
     assessment_table = df[['student_number']].copy()
 
     # Merge the assessment table with the df to return student_numbers from the df

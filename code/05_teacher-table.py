@@ -12,7 +12,7 @@ master_columns = {'Teacher1ID': 'int32', 'CourseRecordID': 'string'}
 
 # Load the pickled data (student_tables)
 with open('./data/student_data.pkl', 'rb') as f:
-    student_tables, high_school_students_tables = pickle.load(f)
+    student_tables = pickle.load(f)
 
 # Concatenate all years of data for each dataset into single DataFrames
 # This combines data from all years to create a complete record of the teachers had by students
@@ -21,7 +21,6 @@ with open('./data/student_data.pkl', 'rb') as f:
 all_membership = []
 all_master = []
 all_student_tables = []
-all_hs_students = []
 
 # Loop through each year and load the data and drop duplicates immediatly to clean the data and speed up the loop
 for year in years:
@@ -33,15 +32,13 @@ for year in years:
     f'data/{year} EOY Data - USU.xlsx', sheet_name='Course Master', usecols=master_columns.keys(),dtype=master_columns
     ).drop_duplicates()
 
-    # Retrieve the data for the specified year from the student_tables and high_school_students_tables dictionaries
+    # Retrieve the data for the specified year from the student_tables dictionary
     student_table_year = student_tables[year]
-    hs_students_year = high_school_students_tables[year]
 
     # Append year-specific data to the respective lists
     all_membership.append(membership_year)
     all_master.append(master_year)
     all_student_tables.append(student_table_year[['student_number']])
-    all_hs_students.append(hs_students_year[['student_number']])
 
 
 ######################################################################################################################################################
@@ -49,7 +46,6 @@ for year in years:
 membership = pd.concat(all_membership, ignore_index=True)
 master = pd.concat(all_master, ignore_index=True)
 student_table = pd.concat(all_student_tables, ignore_index=True)
-hs_students = pd.concat(all_hs_students, ignore_index=True)
 
 # Rename column names in membership table
 membership = membership.rename(columns={'StudentNumber': 'student_number', 'CourseRecordID': 'course_record_id'})
@@ -59,22 +55,17 @@ master = master.rename(columns={'Teacher1ID': 'teacher_id', 'CourseRecordID': 'c
 membership = membership.drop_duplicates(keep='first')
 master = master.drop_duplicates(keep='first')
 student_table = student_table.drop_duplicates(keep='first')
-hs_students = hs_students.drop_duplicates(keep='first')
 
 
 ######################################################################################################################################################
 # Merge the different tables to prepare for the pivot
 teacher_student = pd.merge(membership, master, on='course_record_id', how='left')
 
-####################################################################
-# If we decided to filter at the end, all we need to do is change hs_students to student_table
-# when creating the df below. The next line is the only line that needs to be adjusted.
-####################################################################
-# Create the df from the high_school_student student_numbers
+# Create the df from the student_table student_numbers
 # - df: exploratory data
 # - model_df: model data
-df = hs_students[['student_number']].copy()
-model_df = hs_students[['student_number']].copy()
+df = student_table[['student_number']].copy()
+model_df = student_table[['student_number']].copy()
 
 # Left join model_df and teacher_student so we only have student_numbers from the model_df
 # Only include the student_number and teacher_id from the teacher_student table

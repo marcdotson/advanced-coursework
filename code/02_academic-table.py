@@ -7,7 +7,7 @@ import numpy as np
 import pickle
 
 ######################################################################################################################################################
-# All of the data will be left joined with the df and model_df, therefore we can use the student_table rather than the high_school_students table 
+# All of the data will be left joined with the df and model_df
 # (if we don't want to filter before)
 
 def process_numeric_student_columns(student_table, model_df, df, columns, rename_map):
@@ -64,7 +64,7 @@ model_dict = {}
 # 'as f' assigns the file object to 'f' for use within the block.
 # pickle.load(f) loads the saved Python objects (two dictionaries of DataFrames).
 with open('./data/student_data.pkl', 'rb') as f:
-    student_tables, high_school_students_tables = pickle.load(f)
+    student_tables = pickle.load(f)
 
 # Begin the for loop to process all the years of data
 for year in years:
@@ -73,7 +73,7 @@ for year in years:
     model_df = None
 
     ######################################################################################################################################################
-    # File Paths (import student_table and high_school_student (for now))
+    # File Paths
     master_file = f'data/{year} EOY Data - USU.xlsx'
     membership_file = f'data/{year} EOY Data - USU.xlsx'
     scram_file = f'data/{year} EOY Data - USU.xlsx'
@@ -83,9 +83,8 @@ for year in years:
     membership = pd.read_excel(membership_file, sheet_name='Course Membership')
     scram = pd.read_excel(scram_file, sheet_name='SCRAM')
 
-    # Retrieve the data for the specified year from the student_tables and high_school_students_tables dictionaries
+    # Retrieve the data for the specified year from the student_tables dictionary
     student_table = student_tables[year]
-    high_school_students = high_school_students_tables[year]
 
     # Rename 'StudentNumber' to 'student_number'
     membership = membership.rename(columns={'StudentNumber': 'student_number'})
@@ -93,15 +92,12 @@ for year in years:
 
     ######################################################################################################################################################
     # df will represent the exploratory data, and model_df will represent the model data
-    ####################################################################
-    # If we decided to filter at the end, all we need to do is change high_school_students to student_table when creating the df and model_df below
-    ####################################################################
 
-    # Create the df from the high_school_student student_numbers
-    df = high_school_students[['student_number']].copy()
+    # Create the df from the student_table student_numbers
+    df = student_table[['student_number']].copy()
 
-    # Create the model_df from the high_school_student student_numbers
-    model_df = high_school_students[['student_number']].copy()
+    # Create the model_df from the student_table student_numbers
+    model_df = student_table[['student_number']].copy()
 
     ######################################################################################################################################################
     # Determine if a class is an advanced course, determine if a student has taken an ac (ac_ind)
@@ -444,12 +440,13 @@ model_attendance = model_attendance.groupby('student_number', as_index=False).su
 # Create percent_days_attended to calculate overall attendance percentage: days_attended divided by school_membership
 # If school_membership is 0 it is replaced with NA to avoid division issues.
 # This might be pointless.
-model_attendance['percent_days_attended'] = (
-    model_attendance['days_attended'] / model_attendance['school_membership'].replace(0, pd.NA)
-) * 100
+# If school_membership = 0 then percent_days_attended = 0 (avoid dividing by 0)
+model_attendance.loc[model_attendance['school_membership'] == 0, 'percent_days_attended'] = np.nan
 
-# Round percent_days_attended to two decimal places
-model_attendance['percent_days_attended'] = pd.to_numeric(model_attendance['percent_days_attended'], errors='coerce')
+# Perform the calculation
+model_attendance['percent_days_attended'] = (model_attendance['days_attended'] / model_attendance['school_membership']) * 100
+
+# Round the result to two decimal places
 model_attendance['percent_days_attended'] = model_attendance['percent_days_attended'].round(2)
 
 model_attendance.head()
@@ -468,9 +465,14 @@ model_df.head()
 # Calculate the percent_days_attended column for the df. This will be the percentage of days each student attended each year.
 # If school_membership is 0 it is replaced with NA to avoid division issues.
 # This might be pointless.
-df['percent_days_attended'] = (
-    df['days_attended'] / df['school_membership'].replace(0, pd.NA)
-) * 100
+# If school_membership = 0 then percent_days_attended = 0 (avoid dividing by 0)
+df.loc[df['school_membership'] == 0, 'percent_days_attended'] = np.nan  # Avoid division by zero
+
+# Perform the calculation
+df['percent_days_attended'] = (df['days_attended'] / df['school_membership']) * 100
+
+# Round the result to two decimal places
+df['percent_days_attended'] = df['percent_days_attended'].round(2) 
 
 # Round percent_days_attended to two decimal places
 df['percent_days_attended'] = pd.to_numeric(df['percent_days_attended'], errors='coerce')

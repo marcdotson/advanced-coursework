@@ -21,37 +21,32 @@ school_df = pd.read_csv('data/06_school_exploratory_data.csv')
 
 # Load the pickled data (student_tables)
 with open('./data/student_data.pkl', 'rb') as f:
-    student_tables, high_school_students_tables = pickle.load(f)
+    student_tables = pickle.load(f)
 
 ######################################################################################################################################################
 # Initialize empty list to store the student_numbers from the for loop
 all_students = []  # this will store the student_numbers from the student_tables
-hs_students = []  # this will store the student_numbers from the high_school_students tables
 
 # List of years for which we will process the data
 years = [2017, 2018, 2022, 2023, 2024]
 
-# Iterate through each of the student_tables and high_school_student_tables to make a list of all student_numbers across all years
+# Iterate through each of the student_tables to make a list of all student_numbers across all years
 for year in years:
-    # Load the student_table and high_school_students for the specific year from the pickle data
+    # Load the student_table for the specific year from the pickle data
     student_table = student_tables[year]  # Use the student_tables dictionary
-    high_school_student = high_school_students_tables[year]  # Use the high_school_students_tables dictionary
     
-    
-    # Add the student_number to the all_students and hs_students list
-    all_students.append(student_table[['student_number']])
-    hs_students.append(high_school_student[['student_number']])
+    # Filter to only include student_numbers where GradeLevel > 8
+    filtered_students = student_table[student_table['GradeLevel'] > 8][['student_number']]
+
+    # Add the student_number from filtered_students to the all_students list
+    all_students.append(filtered_students[['student_number']])
 
 
 ######################################################################################################################################################
-# Concatenate all of the student_numbers from the high_school_students tables into the df and model_df. 
+# Concatenate all of the student_numbers from the student tables into the df and model_df. 
 # Everything will be built by left joining with the df and model_df.
-####################################################################
-# If we decided to filter at the end, all we need to do is change hs_students to all_students 
-# when creating the df and model_df below. The next two lines are the only lines that needs to be adjusted.
-####################################################################
-df = pd.concat(hs_students, ignore_index=True)
-model_df = pd.concat(hs_students, ignore_index=True)
+df = pd.concat(all_students, ignore_index=True)
+model_df = pd.concat(all_students, ignore_index=True)
 
 # We do not want any duplicate student_numbers, so we will drop all duplicates while only keeping the first duplicate.
 df = df.drop_duplicates(keep = 'first')

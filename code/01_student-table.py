@@ -8,7 +8,7 @@
 #    - Example: student_tables[2017] provides the full student table for 2017.
 
 #======================================================
-# Filtering has been moved to the end of the process
+# Filtering has been moved back to the begining of the process
 #======================================================
 
 import pandas as pd
@@ -60,6 +60,8 @@ for year in years:
     # Drop duplicate student_numbers but keep the row with the largest GradeLevel
     student_table = student_table.loc[student_table.groupby('student_number')['GradeLevel'].idxmax()].reset_index(drop=True)
 
+    # Filter out students that are not in high school
+    student_table = student_table[student_table['GradeLevel'] > 8]
 
     ##########################################################################################################################################################
     # Add the processed tables to their respective dictionaries

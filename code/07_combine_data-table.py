@@ -34,12 +34,9 @@ years = [2017, 2018, 2022, 2023, 2024]
 for year in years:
     # Load the student_table for the specific year from the pickle data
     student_table = student_tables[year]  # Use the student_tables dictionary
-    
-    # Filter to only include student_numbers where GradeLevel > 8
-    filtered_students = student_table[student_table['GradeLevel'] > 8][['student_number']]
 
     # Add the student_number from filtered_students to the all_students list
-    all_students.append(filtered_students[['student_number']])
+    all_students.append(student_table[['student_number']])
 
 
 ######################################################################################################################################################

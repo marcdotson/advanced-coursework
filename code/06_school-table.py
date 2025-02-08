@@ -52,6 +52,9 @@ student_current_school = pd.concat(all_student_tables, ignore_index=True) # I wi
 # Rename column names in membership table
 membership = membership.rename(columns={'StudentNumber': 'student_number', 'SchoolNumber': 'school_number'})
 
+# We can drop the year column from the student_table as it is not needed in the modeling data
+student_table = student_table.drop(columns=['year'])
+
 # Remove all duplicates from the dataframes after the data is concatenated
 membership = membership.drop_duplicates(keep='first')
 student_table = student_table.drop_duplicates(keep='first')
@@ -68,8 +71,6 @@ model_df = student_table[['student_number']].copy()
 # Merge model_df and the membership table
 student_school = pd.merge(model_df, membership, on='student_number', how='left')
 
-# Drop year from student_school as it is not needed for the modeling data. It is used to find the current school.
-student_school.drop(columns=['year'], inplace=True)
 student_school.head()
 
 

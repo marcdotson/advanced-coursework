@@ -105,7 +105,8 @@ df_coefficients = df_coefficients.sort_values(by='coefficient', ascending=False)
 print("\nTop 10 Most Important Features:\n")
 df_top10 = df_coefficients.reset_index(drop=True).assign(rank=lambda x: x.index + 1)[['rank', 'feature', 'coefficient']]
 df_top10['coefficient'] = df_top10['coefficient'].apply(lambda x: f"{x:.2e}")
-print(df_top10)
+print(df_top10[0:10])
+
 
 
 df_top10.to_csv("data/log_reg_initial_results_all_columns.csv", index=False)

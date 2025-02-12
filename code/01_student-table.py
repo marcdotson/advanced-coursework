@@ -8,8 +8,9 @@
 #    - Example: student_tables[2017] provides the full student table for 2017.
 
 #======================================================
-# Filtering has been moved to the end of the process
+# Filtering has been moved back to the begining of the process
 #======================================================
+
 import pandas as pd
 import pickle
 
@@ -53,10 +54,14 @@ for year in years:
     student_table.dropna(subset=['student_number'], inplace=True)
     student_table = student_table.dropna(subset=['GradeLevel'])
 
+    # Make sure GradeLevel is an int
     student_table['GradeLevel'] = student_table['GradeLevel'].astype(int)
 
     # Drop duplicate student_numbers but keep the row with the largest GradeLevel
     student_table = student_table.loc[student_table.groupby('student_number')['GradeLevel'].idxmax()].reset_index(drop=True)
+
+    # Filter out students that are not in high school
+    student_table = student_table[student_table['GradeLevel'] > 8]
 
 
     ##########################################################################################################################################################

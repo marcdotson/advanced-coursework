@@ -231,13 +231,12 @@ for year in years:
         'ScramMembership': 'scram_membership',
         'RegularPercent': 'regular_percent',
         'Environment': 'environment',
-        'IsOnePercent': 'is_one_percent',
         'ExtendedSchoolYear': 'extended_school_year'
     }
     scram = scram.rename(columns=scram_columns)
 
     ################################################################
-    # Dummy code the scram data (regular_percent, environment, is_one_percent and extended_school_year)
+    # Dummy code the scram data (regular_percent, environment and extended_school_year)
     # Create a dataframe for dummy variables. scram_membership is a number from 0-180 so it doesn't need to be dummied.
     scram_dummies = scram[['student_number', 'scram_membership']].copy()
 
@@ -274,22 +273,6 @@ for year in years:
 
     scram_dummies.head()
 
-    ################################################################
-    # Dummy code is_one_percent (is_one_percent_y = 1)
-    
-    ################################################################
-    # I'm assuming that null values would be classified as is_one_percent_n (No severe disability)
-    # TODO: Check with Jeremy
-    ################################################################
-    one_percent_dummies = pd.get_dummies(scram['is_one_percent'].replace(0, 'n'), prefix='is_one_percent').astype(int)
-
-    # Lowercase column titles
-    one_percent_dummies.columns = one_percent_dummies.columns.str.lower()
-
-    # Concat with scram_dummies table
-    scram_dummies = pd.concat([scram_dummies, one_percent_dummies], axis=1)
-
-    scram_dummies.head()
 
     ################################################################
     # Dummy code extended_school_year (extended_school_year_y = 1)
@@ -542,7 +525,7 @@ model_df.head()
 # Return the rest of Scram data for the most recent year of data per student
 concat_scram_colums = [
     'student_number', 'regular_percent_1.0', 'regular_percent_2.0', 'regular_percent_3.0', 'regular_percent_nan', 
-    'environment_h', 'environment_r', 'environment_v', 'is_one_percent_y', 'extended_school_year_y', 'current_grade'
+    'environment_h', 'environment_r', 'environment_v', 'extended_school_year_y', 'current_grade'
 ]
 
 # Filter the DataFrame for the specified columns
@@ -583,17 +566,18 @@ df.duplicated().sum()
 
 ######################################################################################################################################################
 # Prepare the data for export
+# Columns not included in both df and model_df: home_status, limited_english, ell_instruction_type, ell_native_language and ell_parent_language
+
 # Specify the column order for the df
 df_columns = ['student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa', 'days_attended',
             'days_absent', 'school_membership', 'percent_days_attended',  'current_grade',
-            'scram_membership', 'regular_percent', 'environment', 'is_one_percent', 'extended_school_year']
+            'scram_membership', 'regular_percent', 'environment', 'extended_school_year']
 
 df = df[df_columns]
 
 # Specify the column order for the model_df
 model_columns = (['student_number', 'ac_ind', 'overall_gpa', 'days_attended', 'days_absent', 
-                'school_membership', 'percent_days_attended',
-                'is_one_percent_y', 'extended_school_year_y']
+                'school_membership', 'percent_days_attended', 'extended_school_year_y']
  + [col for col in model_df.columns if col.startswith('regular_percent')]
  + [col for col in model_df.columns if col.startswith('environment_')])
 

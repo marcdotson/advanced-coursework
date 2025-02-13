@@ -9,6 +9,7 @@
 
 #======================================================
 # Filtering has been moved back to the begining of the process
+# IsOnePercent = Y has been filtered out of the data.
 #======================================================
 
 import pandas as pd
@@ -35,10 +36,12 @@ for year in years:
     # Load the Excel file for the specific year
     file_path = f'data/{year} EOY Data - USU.xlsx'
     student = pd.read_excel(file_path, sheet_name='Student')
-
+    # Load the scram data to filter out IsOnePercent = Y
+    scram = pd.read_excel(file_path, sheet_name='SCRAM')
+    
     # Rename 'StudentNumber' to 'student_number' in all tables that contain 'student_number'
     student = student.rename(columns={'StudentNumber': 'student_number'})
-
+    scram = scram.rename(columns={'StudentNumber': 'student_number'})
 
     ##########################################################################################################################################################
     # Filter the student table down to 1 row per student. This will make everything easier moving forward
@@ -46,6 +49,19 @@ for year in years:
 
     # Drop the columns from the list above. If the data does not contain that column ignore the error and continue.
     student_table = student.drop(columns=[col for col in columns_to_drop if col in student.columns], errors='ignore')
+    
+    # Create a table with student_number and IsOnePercent from the scram data
+    scram_filter = scram[['student_number', 'IsOnePercent']].copy()
+
+    # Merge the student table and the scram_filter table
+    student_table = pd.merge(student_table, scram_filter, on='student_number', how='left')
+    
+    # Drop rows from student_table where IsOnePercent is NOT null. 
+    # This column contains only 'Y' or null, so removing all non-null values accounts for any potential data entry inconsistencies.
+    student_table = student_table[student_table['IsOnePercent'].isna()]
+
+    # Now that we have filtered out IsOnePercent we can drop this column from the student_table
+    student_table = student_table.drop(columns=['IsOnePercent'])
 
     # Ensure GradeLevel is numeric
     student_table['GradeLevel'] = pd.to_numeric(student_table['GradeLevel'], errors='coerce')

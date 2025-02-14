@@ -8,7 +8,7 @@ library(dagitty)
 # Advantage (also includes disadvantage) (it's mainly disadvantages): military, 
 #      migrant, immigrant, refugee, ethnicity,
 #      is 1%, extended school year, regular %, reading intervention, ELL 
-#      Student, ELL Parent, home status, & gifted.
+#      Student, ELL Parent, & home status.
 
 # School: school & environment
 

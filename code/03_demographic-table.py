@@ -48,6 +48,9 @@ def process_categorical_column(df, model_df, reference_table, column_name, dummy
     # Merge dummy variables into model_df
     model_df = pd.merge(model_df, pd.concat([temp_table[key_column], dummies], axis=1), on=key_column, how='left')
 
+    # Fill any remaining nulls in dummy variables with 0
+    model_df[dummies.columns] = model_df[dummies.columns].fillna(0)
+
     return df, model_df
 
 
@@ -91,6 +94,9 @@ def student_binary_columns(df, model_df, reference_table, column_name, dummy_nam
 
     # Merge the dummy variable into model_df
     model_df = pd.merge(model_df, dummy_table, on=key_column, how='left')
+
+    # Fill any remaining nulls in dummy variable with 0
+    model_df[f"{dummy_name}_y"] = model_df[f"{dummy_name}_y"].fillna(0)
 
     return df, model_df
 
@@ -311,6 +317,7 @@ for col in date_columns:
 # Ensure student_number is a string
 earliest_dates['student_number'] = earliest_dates['student_number'].astype(str)
 
+earliest_dates.fillna(0, inplace=True)
 earliest_dates.head()
 
 # Merge the earliest dates into model_df
@@ -324,14 +331,13 @@ model_df.head()
 # Categorizing students based on ELL status and disability.
 # A student is considered to have a disability if regular_percent is 1, 2, or 3.
 # A student is classified as ELL if limited_english is 'Y', 'O', or 'F'.
-# This will create four distinct groups: 
+# This will create four distinct groups, stored in a single column (ell_disability_group): 
 #   - ell_with_disability
 #   - ell_without_disability
 #   - non_ell_with_disability
 #   - non_ell_without_disability
-# Each student will be assigned to exactly one of these groups, with a '1' indicating membership in that category.
-# For exploratory data, a single column 'ell_disability_group' will be used instead of separate binary columns.
 # This column will contain one of the four group labels.
+# The exploratory data will follow the same process, but will assign a group for each year a student_number appears in the data.
 
 #======================================================================================================================================
 #======================================================================================================================================
@@ -414,12 +420,6 @@ group_mapping = {
 # Apply mapping
 ell_disability_data["ell_disability_group"] = ell_disability_data["ell_disability_group"].map(group_mapping)
 
-# Pivot ell_disability_group so that each group becomes its own column with binary values
-ell_dis_dummies = pd.get_dummies(ell_disability_data["ell_disability_group"], dtype=int)
-
-# Merge dummy variables into ell_disability_data first
-ell_disability_data = pd.concat([ell_disability_data[['student_number']], ell_dis_dummies], axis=1)
-
 # Merge into model_df
 model_df = pd.merge(model_df, ell_disability_data, on='student_number', how='left')
 
@@ -455,10 +455,12 @@ df.head()
 
 ######################################################################################################################################################
 # Prepare the data for export
+# Notice that the column 'gifted' is not included in the final output.  
+# The column is still processed, but excluding it from the output was the simpler approach.  
 
 # Specify the column order for the df
 df_columns = ['student_number', 'gender', 'ethnicity', 'amerindian_alaskan', 'asian', 'black_african_amer', 
-            'hawaiian_pacific_isl', 'white', 'migrant', 'military_child', 'refugee_student', 'gifted',
+            'hawaiian_pacific_isl', 'white', 'migrant', 'military_child', 'refugee_student',
             'services_504', 'immigrant', 'passed_civics_exam', 'reading_intervention', 'home_status', 'ell_disability_group',
             'hs_complete_status', 'part_time_home_school', 'tribal_affiliation', 'read_grade_level', 'exit_code', 
             'ell_entry_date', 'entry_date','first_enroll_us']
@@ -471,11 +473,10 @@ model_columns = (
     [col for col in model_df.columns if col.startswith('gender_')]
     +[
         'ethnicity_y', 'amerindian_alaskan_y', 'asian_y', 'black_african_amer_y', 
-        'hawaiian_pacific_isl_y', 'white_y', 'migrant_y', 'military_child_y', 'refugee_student_y', 'gifted_y',
-        'services_504_y', 'immigrant_y', 'passed_civics_exam_y', 'reading_intervention_y',]
+        'hawaiian_pacific_isl_y', 'white_y', 'migrant_y', 'military_child_y', 'refugee_student_y',
+        'services_504_y', 'immigrant_y', 'passed_civics_exam_y', 'reading_intervention_y', 'ell_disability_group']
     + [col for col in model_df.columns if col.startswith('home_status_')]
     + [col for col in model_df.columns if col.startswith('ell_with')]
-    + [col for col in model_df.columns if col.startswith('non_ell_')]
     + [col for col in model_df.columns if col.startswith('hs_complete_status_')]
     + [col for col in model_df.columns if col.startswith('part_time_home_school_')]
     + [col for col in model_df.columns if col.startswith('tribal_affiliation_')]
@@ -487,6 +488,34 @@ model_df = model_df[model_columns]
 
 model_df.head()
 df.head()
+
+
+######################################################################################################################################################
+# Now that all data has been merged, null values need to be addressed.  
+# These null values arise because the data comes from multiple years, and not every column exists in every year.  
+# When categorical columns are dummy-encoded and merged across different years, some students may not have entries  
+# for certain categories, resulting in null values.  
+# To handle this, all columns except the date columns (defined below) will have missing values filled with 0.  
+# Since date columns have a different format, they need to be handled separately.
+
+# Define the date columns that should NOT be filled with 0
+date_columns = ['ell_entry_date', 'entry_date', 'first_enroll_us']
+
+# Identify all columns except date columns
+non_date_model_cols = [col for col in model_df.columns if col not in date_columns]
+non_date_df_cols = [col for col in df.columns if col not in date_columns]
+
+# Fill NaNs with 0 for all non-date columns
+model_df[non_date_model_cols] = model_df[non_date_model_cols].fillna(0)
+df[non_date_df_cols] = df[non_date_df_cols].fillna(0)
+
+# Fill NaNs in date columns with 'unknown'
+model_df[date_columns] = model_df[date_columns].fillna('unknown')
+df[date_columns] = df[date_columns].fillna('unknown')
+
+
+######################################################################################################################################################
+# Export the data
 
 # Export the updated academic files using the same file paths from the 02-script
 academic_exploratory_data.to_csv('data/02_academic_exploratory.csv', index=False)
@@ -500,3 +529,4 @@ model_df.to_csv('./data/03_demographic_modeling.csv', index=False)
 print("Demographic data exported successfully!")
 print("Next, run: 04_assessment-table.py")
 print('===========================================')
+

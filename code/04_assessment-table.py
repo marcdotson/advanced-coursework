@@ -131,6 +131,10 @@ df = df.sort_values(by = 'composite_score', ascending=False)
 # Drop all duplicate rows, and only keep the first instance of the duplicate
 df = df.drop_duplicates(subset='student_number', keep = 'first')
 
+# Fill the null values within each column with 0. 
+# These null values exist because some students have not taken the ACT yet.
+df.fillna(0, inplace=True)
+
 df.head()
 
 ######################################################################################################################################################

@@ -513,6 +513,14 @@ df[non_date_df_cols] = df[non_date_df_cols].fillna(0)
 model_df[date_columns] = model_df[date_columns].fillna('unknown')
 df[date_columns] = df[date_columns].fillna('unknown')
 
+# The columns below must be exported as strings to prevent them from being loaded as null values in the 07-script.
+# These specific columns are the only ones causing issues.
+# Ensure columns remain as strings to prevent unintended float conversions
+columns_to_fix = ['part_time_home_school', 'tribal_affiliation', 'exit_code', 'hs_complete_status']
+
+# Convert columns to strings and ensure missing values remain as '0'
+df[columns_to_fix] = df[columns_to_fix].astype(str).replace('nan', '0')
+
 
 ######################################################################################################################################################
 # Export the data

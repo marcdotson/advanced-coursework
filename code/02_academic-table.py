@@ -586,6 +586,17 @@ model_df = model_df[model_columns]
 df.head()
 model_df.head()
 
+
+######################################################################################################################################################
+# Now that all data has been merged, null values need to be addressed.  
+# These null values arise because the data comes from multiple years, and not every column exists in every year.  
+# When categorical columns are dummy-encoded and merged across different years, some students may not have entries  
+# for certain categories, resulting in null values.  
+# To handle this, all columns will have missing values filled with 0.
+
+model_df.fillna(0, inplace=True)
+df.fillna(0, inplace=True)
+
 # Export both files
 df.to_csv('./data/02_academic_exploratory.csv', index=False)
 model_df.to_csv('./data/02_academic_modeling.csv', index=False)

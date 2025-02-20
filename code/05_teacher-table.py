@@ -114,6 +114,11 @@ df = pd.merge(df, student_teacher_list, on='student_number', how='left')
 
 df.head()
 
+# Fill all null values with 0.
+# The null values arise because there are some (290) students_numbers who do not have any recorded teachers.
+model_df.fillna(0, inplace=True)
+df.fillna(0, inplace=True)
+
 
 ######################################################################################################################################################
 # Export the data

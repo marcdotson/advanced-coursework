@@ -18,6 +18,7 @@ print(f"Years in data set: {years}\n", sep=', ')
 print("##############################################################################################################")
 print("Summary Statistics:")
 
+data.info()
 data.describe(include='all')
 
 # # Display the count of missing values in each column
@@ -77,17 +78,6 @@ print(f"Average number of AC courses taken by students who took AC courses: {avg
 average_gpa = data['overall_gpa'][data['overall_gpa'] != 0].mean()
 print(f"\nAverage overall GPA: {average_gpa:.2f}")
 
-data['overall_gpa'] = data['overall_gpa'][data['overall_gpa'] != 0]
-
-# Histogram - overall GPA
-plt.figure(figsize=(8, 6))
-plt.hist(data['overall_gpa'], bins=10, color='blue', edgecolor='black')
-plt.title('Overall GPA Distribution')
-plt.xlabel('Overall GPA')
-plt.ylabel('Students')
-plt.xlim(0, 4)  # Set x-axis range from 0 to 4
-plt.show()
-
 #Average overall GPA of students who have not taken an AC course
 non_ac_overall_gpa = round(data[data['ac_ind'] == 0]['overall_gpa'].mean(), 2)
 print(f"Average overall GPA for ac_ind = 0 students: {non_ac_overall_gpa}")
@@ -103,6 +93,25 @@ plt.hist(filtered_ac_gpa, bins=np.arange(0.0, 4.1, 0.5), color='blue', edgecolor
 plt.title('AC GPA Distribution')
 plt.xlabel('AC GPA')
 plt.ylabel('Frequency')
+plt.show()
+# Box plot - overall GPA by ac_ind, excluding zero GPAs
+plt.figure(figsize=(8, 6))
+sns.boxplot(x="overall_gpa", y="ac_ind", data=data[(data['ac_ind'].isin([0, 1])) & (data['overall_gpa'] > 0)], palette=['skyblue', 'navy'], orient='h')
+plt.title('Overall GPA Distribution by AC Course Status (Excluding Zero GPAs)')
+plt.xlabel('Overall GPA')
+plt.ylabel('AC Course Status')
+plt.xlim(0, 4)  # Set x-axis range from 0 to 4
+plt.yticks([0, 1], ['Non-AC', 'AC'])  # Set y-axis labels
+plt.show()
+
+# Scatter plot - overall GPA vs AC course status
+plt.figure(figsize=(8, 6))
+sns.scatterplot(x="overall_gpa", y="ac_count", data=data[data['ac_ind'].isin([0,1]) & (data['overall_gpa'] > 0)], hue="ac_ind", palette=['skyblue', 'navy'])
+plt.title('Scatter Plot of Overall GPA vs AC Course Status')
+plt.xlabel('Overall GPA')
+plt.ylabel('AC Count')
+handles, labels = plt.gca().get_legend_handles_labels()
+plt.legend(handles=handles, title='AC Course Status', loc='upper right', labels=['Non-AC', 'AC'], facecolor='lightgrey', markerscale=1.5)
 plt.show()
 
 # Did not use model percent days attended because there were errors
@@ -195,24 +204,6 @@ plt.xticks(rotation=45)
 for p in plt.gca().patches:
     plt.text(p.get_x() + (p.get_width() / 2), p.get_y() + (p.get_height() / 2), '{:.0f}'.format(p.get_height()), ha='center')
 plt.show()
-
-data['percent_days_attended'] = np.nan
-
-# Perform the calculation only where school_membership is greater than zero
-data.loc[data['school_membership'] > 0, 'percent_days_attended'] = \
-    (data['days_attended'] / data['school_membership']) * 100
-
-# Convert to numeric and round to 2 decimal places
-data['percent_days_attended'] = pd.to_numeric(data['percent_days_attended'], errors='coerce')
-data['percent_days_attended'] = data['percent_days_attended'].round(2)
-
-# Average percent days attended in district
-avg_percent_days_attended = round(data['percent_days_attended'].mean(), 2)
-print(f"\nAverage percent days attended in district: {avg_percent_days_attended:.2f}%")
-
-# Average percent days attended for students who have taken an AC course
-ac_percent_days_attended = round(data[data['ac_ind'] == 1]['percent_days_attended'].mean(), 2)
-print(f"Average percent days attended for AC students: {ac_percent_days_attended:.2f}%")
 
 # Count total number of each gender in district
 print("\nTotal number of each gender:")
@@ -326,11 +317,6 @@ print(modelcorrelations.iloc[:10])
     # How many teachers teach AC classes in each school???
     # Days attended distributions by school
 
-# print("Would you like to compare school's data? (y/n)")
-# answer = input().lower()
-# if answer == 'y':
-#     print("School Evaluation\n")
-
 # #Count total number of students in each current school
 # school_counts = df.filter(like='current_school').sum()
 # print("\nTotal number of students in each school:")
@@ -342,12 +328,13 @@ print("\nAverage Overall GPA by school:")
 
 # Box plot of overall GPA by school
 plt.figure(figsize=(10, 6))
-sns.boxplot(x='current_school', y='overall_gpa', data=data)
-plt.title('Overall GPA by School')
+sns.boxplot(x='current_school', y='ac_gpa', data=data)
+plt.title('AC GPA by School')
 plt.xlabel('School')
-plt.ylabel('Overall GPA')
+plt.ylabel('AC GPA')
 plt.xticks(rotation=90)
 plt.show()
+
 
 #not sure why it is not working
 # # Calculate average GPA for students taking AC courses by school
@@ -377,24 +364,43 @@ plt.show()
 # plt.tight_layout()
 # plt.show()
 
-# Number of ac students in the whole district
-#data['ac_ind'] = pd.to_numeric(data['ac_ind'], errors='coerce')
-ac_count_district_total = data[data['ac_ind'] == 1]['ac_ind'].sum()
-print(f"Number of ac students in the district: {ac_count_district_total}")
+#fix the ac count by school vs the ac students by school
 
-# Number of ac students in each school
-ac_count_school = data[data['ac_ind'] == 1].groupby('current_school')['ac_ind'].count()
+# Total number of AC courses taken in the district
+ac_count_district_total = data['ac_count'].sum()
+# Number of AC courses taken in each school
+school_ac_count = data.groupby('current_school')['ac_count'].sum()
+print(f"Number of AC classes in the district: {ac_count_district_total}")
+print(f"Number of AC classes in each school:\n{school_ac_count}")
+# Total number of AC students in the district
+school_ac_students = data[data['ac_ind'] == 1].groupby('current_school')['ac_ind'].count()
+# Total number of AC students in the district
+district_ac_students = data['ac_ind'].sum()
+print(f"Number of AC students in each school:\n{school_ac_students}")
+print(f"Number of AC students in the district: {district_ac_students}")
 
-# Plot the proportion of ac enrollments by school
+# Plot the proportion of AC enrollments by school
 plt.figure(figsize=(12, 6))
-ac_count_school.sort_values(ascending=False).plot(kind='bar', color='seagreen')
+school_ac_count.sort_values(ascending=False).plot(kind='bar', color='seagreen')
 plt.title('AC Count by School')
 plt.xlabel('School')
+plt.ylabel('Number of AC Students')
 plt.xticks(rotation=45)
 plt.show()
 
-for p in plt.gca().patches:
-    plt.text(p.get_x() + (p.get_width() / 2), p.get_y() + (p.get_height() / 2), '{:.0f}'.format(p.get_height()), ha='center')
+# Plot the proportion of AC enrollments by school
+plt.figure(figsize=(12, 6))
+school_ac_students.sort_values(ascending=False).plot(kind='bar', color='skyblue')
+plt.title('Number of AC Students by School')
+plt.xlabel('School')
+plt.ylabel('Number of AC Students')
+plt.xticks(rotation=45)
+plt.show()
 
-# # else:
-# #     print("End of script. Please re-run to see the district evaluation.")
+
+# Compute the average AC classes per AP student per school
+average_ac_classes_per_ap_student_by_school = school_ac_count / school_ac_students
+
+# Print results
+print("\nAverage AC classes per AP student by school:")
+print(average_ac_classes_per_ap_student_by_school.sort_values(ascending=False))

@@ -23,7 +23,7 @@
         "\n",
         "These core libraries are crucial for data analysis and modeling. Numpy handles numerical data, Pandas is for data manipulation, and Pymc supports probabilistic modeling. Arviz helps visualize Bayesian model results, while Matplotlib.pyplot is used for plotting. Sklearn offers tools for splitting data, applying machine learning models like logistic regression, and evaluating performance with metrics like accuracy, confusion matrix, and ROC curves.\n"
       ],
-      "id": "bcce1359"
+      "id": "086c78ce"
     },
     {
       "cell_type": "code",
@@ -39,7 +39,7 @@
         "from sklearn.linear_model import LogisticRegression\n",
         "from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_auc_score, roc_curve, auc"
       ],
-      "id": "05e56546",
+      "id": "5efa6d45",
       "execution_count": null,
       "outputs": []
     },
@@ -51,7 +51,7 @@
         "\n",
         "We'll start by generating synthetic data to test both models. The data consists of two features (X1, X2) and a target variable (Y), where Y is based on a logistic function of the features.\n"
       ],
-      "id": "42633cf2"
+      "id": "9f4a807b"
     },
     {
       "cell_type": "code",
@@ -73,7 +73,7 @@
         "\n",
         "print(df.head())"
       ],
-      "id": "1a585df2",
+      "id": "1f6c9430",
       "execution_count": null,
       "outputs": []
     },
@@ -87,7 +87,7 @@
         "\n",
         "Scikit-learn provides an easy way to perform logistic regression using the LogisticRegression class. First, we’ll split the data into training and testing sets, train the model, and evaluate its performance.\n"
       ],
-      "id": "fb3e7d72"
+      "id": "b610a4f3"
     },
     {
       "cell_type": "code",
@@ -109,7 +109,7 @@
         "print(f\"Accuracy: {accuracy:.2f}\")\n",
         "print(classification_report(y_test, y_pred))"
       ],
-      "id": "2657e984",
+      "id": "33e8fc67",
       "execution_count": null,
       "outputs": []
     },
@@ -121,7 +121,7 @@
         "\n",
         "## Visualize Scikit-learn Results\n"
       ],
-      "id": "58fadf84"
+      "id": "1a9e024a"
     },
     {
       "cell_type": "code",
@@ -140,7 +140,7 @@
         "plt.legend(loc='lower right')\n",
         "plt.show()"
       ],
-      "id": "e131b6e4",
+      "id": "b3e54589",
       "execution_count": null,
       "outputs": []
     },
@@ -153,16 +153,15 @@
         "\n",
         "# Step 3: Logistic Regression using PyMC\n",
         "\n",
-        "Now, let's implement logistic regression using PyMC, a Bayesian modeling framework. We will build a probabilistic model that fits the data and then sample from the posterior distribution of the parameters.\n",
-        "\n",
-        "# Your data generation code here (or loading from a file)"
+        "Now, let's implement logistic regression using PyMC, a Bayesian modeling framework. We will build a probabilistic model that fits the data and then sample from the posterior distribution of the parameters.\n"
       ],
-      "id": "1d76ceb0"
+      "id": "edc17db6"
     },
     {
       "cell_type": "code",
       "metadata": {},
       "source": [
+        "# Data generation\n",
         "np.random.seed(42)\n",
         "X1 = np.random.normal(0, 1, 100)\n",
         "X2 = np.random.normal(0, 1, 100)\n",
@@ -172,27 +171,26 @@
         "data = pd.DataFrame({'X1': X1, 'X2': X2, 'y': y})\n",
         "\n",
         "def run_logistic_regression():\n",
-        "    # Define the model\n",
         "    with pm.Model() as logistic_model:\n",
-        "        intercept = pm.Normal('intercept', mu=0, sigma=10)\n",
-        "        coef_X1 = pm.Normal('coef_X1', mu=0, sigma=10)\n",
-        "        coef_X2 = pm.Normal('coef_X2', mu=0, sigma=10)\n",
+        "        # More informative priors can help with convergence.\n",
+        "        intercept = pm.Normal('intercept', mu=0, sigma=5)\n",
+        "        coef_X1 = pm.Normal('coef_X1', mu=0, sigma=5)\n",
+        "        coef_X2 = pm.Normal('coef_X2', mu=0, sigma=5)\n",
         "\n",
         "        linear_model = intercept + coef_X1 * data['X1'] + coef_X2 * data['X2']\n",
-        "\n",
         "        p = pm.math.sigmoid(linear_model)\n",
         "        likelihood = pm.Bernoulli('likelihood', p=p, observed=data['y'])\n",
-        "\n",
-        "        trace = pm.sample(2000, return_inferencedata=True)\n",
-        "\n",
-        "    # Traceplot and summary\n",
-        "    az.plot_trace(trace)\n",
-        "    print(az.summary(trace))\n",
+        "        \n",
+        "        # Explicitly set the NUTS sampler with a target acceptance rate\n",
+        "        step = pm.NUTS(target_accept=0.9)\n",
+        "        \n",
+        "        # Use multiple cores to run chains in parallel\n",
+        "        trace = pm.sample(1000, tune=200, chains=2, cores=2, step=step, progressbar=True)\n",
         "\n",
         "if __name__ == '__main__':\n",
-        "    run_logistic_regression()\n"
+        "    run_logistic_regression()"
       ],
-      "id": "57596612",
+      "id": "36439f89",
       "execution_count": null,
       "outputs": []
     },
@@ -204,15 +202,16 @@
         "\n",
         "Arviz provides a suite of functions to visualize the results from Bayesian models. After sampling, we can use az.plot_trace() to view the posterior distributions of the model parameters.\n"
       ],
-      "id": "9d5f14db"
+      "id": "f672c417"
     },
     {
       "cell_type": "code",
       "metadata": {},
       "source": [
-        "az.plot_trace(trace)"
+        "# Trace code isn't working\n",
+        "# az.plot_trace(trace)"
       ],
-      "id": "4f865a7c",
+      "id": "e1076149",
       "execution_count": null,
       "outputs": []
     },
@@ -250,7 +249,7 @@
         "\n",
         "In Scikit-learn, we focused on efficiency and simplicity, while in PyMC, we explored the flexibility of Bayesian models and how they allow us to quantify uncertainty in the predictions.\n"
       ],
-      "id": "66e5d648"
+      "id": "0cfc3760"
     }
   ],
   "metadata": {

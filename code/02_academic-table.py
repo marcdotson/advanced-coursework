@@ -567,10 +567,11 @@ df.duplicated().sum()
 ######################################################################################################################################################
 # Prepare the data for export
 # Columns not included in both df and model_df: home_status, limited_english, ell_instruction_type, ell_native_language and ell_parent_language
+# Columns not included in model_df: days_attended and days_absent
 
 # Specify the column order for the df
-df_columns = ['student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa', 'days_attended',
-            'days_absent', 'school_membership', 'percent_days_attended',  'current_grade',
+df_columns = ['student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa',
+            'school_membership', 'percent_days_attended',  'current_grade',
             'scram_membership', 'regular_percent', 'environment', 'extended_school_year']
 
 df = df[df_columns]

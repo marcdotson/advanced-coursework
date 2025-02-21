@@ -17,10 +17,7 @@ df = pd.read_csv('data/modeling_data.csv')
 #This will assign a unique integer (0, 1, 2, 3) to each of the four groups.
 df["ell_disability_index"] = df["ell_disability_group"].astype("category").cat.codes
 
-#{0: 'ell_with_disability', 1: 'ell_without_disability', 2: 'non_ell_with_disability', 3: 'non_ell_without_disability'}
-group_labels = dict(enumerate(df["ell_disability_group"].astype("category").cat.categories))
-
-#columns to drop ADD MORE AS NECCESSARY
+#columns to drop later prior to modeling ADD MORE AS NECCESSARY
 col_drop = ['student_number', 'ac_ind', 'ell_disability_group', 'ell_disability_index']
 
 
@@ -42,7 +39,7 @@ col_drop = ['student_number', 'ac_ind', 'ell_disability_group', 'ell_disability_
 # subset_df = subset_df.groupby("ell_disability_group", group_keys=False).apply(lambda x: x.sample(frac=sample_fraction, random_state=42))
 
 # # Convert categorical group column to an array
-# group_idx = subset_df["ell_disability_index"].astype('category').cat.codes.values
+# group_idx = subset_df["ell_disability_index"].values
 # num_groups = subset_df["ell_disability_index"].nunique()
 
 # # Predictor variables 
@@ -57,7 +54,7 @@ col_drop = ['student_number', 'ac_ind', 'ell_disability_group', 'ell_disability_
 #____________________________________________________________________________
 
 # Convert categorical group column to an array
-group_idx = df["ell_disability_index"].astype('category').cat.codes.values
+group_idx = df["ell_disability_index"].values
 num_groups = df["ell_disability_index"].nunique()
 
 # Predictor variables 

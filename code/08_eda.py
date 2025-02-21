@@ -14,6 +14,14 @@ print("CCSD Powerschool Exploratory Data Analysis\n")
 years = data['year'].unique()
 print(f"Years in data set: {years}\n", sep=', ')
 
+# Filter the data to include only the year 2017
+data= data[data['year'] != 2017]
+
+
+print("Data filtered to only include the year 2017\n")
+print(data.head())
+
+
 # Summary Statistics
 print("##############################################################################################################")
 print("Summary Statistics:")
@@ -116,32 +124,32 @@ plt.show()
 
 # Did not use model percent days attended because there were errors
 # Establish variable
-data['percent_days_attended'] = np.nan
+# data['percent_days_attended'] = np.nan
 
 # Perform the calculation only where school_membership is greater than zero
-data.loc[data['school_membership'] > 0, 'percent_days_attended'] = \
-    (data['days_attended'] / data['school_membership']) * 100
+#data.loc[data['school_membership'] > 0, 'percent_days_attended'] = \
+ #   (data['days_attended'] / data['school_membership']) * 100
 
-# Convert to numeric and round to 2 decimal places
-data['percent_days_attended'] = pd.to_numeric(data['percent_days_attended'], errors='coerce')
-data['percent_days_attended'] = data['percent_days_attended'].round(2)
+# # Convert to numeric and round to 2 decimal places
+# data['percent_days_attended'] = pd.to_numeric(data['percent_days_attended'], errors='coerce')
+# data['percent_days_attended'] = data['percent_days_attended'].round(2)
 
-# Average percent days attended in district
-avg_percent_days_attended = round(data['percent_days_attended'].mean(), 2)
-print(f"\nAverage percent days attended in district: {avg_percent_days_attended:.2f}%")
+# # Average percent days attended in district
+# avg_percent_days_attended = round(data['percent_days_attended'].mean(), 2)
+# print(f"\nAverage percent days attended in district: {avg_percent_days_attended:.2f}%")
 
-# Average percent days attended for students who have taken an AC course
-avg_ac_percent_days_attended = round(data[data['ac_ind'] == 1]['percent_days_attended'].mean(), 2)
-print(f"Average percent days attended for AC students: {avg_ac_percent_days_attended:.2f}%")
+# # Average percent days attended for students who have taken an AC course
+# avg_ac_percent_days_attended = round(data[data['ac_ind'] == 1]['percent_days_attended'].mean(), 2)
+# print(f"Average percent days attended for AC students: {avg_ac_percent_days_attended:.2f}%")
 
 # regular_percent
-regularpercent_3 = data[(data['regular_percent'] == 3) & (data['ac_ind'] == 1)].shape[0]
-regularpercent_2 = data[(data['regular_percent'] == 2) & (data['ac_ind'] == 1)].shape[0]
-regularpercent_1 = data[(data['regular_percent'] == 1) & (data['ac_ind'] == 1)].shape[0]
-print(f"Number of students in each regularpercent category with ac_ind=1:\n1: ", regularpercent_1, "\n2: ", regularpercent_2, "\n3: ", regularpercent_3)
+# regularpercent_3 = data[(data['regular_percent'] == 3) & (data['ac_ind'] == 1)].shape[0]
+# regularpercent_2 = data[(data['regular_percent'] == 2) & (data['ac_ind'] == 1)].shape[0]
+# regularpercent_1 = data[(data['regular_percent'] == 1) & (data['ac_ind'] == 1)].shape[0]
+# print(f"Number of students in each regularpercent category with ac_ind=1:\n1: ", regularpercent_1, "\n2: ", regularpercent_2, "\n3: ", regularpercent_3)
 
-is_one_percent = data['is_one_percent'].value_counts()
-print(is_one_percent)
+# is_one_percent = data['is_one_percent'].value_counts()
+# print(is_one_percent)
 
 extended = data['extended_school_year'].value_counts()
 print(extended)
@@ -158,8 +166,8 @@ print("Demographic Data from 03_demographic_table - EOY Student Table\n")
 # first_enroll_us
 
 # gifted
-gifted = data['gifted'].value_counts()
-print(gifted)
+# gifted = data['gifted'].value_counts()
+# print(gifted)
 #print(f"\nNumber of gifted students: {gifted}, proportion: {gifted / total_students:.2f}")
 
 # services_504
@@ -232,9 +240,11 @@ print(f"\nProportion of each gender taking AC courses:\n{gender_proportion_ac.ma
 indicators = [
     'military_child', 'passed_civics_exam', 'read_grade_level',
     'reading_intervention', 'home_status', 'hs_complete_status', 'part_time_home_school',
-    'tribal_affiliation', 'limited_english', 'ell_native_language', 'ell_parent_language',
+    'tribal_affiliation',
     'read_grade_level'
 ]
+#why is ell parent language and ell native language gone?
+#why is limited english gone?
 
 #data[indicators] = data[indicators].astype
 #indicator_counts = data[indicators].apply(pd.Series.value_counts).sum(axis=1)

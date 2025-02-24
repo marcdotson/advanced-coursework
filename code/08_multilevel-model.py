@@ -11,54 +11,50 @@ import pandas as pd
 df = pd.read_csv('data/modeling_data.csv')
 
 #____________________________________________________________________________
-                              #PREP THE MODEL
+                          #SPECIFY COLUMNS TO DROP
 #____________________________________________________________________________
-
-#This will assign a unique integer (0, 1, 2, 3) to each of the four groups.
-df["ell_disability_index"] = df["ell_disability_group"].astype("category").cat.codes
 
 #columns to drop later prior to modeling ADD MORE AS NECCESSARY
-col_drop = ['student_number', 'ac_ind', 'ell_disability_group', 'ell_disability_index']
-
+col_drop = ['student_number', 'ac_ind', 'ell_disability_group']
 
 #____________________________________________________________________________
-                 #USE THIS TO MODEL ON A SUBSET OF THE DATA
+                 #PREP THE MODEL ON A SUBSET OF THE DATA
 #____________________________________________________________________________
 
 ########################################################################################################
 # ******ONLY UNCOMMENT THE CODE BELOW IF YOU WOULD LIKE TO RUN THE MODEL WITH A SUBSET OF THE DATA******
 ########################################################################################################
 
-# Set the sample fraction for the subset data
+# # Set the sample fraction for the subset data
 # sample_fraction = 0.1
 
 # #establish the subset DF to test to see if the model is set up correctly
-# subset_df = df[['student_number','ac_ind', 'overall_gpa', 'teacher_218966', 'english_score', 'ell_disability_group', 'ell_disability_index']]
+# subset_df = df[['student_number','ac_ind', 'overall_gpa', 'teacher_218966', 'english_score', 'ell_disability_group']]
 
 # # Stratified sampling
 # subset_df = subset_df.groupby("ell_disability_group", group_keys=False).apply(lambda x: x.sample(frac=sample_fraction, random_state=42))
 
 # # Convert categorical group column to an array
-# group_idx = subset_df["ell_disability_index"].values
-# num_groups = subset_df["ell_disability_index"].nunique()
+# group_idx = subset_df["ell_disability_group"].astype("category").cat.codes.values
+# num_groups = subset_df["ell_disability_group"].nunique()
 
 # # Predictor variables 
-# X = subset_df.drop(columns = col_drop).values
+# X = subset_df.drop(columns = col_drop, axis = 1).values
 # num_predictors = X.shape[1]
 
 # # Outcome variable
 # y = subset_df["ac_ind"].values 
 
 #____________________________________________________________________________
-                   #USE THIS TO MODEL ON THE FULL DATASET
+                   #PREP THE MODEL ON THE FULL DATASET
 #____________________________________________________________________________
 
 # Convert categorical group column to an array
-group_idx = df["ell_disability_index"].values
-num_groups = df["ell_disability_index"].nunique()
+group_idx = df["ell_disability_group"].astype("category").cat.codes.values
+num_groups = df["ell_disability_group"].nunique()
 
 # Predictor variables 
-X = df.drop(columns = col_drop).values
+X = df.drop(columns = col_drop, axis = 1).values
 num_predictors = X.shape[1]
 
 # Outcome variable
@@ -94,7 +90,7 @@ if __name__ == '__main__':
 
         # Run the sampling *******ADJUST THE AMOUNT OF SAMPLING HERE AS NEEDED ********
         try:
-            print("Sampling Starting Up...")
+            print("Starting model sampling...")
             trace = pm.sample(1000, tune=1000, target_accept=0.95, return_inferencedata=True)
             print("Sampling complete.")
         except Exception as e:

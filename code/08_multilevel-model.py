@@ -26,43 +26,43 @@ col_drop = ['student_number', 'ac_ind', 'ell_disability_group']
 ########################################################################################################
 
 # Set the sample fraction for the subset data
-sample_fraction = 0.1
+# sample_fraction = 0.1
 
-#establish the subset DF to test to see if the model is set up correctly
-subset_df = df[['student_number','ac_ind', 'overall_gpa', 'teacher_218966', 'english_score', 'ell_disability_group']]
+# #establish the subset DF to test to see if the model is set up correctly
+# subset_df = df[['student_number','ac_ind', 'overall_gpa', 'teacher_218966', 'english_score', 'ell_disability_group']]
 
-# Stratified sampling
-subset_df = subset_df.groupby("ell_disability_group", group_keys=False).apply(lambda x: x.sample(frac=sample_fraction, random_state=42))
+# # Stratified sampling
+# subset_df = subset_df.groupby("ell_disability_group", group_keys=False).apply(lambda x: x.sample(frac=sample_fraction, random_state=42))
 
-# Convert categorical group column to an array
-group_idx = subset_df["ell_disability_group"].astype("category").cat.codes.values
-group_names = subset_df["ell_disability_group"].astype("category").cat.categories.tolist()
-num_groups = len(group_names)
+# # Convert categorical group column to an array
+# group_idx = subset_df["ell_disability_group"].astype("category").cat.codes.values
+# group_names = subset_df["ell_disability_group"].astype("category").cat.categories.tolist()
+# num_groups = len(group_names)
 
-# Predictor variables 
-X = subset_df.drop(columns=col_drop, axis=1).values
-predictor_names = subset_df.drop(columns=col_drop, axis=1).columns.tolist()
-num_predictors = len(predictor_names)
+# # Predictor variables 
+# X = subset_df.drop(columns=col_drop, axis=1).values
+# predictor_names = subset_df.drop(columns=col_drop, axis=1).columns.tolist()
+# num_predictors = len(predictor_names)
 
-# Outcome variable
-y = subset_df["ac_ind"].values 
+# # Outcome variable
+# y = subset_df["ac_ind"].values 
 
 #____________________________________________________________________________
                    #PREP THE MODEL ON THE FULL DATASET
 #____________________________________________________________________________
 
 # # Convert categorical group column to an array
-# group_idx = df["ell_disability_group"].astype("category").cat.codes.values
-# group_names = df["ell_disability_group"].astype("category").cat.categories.tolist()
-# num_groups = len(group_names)
+group_idx = df["ell_disability_group"].astype("category").cat.codes.values
+group_names = df["ell_disability_group"].astype("category").cat.categories.tolist()
+num_groups = len(group_names)
 
-# # Predictor variables 
-# X = df.drop(columns=col_drop, axis=1).values
-# predictor_names = df.drop(columns=col_drop, axis=1).columns.tolist()
-# num_predictors = len(predictor_names)
+# Predictor variables 
+X = df.drop(columns=col_drop, axis=1).values
+predictor_names = df.drop(columns=col_drop, axis=1).columns.tolist()
+num_predictors = len(predictor_names)
 
-# # Outcome variable
-# y = df["ac_ind"].values 
+# Outcome variable
+y = df["ac_ind"].values 
 
 #____________________________________________________________________________
                     #RUN THE MODEL AND EXPORT TRACE TO A FILE

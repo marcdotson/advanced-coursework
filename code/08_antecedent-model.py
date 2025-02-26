@@ -1,6 +1,5 @@
 ################################################################################################
 # Create a DAG
-
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -30,33 +29,38 @@ nx.draw(G, pos, with_labels=True, node_color='lightblue', edge_color='gray', nod
 plt.title("DAG for Advanced Coursework ASC Project")
 plt.show()
 
-#____________________________________________________________________________
-                             #IMPORT LIBRARIES
-#____________________________________________________________________________ 
+################################################################################################
 import pymc as pm
 import pandas as pd
 
+# Load in the dataset
+df = pd.read_csv('data/modeling_data.csv', low_memory = False)
 
+# import polars as pl
+# import polars.selectors as cs
+# 
+# dfpl = pl.read_csv('data/modeling_data.csv')
+# dfpl.group_by(pl.col(['exit_code_nan'])).agg(n = pl.len())
+# dfpl.select(cs.contains('teacher')).columns
+# dfpl = (dfpl
+#     .with_columns(
+#         pl.sum_horizontal(cs.contains('school')).alias('new')
+#     )
+# )
+# dfpl.group_by(pl.col('new')).agg(n = pl.len())
 
+# TODO: Keep columns to drop here or move to the end of the 07_combine_data-table script?
+col_drop = ['student_number', 'days_attended', 'days_absent', 'school_membership', 
+            'extended_school_year_y', 'environment_v', 'gender_f', 'hs_complete_status_ao',
+            'hs_complete_status_ct', 'hs_complete_status_do', 'hs_complete_status_gc',
+            'hs_complete_status_gg', 'hs_complete_status_gr', 'hs_complete_status_rt',
+            # TODO: Update with changes Matt makes (see PR)
+            'ell_entry_date', 'entry_date', 'first_enroll_us', 'test_date',
+            'hs_complete_status_nan', 'tribal_affiliation_nan', 'exit_code_nan',
+            'reading_intervention_y', 'read_grade_level_y'
+]
 
-
-
-#____________________________________________________________________________ 
-                              #LOAD IN THE DATA
-#____________________________________________________________________________ 
-#load in the dataset
-df = pd.read_csv('data/modeling_data.csv')
-
-#____________________________________________________________________________
-                          #SPECIFY COLUMNS TO DROP
-#____________________________________________________________________________
-
-#columns to drop later prior to modeling ADD MORE AS NECCESSARY
-col_drop = ['student_number', 'ac_ind', 'ell_disability_group']
-
-#____________________________________________________________________________
-                 #PREP THE MODEL ON A SUBSET OF THE DATA
-#____________________________________________________________________________
+# ell_disability_group is the group variable (currently a string)
 
 ########################################################################################################
 # ******ONLY UNCOMMENT THE CODE BELOW IF YOU WOULD LIKE TO RUN THE MODEL WITH A SUBSET OF THE DATA******

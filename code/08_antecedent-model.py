@@ -50,7 +50,17 @@ df = pd.read_csv('data/modeling_data.csv', low_memory = False)
 # dfpl.group_by(pl.col('new')).agg(n = pl.len())
 
 # TODO: Keep columns to drop here or move to the end of the 07_combine_data-table script?
-col_drop = ['student_number', 'days_attended', 'days_absent', 'school_membership', 
+col_drop = ['student_number', 
+            # TODO: Decide on dropping ac_ind (needs to be included for Bambi)
+            # 'ac_ind', 
+            ###################################################
+            # TODO: Temporary dropped columsn for testing with a subset of obs
+            # 'environment_h', 'exit_code_11', 'exit_code_de', 'exit_code_ex',
+            # 'exit_code_he', 'exit_code_un', 'home_status_2', 'home_status_3',
+            # 'home_status_4', 'home_status_5', 'military_child_y',
+            # 'part_time_home_school_p', 'teacher_10', 'teacher_100642',
+            ###################################################
+            'days_attended', 'days_absent', 'school_membership', 
             'extended_school_year_y', 'environment_v', 'gender_f', 'hs_complete_status_ao',
             'hs_complete_status_ct', 'hs_complete_status_do', 'hs_complete_status_gc',
             'hs_complete_status_gg', 'hs_complete_status_gr', 'hs_complete_status_rt',
@@ -65,7 +75,7 @@ col_drop = ['student_number', 'days_attended', 'days_absent', 'school_membership
 ################################################################################################
 # Get a stratified subsample of the total number of rows 
 # TODO: Delete this and run with *all* of the observations
-df = df.groupby("ell_disability_group", group_keys=False).apply(lambda x: x.sample(frac=0.1, random_state=42))
+# df = df.groupby("ell_disability_group", group_keys=False).apply(lambda x: x.sample(frac=0.75, random_state=42))
 ################################################################################################
 
 # Convert categorical group column to an integer array
@@ -78,6 +88,30 @@ predictor_names = df.drop(columns=col_drop, axis=1).columns.tolist()
 
 # Outcome variable
 y = df["ac_ind"].values 
+
+################################################################################################
+# RUN A FLAT TEST MODEL FIRST (using Bambi)
+import bambi as bmb
+import arviz as az
+
+df_new = df.drop(columns=col_drop, axis=1)
+
+predictors_new = "+".join(df_new.columns.difference(["ac_ind"]))
+formula_new = f"ac_ind ~ {predictors_new}"
+
+flat_model = bmb.Model('ac_ind ~ ethnicity_y', df_new, family="bernoulli")
+flat_model.build()
+
+
+pymc_model = flat_model.backend.model
+
+
+flat_fitted = flat_model.fit(
+    draws=2000, target_accept=0.85, random_seed=42, idata_kwargs={"log_likelihood": True}
+)
+
+az.plot_trace(flat_fitted, combined = True)
+az.plot_forest(flat_fitted, combined = True, hdi_prob=0.95) #kind = 'ridgeplot')
 
 ################################################################################################
 # RUN THE MODEL AND EXPORT DRAWS TO A FILE

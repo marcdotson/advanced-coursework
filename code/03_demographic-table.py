@@ -121,9 +121,7 @@ for year in years:
     # Retrieve the data for the specified year from the student_tables dictionary
     student_table = student_tables[year]
 
-    ######################################################################################################################################################
     # df will represent the exploratory data, and model_df will represent the model data
-
     # Create the df from the student_table student_numbers
     df = student_table[['student_number']].copy()
 
@@ -136,10 +134,8 @@ for year in years:
     categorical_columns = [
         ('Gender', 'gender'),
         ('LimitedEnglish', 'limited_english'),
-        ('PartTimeHomeSchool', 'part_time_home_school'),
         ('HighSchlComplStatus', 'hs_complete_status'),
         ('ExitCode', 'exit_code'),
-        ('HomeStatus', 'home_status'),
         ('TribalAffiliation', 'tribal_affiliation'),
         ('EllNativeLanguage', 'ell_native_language'),
         ('EllParentLanguage', 'ell_parent_language'),
@@ -216,6 +212,41 @@ for year in years:
 
     # Merge into model_df
     model_df = pd.merge(model_df, student_dates, on='student_number', how='left')
+
+
+    ######################################################################################################################################################
+    # Add HomeStatus and PartTimeHomeSchool to the df and model_df
+    # These columns will be grouped differently later in the script, so they are handled separately here.  
+    
+    # Create a DataFrame that only contains student_number from the student_table
+    extra_columns = student_table[['student_number']].copy()
+
+    # Check if HomeStatus is available for the current year and merge it. Print a message if it's missing.
+    if 'HomeStatus' in student_table.columns:
+        extra_columns = extra_columns.merge(student_table[['student_number', 'HomeStatus']], on='student_number', how='left')
+    else:
+        print(f"Column 'HomeStatus' not found in the '{year}' student_table. Skipping...")
+
+    # Check if PartTimeHomeSchool is available for the current year and merge it. Print a message if it's missing.
+    if 'PartTimeHomeSchool' in student_table.columns:
+        extra_columns = extra_columns.merge(student_table[['student_number', 'PartTimeHomeSchool']], on='student_number', how='left')
+    else:
+        print(f"Column 'PartTimeHomeSchool' not found in the '{year}' student_table. Skipping...")
+
+    # Rename columns for consistency
+    extra_columns = extra_columns.rename(columns={
+        'HomeStatus': 'home_status',
+        'PartTimeHomeSchool': 'part_time_home_school'
+    })
+
+    # Make sure student_number is a string
+    extra_columns['student_number'] = extra_columns['student_number'].astype(str)
+    df['student_number'] = df['student_number'].astype(str)
+    model_df['student_number'] = model_df['student_number'].astype(str)
+
+    # Merge into df and model_df
+    df = pd.merge(df, extra_columns, on='student_number', how='left')
+    model_df = pd.merge(model_df, extra_columns, on='student_number', how='left')
 
 
     ######################################################################################################################################################
@@ -328,6 +359,64 @@ model_df.head()
 
 
 ######################################################################################################################################################
+# The following code processes the 'home_status' column to indicate student homelessness status.
+#
+# HomeStatus codes:
+# 0 - Not homeless
+# 1 - Living with family due to economic hardship
+# 2 - Living in a motel or hotel
+# 3 - Living in a shelter (emergency, transitional, or domestic violence)
+# 4 - Living in a car, park, campground, or public place
+# 5 - Without adequate facilities (running water, heat, electricity)
+#
+# Key tasks performed in this script:
+# - Creates a binary indicator 'homeless_y' (1 if home_status was ever > 0, otherwise 0)
+# - df retains 'homeless_y' for each specific year (multiple rows per student)
+# - model_df retains 'homeless_y' if a student was ever homeless (one row per student)
+#
+# df and model_df both merge with home_status_df:
+# - df merges **before** dropping duplicates (to retain yearly homeless status)
+# - model_df merges **after** dropping duplicates (ensuring only one row per student)
+
+# Extract relavant columns
+home_status_df = concat_model[['student_number', 'home_status']].copy()
+
+# Make sure home_status values are numbers and also fill null values with 0
+home_status_df['home_status'] = pd.to_numeric(home_status_df['home_status'], errors='coerce').fillna(0)
+
+# Create a column 'homeless_y'. If a student had a home_status that was not 0 homeless_y = 1
+home_status_df['homeless_y'] = (home_status_df['home_status'] != 0).astype(int)
+
+# Sort by home_status in descening order
+home_status_df = home_status_df.sort_values(by='home_status', ascending=False)
+
+# Drop home_status column as it is no longer needed
+home_status_df = home_status_df.drop(columns=['home_status'])
+
+# Make sure student_number is a string
+home_status_df['student_number'] = home_status_df['student_number'].astype(str)
+df['student_number'] = df['student_number'].astype(str)
+model_df['student_number'] = model_df['student_number'].astype(str)
+
+#=================================================================
+# Before dropping duplicates, merge home_status_df with df
+df = pd.merge(df, home_status_df, on='student_number', how='left')
+
+# Drop home_status from the df
+df = df.drop(columns=['home_status'])
+#=================================================================
+
+# Drop duplicates, keeping the first occurrence (which will be homeless if applicable)
+home_status_df = home_status_df.drop_duplicates(subset=['student_number'], keep='first')
+
+# home_status_df now only contains one row per student_number, so we can now merge with model_df
+model_df = pd.merge(model_df, home_status_df, on='student_number', how='left')
+
+model_df.head()
+df.head()
+
+
+######################################################################################################################################################
 # Categorizing students based on ELL status and disability.
 # A student is considered to have a disability if regular_percent is 1, 2, or 3.
 # A student is classified as ELL if limited_english is 'Y', 'O', or 'F'.
@@ -339,7 +428,6 @@ model_df.head()
 # This column will contain one of the four group labels.
 # The exploratory data will follow the same process, but will assign a group for each year a student_number appears in the data.
 
-#======================================================================================================================================
 #======================================================================================================================================
 # The regular_percent columns were originally created in the 02_academic-table.py script.
 # They could not be dropped there because they are needed in this script to classify disability status. 
@@ -370,10 +458,7 @@ academic_exploratory_data = academic_exploratory_data.drop(columns=['regular_per
 academic_modeling_data = academic_modeling_data.drop(
     columns=[col for col in academic_model_df.columns if col.startswith('regular_percent_')], errors='ignore')
 
-
 #======================================================================================================================================
-#======================================================================================================================================
-
 
 # Keep only student_number and regular_percent columns
 academic_df = academic_df[['student_number', 'regular_percent']].copy()
@@ -461,7 +546,7 @@ df.head()
 # Specify the column order for the df
 df_columns = ['student_number', 'gender', 'ethnicity', 'amerindian_alaskan', 'asian', 'black_african_amer', 
             'hawaiian_pacific_isl', 'white', 'migrant', 'military_child', 'refugee_student',
-            'services_504', 'immigrant', 'passed_civics_exam', 'reading_intervention', 'home_status', 'ell_disability_group',
+            'services_504', 'immigrant', 'passed_civics_exam', 'reading_intervention', 'homeless_y', 'ell_disability_group',
             'hs_complete_status', 'part_time_home_school', 'tribal_affiliation', 'read_grade_level', 'exit_code', 
             'ell_entry_date', 'entry_date','first_enroll_us']
 
@@ -473,12 +558,10 @@ model_columns = (
     [col for col in model_df.columns if col.startswith('gender_')]
     +[
         'ethnicity_y', 'amerindian_alaskan_y', 'asian_y', 'black_african_amer_y', 
-        'hawaiian_pacific_isl_y', 'white_y', 'migrant_y', 'military_child_y', 'refugee_student_y',
+        'hawaiian_pacific_isl_y', 'white_y', 'migrant_y', 'military_child_y', 'refugee_student_y', 'homeless_y',
         'services_504_y', 'immigrant_y', 'passed_civics_exam_y', 'reading_intervention_y', 'ell_disability_group']
-    + [col for col in model_df.columns if col.startswith('home_status_')]
     + [col for col in model_df.columns if col.startswith('ell_with')]
     + [col for col in model_df.columns if col.startswith('hs_complete_status_')]
-    + [col for col in model_df.columns if col.startswith('part_time_home_school_')]
     + [col for col in model_df.columns if col.startswith('tribal_affiliation_')]
     + [col for col in model_df.columns if col.startswith('read_grade_level_')]
     + [col for col in model_df.columns if col.startswith('exit_code_')]

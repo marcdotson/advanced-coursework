@@ -57,57 +57,30 @@ col_drop = ['student_number', 'days_attended', 'days_absent', 'school_membership
             # TODO: Update with changes Matt makes (see PR)
             'ell_entry_date', 'entry_date', 'first_enroll_us', 'test_date',
             'hs_complete_status_nan', 'tribal_affiliation_nan', 'exit_code_nan',
-            'reading_intervention_y', 'read_grade_level_y'
+            'reading_intervention_y', 'read_grade_level_y',
+            # TODO: Confirm grouping in PyMC and when to drop this string version of the group index
+            'ell_disability_group'
 ]
 
-# ell_disability_group is the group variable (currently a string)
+################################################################################################
+# Get a stratified subsample of the total number of rows 
+# TODO: Delete this and run with *all* of the observations
+df = df.groupby("ell_disability_group", group_keys=False).apply(lambda x: x.sample(frac=0.1, random_state=42))
+################################################################################################
 
-########################################################################################################
-# ******ONLY UNCOMMENT THE CODE BELOW IF YOU WOULD LIKE TO RUN THE MODEL WITH A SUBSET OF THE DATA******
-########################################################################################################
-
-# Set the sample fraction for the subset data
-# sample_fraction = 0.1
-
-# #establish the subset DF to test to see if the model is set up correctly
-# subset_df = df[['student_number','ac_ind', 'overall_gpa', 'teacher_218966', 'english_score', 'ell_disability_group']]
-
-# # Stratified sampling
-# subset_df = subset_df.groupby("ell_disability_group", group_keys=False).apply(lambda x: x.sample(frac=sample_fraction, random_state=42))
-
-# # Convert categorical group column to an array
-# group_idx = subset_df["ell_disability_group"].astype("category").cat.codes.values
-# group_names = subset_df["ell_disability_group"].astype("category").cat.categories.tolist()
-# num_groups = len(group_names)
-
-# # Predictor variables 
-# X = subset_df.drop(columns=col_drop, axis=1).values
-# predictor_names = subset_df.drop(columns=col_drop, axis=1).columns.tolist()
-# num_predictors = len(predictor_names)
-
-# # Outcome variable
-# y = subset_df["ac_ind"].values 
-
-#____________________________________________________________________________
-                   #PREP THE MODEL ON THE FULL DATASET
-#____________________________________________________________________________
-
-# # Convert categorical group column to an array
+# Convert categorical group column to an integer array
 group_idx = df["ell_disability_group"].astype("category").cat.codes.values
 group_names = df["ell_disability_group"].astype("category").cat.categories.tolist()
-num_groups = len(group_names)
 
-# Predictor variables 
+# Predictor variables
 X = df.drop(columns=col_drop, axis=1).values
 predictor_names = df.drop(columns=col_drop, axis=1).columns.tolist()
-num_predictors = len(predictor_names)
 
 # Outcome variable
 y = df["ac_ind"].values 
 
-#____________________________________________________________________________
-                    #RUN THE MODEL AND EXPORT TRACE TO A FILE
-#____________________________________________________________________________
+################################################################################################
+# RUN THE MODEL AND EXPORT DRAWS TO A FILE
 if __name__ == '__main__':
     print("Starting model setup...")
 
@@ -118,7 +91,7 @@ if __name__ == '__main__':
         sigma_a = pm.Exponential("sigma_a", 1)                    # Hyperprior for variance
         a = pm.Normal("a", mu=mu_a, sigma=sigma_a, dims = 'group')  # Varying intercepts for groups
 
-         # Group-level slopes
+        # Group-level slopes
         mu_b = pm.Normal("mu_b", mu=0, sigma=1, dims="predictor")  
         sigma_b = pm.Exponential("sigma_b", 1, dims="predictor")  
         b = pm.Normal("b", mu=mu_b, sigma=sigma_b, dims=("group", "predictor"))  # Use both coordinates
@@ -154,7 +127,4 @@ if __name__ == '__main__':
 
         else:
             print("Trace is None, cannot save trace to a file.")
-
-
-
 

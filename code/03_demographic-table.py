@@ -163,7 +163,6 @@ for year in years:
         ('HawaiianPacificIsl', 'hawaiian_pacific_isl'),
         ('White', 'white'),
         ('Migrant', 'migrant'),
-        ('Gifted', 'gifted'),
         ('Services504', 'services_504'),
         ('MilitaryChild', 'military_child'),
         ('RefugeeStudent', 'refugee_student'),
@@ -417,6 +416,48 @@ df.head()
 
 
 ######################################################################################################################################################
+# Processing part_time_home_school column:
+# - H = Home School
+# - P = Private School
+# - S = "Stable" (Part-time but not Home/Private School)
+# - Creates 'part_time_home_school_y' (1 if a student was ever in part-time home school, else 0)
+# - df retains part-time home school status per year (multiple rows per student)
+# - model_df retains part-time home school status if a student was ever enrolled (one row per student)
+
+# Extract only relevant columns and make a copy
+part_time_home_df = concat_model[['student_number', 'part_time_home_school']].copy()
+
+# Create part_time_home_school_y column (1 if part_time_home_school is not null, else 0)
+part_time_home_df['part_time_home_school_y'] = part_time_home_df['part_time_home_school'].notna().astype(int)
+
+# Sort by part_time_home_school_y in descending order to prioritize students with part-time home school history
+part_time_home_df = part_time_home_df.sort_values(by='part_time_home_school_y', ascending=False)
+
+# Drop home_status column as it is no longer needed
+part_time_home_df = part_time_home_df.drop(columns=['part_time_home_school'])
+
+# Convert student_number to string for consistency
+part_time_home_df['student_number'] = part_time_home_df['student_number'].astype(str)
+
+#=================================================================
+# Before dropping duplicates, merge part_time_home_df with df
+df = pd.merge(df, part_time_home_df[['student_number', 'part_time_home_school_y']], on='student_number', how='left')
+
+# Drop part_time_home_school from the df
+df = df.drop(columns=['part_time_home_school'])
+#=================================================================
+
+# Drop duplicates, keeping the first occurrence (which is sorted by part_time_home_school_y in descending order)
+part_time_home_df = part_time_home_df.drop_duplicates(subset=['student_number'], keep='first')
+
+# Merge part_time_home_df with model_df (after dropping duplicates)
+model_df = pd.merge(model_df, part_time_home_df[['student_number', 'part_time_home_school_y']], on='student_number', how='left')
+
+model_df.head()
+df.head()
+
+
+######################################################################################################################################################
 # Categorizing students based on ELL status and disability.
 # A student is considered to have a disability if regular_percent is 1, 2, or 3.
 # A student is classified as ELL if limited_english is 'Y', 'O', or 'F'.
@@ -539,15 +580,13 @@ df.head()
 
 
 ######################################################################################################################################################
-# Prepare the data for export
-# Notice that the column 'gifted' is not included in the final output.  
-# The column is still processed, but excluding it from the output was the simpler approach.  
+# Prepare the data for export 
 
 # Specify the column order for the df
 df_columns = ['student_number', 'gender', 'ethnicity', 'amerindian_alaskan', 'asian', 'black_african_amer', 
             'hawaiian_pacific_isl', 'white', 'migrant', 'military_child', 'refugee_student',
-            'services_504', 'immigrant', 'passed_civics_exam', 'reading_intervention', 'homeless_y', 'ell_disability_group',
-            'hs_complete_status', 'part_time_home_school', 'tribal_affiliation', 'read_grade_level', 'exit_code', 
+            'services_504', 'immigrant', 'passed_civics_exam', 'reading_intervention', 'homeless_y', 'part_time_home_school_y', 'ell_disability_group',
+            'hs_complete_status', 'tribal_affiliation', 'read_grade_level', 'exit_code', 
             'ell_entry_date', 'entry_date','first_enroll_us']
 
 df = df[df_columns]
@@ -558,7 +597,7 @@ model_columns = (
     [col for col in model_df.columns if col.startswith('gender_')]
     +[
         'ethnicity_y', 'amerindian_alaskan_y', 'asian_y', 'black_african_amer_y', 
-        'hawaiian_pacific_isl_y', 'white_y', 'migrant_y', 'military_child_y', 'refugee_student_y', 'homeless_y',
+        'hawaiian_pacific_isl_y', 'white_y', 'migrant_y', 'military_child_y', 'refugee_student_y', 'homeless_y', 'part_time_home_school_y',
         'services_504_y', 'immigrant_y', 'passed_civics_exam_y', 'reading_intervention_y', 'ell_disability_group']
     + [col for col in model_df.columns if col.startswith('ell_with')]
     + [col for col in model_df.columns if col.startswith('hs_complete_status_')]
@@ -599,7 +638,7 @@ df[date_columns] = df[date_columns].fillna('unknown')
 # The columns below must be exported as strings to prevent them from being loaded as null values in the 07-script.
 # These specific columns are the only ones causing issues.
 # Ensure columns remain as strings to prevent unintended float conversions
-columns_to_fix = ['part_time_home_school', 'tribal_affiliation', 'exit_code', 'hs_complete_status']
+columns_to_fix = ['tribal_affiliation', 'exit_code', 'hs_complete_status']
 
 # Convert columns to strings and ensure missing values remain as '0'
 df[columns_to_fix] = df[columns_to_fix].astype(str).replace('nan', '0')

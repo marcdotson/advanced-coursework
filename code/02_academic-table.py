@@ -612,11 +612,3 @@ print("Academic data exported successfully!")
 print("Next, run: 03_demographic-table.py")
 print('===========================================')
 
-student_number_to_lookup = "382716756"
-
-# Ensure student_number is treated as a string for consistency
-df['student_number'] = df['student_number'].astype(str)
-
-# Filter df for the given student_number
-student_data = df[df['student_number'] == student_number_to_lookup]
-student_data 

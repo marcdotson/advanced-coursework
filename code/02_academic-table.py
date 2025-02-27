@@ -304,6 +304,9 @@ for year in years:
 # The logic will calculate absences differently based on the availability of these columns:
 # - If absence columns exist: Calculate school_membership as the sum of attendance and absence columns
 # - If absence columns are missing: Use the existing school_membership column to calculate absences by subtracting days_attended from school_membership
+# - If days_attended > 180 change the value of days_attended to 180
+# - If school_membership > 180 change the school_membership value to 180
+# - If school_membership < days attended and days_attended does not equal 0 change 
 # The days_absent column is created to standardize the representation of total absences across all years
 # This will be done separately for df_dict and model_dict
 
@@ -333,17 +336,15 @@ for year in years:
         # For years without detailed absence columns, absences are calculated as the difference between school_membership and days_attended
         df_year['days_absent'] = df_year['school_membership'] - df_year['days_attended']
     
-    # Update school_membership to 180 where school_membership is 0 and days_attended is not 0
-    df_year.loc[
-        (df_year['school_membership'] < df_year['days_attended']) & (df_year['days_attended'] != 0), 
-        'school_membership'] = 180
-
     # Update days_attended and school_membership to 180 if days_attended is > 180 or school_membership is > 180
     df_year.loc[(df['days_attended'] > 180), 'days_attended'] = 180
     df_year.loc[(df['school_membership'] > 180), 'school_membership'] = 180
 
-    # df['school_membership'] = 180
-    df_year['year'] = year
+    # Update school_membership to 180 if school_membership is < days_attended and days_attended is not 0
+    df_year.loc[
+        (df_year['school_membership'] < df_year['days_attended']) & (df_year['days_attended'] != 0), 
+        'school_membership'] = 180
+
     # Save the updated DataFrame back to the dictionary
     df_dict[f'df_{year}'] = df_year
 
@@ -372,16 +373,15 @@ for year in years:
         # For years without detailed absence columns, absences are calculated as the difference between school_membership and days_attended
         model_year['days_absent'] = model_year['school_membership'] - model_year['days_attended']
 
-    # Update school_membership to 180 where school_membership is 0 and days_attended is not 0
-    model_year.loc[
-        (model_year['school_membership'] < model_year['days_attended']) & (model_year['days_attended'] != 0), 
-        'school_membership'] = 180
-
     # Update days_attended and school_membership to 180 if days_attended is > 180 or school_membership is > 180
     model_year.loc[(model_year['days_attended'] > 180), 'days_attended'] = 180
     model_year.loc[(model_year['school_membership'] > 180), 'school_membership'] = 180
 
-    # model_df['school_membership'] = 180
+    # Update school_membership to 180 if school_membership is < days_attended and days_attended is not 0
+    model_year.loc[
+        (model_year['school_membership'] < model_year['days_attended']) & (model_year['days_attended'] != 0), 
+        'school_membership'] = 180
+
     # Save the updated DataFrame back to the dictionary
     model_dict[f'model_df_{year}'] = model_year
 
@@ -549,10 +549,6 @@ combined_scram = combined_scram.drop_duplicates(subset='student_number', keep='f
 # Drop the regular_percent_nan column
 combined_scram = combined_scram.drop(columns='regular_percent_nan')
 
-###################################
-# A environment column needs to be dropped, but some years have v, h, and r, while others only have v so I do not know which column to drop
-###################################
-
 # Make sure student number is a string
 combined_scram['student_number'] = combined_scram['student_number'].astype(str)
 
@@ -581,7 +577,7 @@ model_df = model_df.drop(columns=[col for col in model_columns_to_drop if col in
 # Specify the column order for the df
 df_columns = ['student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa', 'days_attended', 'days_absent',
             'school_membership', 'percent_days_attended',  'current_grade',
-            'scram_membership', 'regular_percent', 'environment', 'extended_school_year', 'year']
+            'scram_membership', 'regular_percent', 'environment', 'extended_school_year']
 
 df = df[df_columns]
 

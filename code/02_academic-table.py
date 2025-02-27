@@ -342,6 +342,7 @@ for year in years:
     df.loc[(df['days_attended'] > 180), 'days_attended'] = 180
     df.loc[(df['school_membership'] > 180), 'school_membership'] = 180
 
+    # df['school_membership'] = 180
     df_year['year'] = year
     # Save the updated DataFrame back to the dictionary
     df_dict[f'df_{year}'] = df_year
@@ -380,6 +381,7 @@ for year in years:
     model_df.loc[(model_df['days_attended'] > 180), 'days_attended'] = 180
     model_df.loc[(model_df['school_membership'] > 180), 'school_membership'] = 180
 
+    # model_df['school_membership'] = 180
     # Save the updated DataFrame back to the dictionary
     model_dict[f'model_df_{year}'] = model_year
 

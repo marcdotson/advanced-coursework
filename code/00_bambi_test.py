@@ -2,11 +2,25 @@
 import pandas as pd
 import bambi as bmb
 import arviz as az
+import os 
+
+
+# Define the folder path where the trace plots will be saved
+folder_path = "outputs/"
+
+# Check if the folder exists, and create it if not
+if not os.path.exists(folder_path):
+    os.makedirs(folder_path)
 
 # Load in the dataset
 df = pd.read_csv('data/modeling_data.csv', low_memory=False)
 
-# Columns to exclude from modeling
+
+##################################################################################################################
+#PREP THE MODEL AND SPECIFY COLUMNS TO DROP
+##################################################################################################################
+
+# Columns to exclude from modeling (THESE ARE THE COLUMNS FROM THE ANTECEDENT SCRIPT, THEY MAY NEED TO BE ADJUSTED)
 col_drop = [
     'student_number', 'days_attended', 'days_absent', 'school_membership',
     'extended_school_year_y', 'environment_v', 'gender_f', 'hs_complete_status_ao',
@@ -17,40 +31,55 @@ col_drop = [
     'reading_intervention_y', 'read_grade_level_y', 'ell_disability_group'
 ]
 
-# Define base dataframe (without excluded columns)
+# Define base dataframe after dropping columns
 df_base = df.drop(columns=col_drop, axis=1)
 
 # Extract potential predictors (excluding the target 'ac_ind')
-all_predictors = df_base.columns.difference(["ac_ind"]).tolist()
+all_predictors = " + ".join(df_base.columns.difference(["ac_ind"]))
 
-# Set batch size (how many columns to add per iteration)
-batch_size = 5
+#create the string formated model formula 
+model_formula =  f"ac_ind ~ {all_predictors}"
+
+
+################################################################################################
+# RUN THE FLAT MODEL AND EXPORT DRAWS TO A FILE
+################################################################################################
 
 if __name__ == '__main__':
-    print("Starting model iteration...")
+    print("Starting model setup...")
 
-    # Iterate over additional columns in batches
-    for i in range(0, len(all_predictors), batch_size):
-        # Select next batch of five columns
-        current_batch = all_predictors[i:i + batch_size]  # Only tests 5 at a time
-        predictors_str = " + ".join(current_batch)
-        formula_new = f"ac_ind ~ {predictors_str}"
+    #establish the flat Logistic Regression Model
+    flat_model = bmb.Model(model_formula, df_base, family="bernoulli")
+    # apply the .build() method prior to fitting the model
+    flat_model.build() 
 
-        print(f"\n🔹 Testing model with {len(current_batch)} predictors: {current_batch}")
-
-        # Define and build Bambi model
-        flat_model = bmb.Model(formula_new, df_base, family="bernoulli")
-        flat_model.build()
-
-        # Fit the model
+    # Run the sampling *******ADJUST THE AMOUNT OF SAMPLING (TUNE, DRAW, ETC.) HERE AS NEEDED ********
+    try:
+        print("Starting model sampling...")
+        #fit the model with the the flat_model that was created prior
         flat_fitted = flat_model.fit(
-            draws=500, target_accept=0.85, random_seed=42, idata_kwargs={"log_likelihood": True}
-        )
+            draws=2000, chains=4, tune=1000, target_accept=0.85, random_seed=42, idata_kwargs={"log_likelihood": True})
+        print("Sampling complete.")
 
-        # Plot results
-        az.plot_trace(flat_fitted, combined=True)
-        az.plot_forest(flat_fitted, combined=True, hdi_prob=0.95)
+    except Exception as e:
+        print(f"Sampling failed: {e}")
+        flat_fitted = None  # Set output to None if sampling fails
 
-        print(f"✅ Completed iteration {i//batch_size + 1} with {len(current_batch)} predictors.")
+    # Only try to export if it is not none
+    if flat_fitted is not None:
+        # Save trace to a NetCDF file
+        print('Saving Model Trace to a File...')
+        flat_fitted.to_netcdf("outputs/flat-model-output.nc")
+        print('Trace successfully saved, look for it in the data folder')
 
-    print("\nAll iterations complete!")
+        # Extract posterior summary to save sorted predictors to a csv
+        summary = az.summary(flat_fitted)
+       # Sort predictors by mean effect size (largest to smallest)
+        sorted_summary = summary.reindex(summary["mean"].sort_values(ascending=False).index)
+        # Save ordered model output to CSV
+        sorted_summary.to_csv("outputs/flat-model-output-ordered.csv")
+        print("Ordered model output saved successfully!")
+
+    else:
+        print("Trace is None, cannot save trace to a file.")
+

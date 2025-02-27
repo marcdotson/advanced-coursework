@@ -3,6 +3,7 @@ import bambi as bmb
 import arviz as az
 import os 
 
+import seaborn.objects as so
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 
@@ -25,10 +26,11 @@ y = df['ac_ind']
 X_drop = ['student_number', 'ac_ind', 'ell_disability_group']
 X = df.drop(columns=X_drop, axis=1)
 
-log_reg = LogisticRegression()
+log_reg = LogisticRegression(fit_intercept = True, max_iter = 10000)
 log_reg.fit(X, y)
 
 # Save log_reg?
+
 
 ##################################################################################################################
 # PREP THE MODEL AND SPECIFY COLUMNS TO DROP

@@ -3,7 +3,6 @@ import bambi as bmb
 import arviz as az
 import os 
 
-import seaborn.objects as so
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 
@@ -22,14 +21,25 @@ df = pd.read_csv('data/modeling_data.csv', low_memory=False)
 # RUN THE FLAT MODEL USING SCIKIT-LEARN AND EXPORT DRAWS TO A FILE
 ################################################################################################
 
+# Define target and predictors
 y = df['ac_ind']
 X_drop = ['student_number', 'ac_ind', 'ell_disability_group']
 X = df.drop(columns=X_drop, axis=1)
 
-log_reg = LogisticRegression(fit_intercept = True, max_iter = 10000)
+# Fit logistic regression model
+log_reg = LogisticRegression(fit_intercept=True, max_iter=10000)
 log_reg.fit(X, y)
 
-# Save log_reg?
+# Extract feature names and coefficients
+coef_df = pd.DataFrame({'Feature': X.columns, 'Coefficient': log_reg.coef_[0]})
+
+# Sort by absolute coefficient value (most influential first)
+coef_df = coef_df.sort_values(by='Coefficient', ascending=False)
+
+# Save to CSV
+coef_df.to_csv("output/scikit-flat-model-sorted-coefficients.csv", index=False)
+
+print("Sckit Logistic regression coefficients saved successfully!")
 
 
 ##################################################################################################################

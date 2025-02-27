@@ -242,11 +242,6 @@ for year in years:
 
     ################################################################
     # Dummy code regular_percent (regular_percent_1.0, regular_percent_2.0, regular_percent_3.0 and regular_percent_nan)
-    
-    ################################################################
-    # I'm not sure if or how the null values should be classified, therefore I have not dropped a column
-    # TODO: Check with Jeremy
-    ################################################################
     regular_percent_dummies = pd.get_dummies(scram['regular_percent'].astype(str), prefix='regular_percent').astype(int)
 
     # Concat with scram_dummies table
@@ -257,12 +252,6 @@ for year in years:
     ################################################################
     # Dummy code environment (environment_v = 1)
     # There are only two students in environment_h
-
-    ################################################################
-    # I'm assuming that null values would be classified as environment_v (regular school setting)
-    # TODO: Check with Jeremy
-    ################################################################
-
     environment_dummies = pd.get_dummies(scram['environment'].fillna('V').astype(str), prefix='environment').astype(int)
 
     # Lowercase column titles
@@ -274,12 +263,6 @@ for year in years:
     scram_dummies.head()
 
 
-    ################################################################
-    # Dummy code extended_school_year (extended_school_year_y = 1)
-    
-    ################################################################
-    # I'm assuming that null values would be classified as extended_school_year_n (No extended school year)
-    # TODO: Check with Jeremy
     ################################################################
     # Dummy code extended_school_year (extended_school_year_y)
     extended_year_dummies = pd.get_dummies(scram['extended_school_year'].replace(0, 'n'), prefix='extended_school_year').astype(int)
@@ -355,6 +338,10 @@ for year in years:
         (df['school_membership'] == 0) & (df['days_attended'] != 0), 
         'school_membership'] = 180
 
+    # Update days_attended and school_membership to 180 if days_attended is > 180 or school_membership is > 180
+    df.loc[(df['days_attended'] > 180), 'days_attended'] = 180
+    df.loc[(df['school_membership'] > 180), 'school_membership'] = 180
+
     # Save the updated DataFrame back to the dictionary
     df_dict[f'df_{year}'] = df_year
 
@@ -387,6 +374,10 @@ for year in years:
     model_df.loc[
         (model_df['school_membership'] == 0) & (model_df['days_attended'] != 0), 
         'school_membership'] = 180
+
+    # Update days_attended and school_membership to 180 if days_attended is > 180 or school_membership is > 180
+    model_df.loc[(model_df['days_attended'] > 180), 'days_attended'] = 180
+    model_df.loc[(model_df['school_membership'] > 180), 'school_membership'] = 180
 
     # Save the updated DataFrame back to the dictionary
     model_dict[f'model_df_{year}'] = model_year
@@ -552,9 +543,6 @@ combined_scram = combined_scram.drop_duplicates(subset='student_number', keep='f
 # Drop current_grade from the Data Frame as it is not needed in the model_df
 #combined_scram = combined_scram.drop(columns='current_grade')
 
-###################################
-# TODO: I am assuming that regular_percent_nan does not need to be reclassified, therefore I will drop this column
-###################################
 # Drop the regular_percent_nan column
 combined_scram = combined_scram.drop(columns='regular_percent_nan')
 

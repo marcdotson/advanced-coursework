@@ -3,11 +3,6 @@
 import pandas as pd
 import pickle
 
-####################################################################
-# TODO: I have not dropped any categorical columns from the dummied data. I need to make sure the 
-# column I drop is a column in every year of the data.
-####################################################################
-
 ######################################################################################################################################################
 # Function to process categorical variables. Add non-dummied columns to df and dummy-coded columns to model_df
 def process_categorical_column(df, model_df, reference_table, column_name, dummy_name, key_column='student_number'):
@@ -185,7 +180,6 @@ for year in years:
 
     ######################################################################################################################################################
     # Add the date columns from the student table to the model_df and the df (entry_date, first_enroll_us....)
-    # TODO I am still unsure of the best way format the dates, possibly a count since a specific date or something else.
     student_dates = student_table[['student_number', 'EntryDate', 'FirstEnrollInUS', 'EllMonitoredEntryDate']]
 
     # Rename the following columns for consistency

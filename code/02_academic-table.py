@@ -334,13 +334,13 @@ for year in years:
         df_year['days_absent'] = df_year['school_membership'] - df_year['days_attended']
     
     # Update school_membership to 180 where school_membership is 0 and days_attended is not 0
-    df.loc[
-        (df['school_membership'] < df['days_attended']) & (df['days_attended'] != 0), 
+    df_year.loc[
+        (df_year['school_membership'] < df_year['days_attended']) & (df_year['days_attended'] != 0), 
         'school_membership'] = 180
 
     # Update days_attended and school_membership to 180 if days_attended is > 180 or school_membership is > 180
-    df.loc[(df['days_attended'] > 180), 'days_attended'] = 180
-    df.loc[(df['school_membership'] > 180), 'school_membership'] = 180
+    df_year.loc[(df['days_attended'] > 180), 'days_attended'] = 180
+    df_year.loc[(df['school_membership'] > 180), 'school_membership'] = 180
 
     # df['school_membership'] = 180
     df_year['year'] = year
@@ -373,13 +373,13 @@ for year in years:
         model_year['days_absent'] = model_year['school_membership'] - model_year['days_attended']
 
     # Update school_membership to 180 where school_membership is 0 and days_attended is not 0
-    model_df.loc[
-        (model_df['school_membership'] < model_df['days_attended']) & (model_df['days_attended'] != 0), 
+    model_year.loc[
+        (model_year['school_membership'] < model_year['days_attended']) & (model_year['days_attended'] != 0), 
         'school_membership'] = 180
 
     # Update days_attended and school_membership to 180 if days_attended is > 180 or school_membership is > 180
-    model_df.loc[(model_df['days_attended'] > 180), 'days_attended'] = 180
-    model_df.loc[(model_df['school_membership'] > 180), 'school_membership'] = 180
+    model_year.loc[(model_year['days_attended'] > 180), 'days_attended'] = 180
+    model_year.loc[(model_year['school_membership'] > 180), 'school_membership'] = 180
 
     # model_df['school_membership'] = 180
     # Save the updated DataFrame back to the dictionary
@@ -614,13 +614,4 @@ print('===========================================')
 print("Academic data exported successfully!")
 print("Next, run: 03_demographic-table.py")
 print('===========================================')
-
-student_number_to_lookup = "382820856"
-
-# Ensure student_number is treated as a string for consistency
-df['student_number'] = df['student_number'].astype(str)
-
-# Filter df for the given student_number
-student_data = df[df['student_number'] == student_number_to_lookup]
-student_data 
 

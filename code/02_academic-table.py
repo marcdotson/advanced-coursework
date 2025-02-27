@@ -350,6 +350,11 @@ for year in years:
         # For years without detailed absence columns, absences are calculated as the difference between school_membership and days_attended
         df_year['days_absent'] = df_year['school_membership'] - df_year['days_attended']
 
+    # Update school_membership to 180 where school_membership is 0 and days_attended is not 0
+    df.loc[
+        (df['school_membership'] == 0) & (df['days_attended'] != 0), 
+        'school_membership'] = 180
+
     # Save the updated DataFrame back to the dictionary
     df_dict[f'df_{year}'] = df_year
 
@@ -377,6 +382,11 @@ for year in years:
     else:
         # For years without detailed absence columns, absences are calculated as the difference between school_membership and days_attended
         model_year['days_absent'] = model_year['school_membership'] - model_year['days_attended']
+
+    # Update school_membership to 180 where school_membership is 0 and days_attended is not 0
+    model_df.loc[
+        (model_df['school_membership'] == 0) & (model_df['days_attended'] != 0), 
+        'school_membership'] = 180
 
     # Save the updated DataFrame back to the dictionary
     model_dict[f'model_df_{year}'] = model_year
@@ -423,14 +433,15 @@ model_attendance = model_attendance.groupby('student_number', as_index=False).su
 # Create percent_days_attended to calculate overall attendance percentage: days_attended divided by school_membership
 # If school_membership is 0 it is replaced with NA to avoid division issues.
 # This might be pointless.
-# If school_membership = 0 then percent_days_attended = 0 (avoid dividing by 0)
-model_attendance.loc[model_attendance['school_membership'] == 0, 'percent_days_attended'] = np.nan
 
 # Perform the calculation
 model_attendance['percent_days_attended'] = (model_attendance['days_attended'] / model_attendance['school_membership']) * 100
 
 # Round the result to two decimal places
 model_attendance['percent_days_attended'] = model_attendance['percent_days_attended'].round(2)
+
+# If school_membership = 0 then percent_days_attended = 0 (avoid dividing by 0)
+model_attendance.loc[model_attendance['school_membership'] == 0, 'percent_days_attended'] = np.nan
 
 model_attendance.head()
 
@@ -448,14 +459,15 @@ model_df.head()
 # Calculate the percent_days_attended column for the df. This will be the percentage of days each student attended each year.
 # If school_membership is 0 it is replaced with NA to avoid division issues.
 # This might be pointless.
-# If school_membership = 0 then percent_days_attended = 0 (avoid dividing by 0)
-df.loc[df['school_membership'] == 0, 'percent_days_attended'] = np.nan  # Avoid division by zero
 
 # Perform the calculation
 df['percent_days_attended'] = (df['days_attended'] / df['school_membership']) * 100
 
 # Round the result to two decimal places
 df['percent_days_attended'] = df['percent_days_attended'].round(2) 
+
+# If school_membership = 0 then percent_days_attended = 0 (avoid dividing by 0)
+df.loc[df['school_membership'] == 0, 'percent_days_attended'] = np.nan  # Avoid division by zero
 
 # Round percent_days_attended to two decimal places
 df['percent_days_attended'] = pd.to_numeric(df['percent_days_attended'], errors='coerce')
@@ -565,20 +577,25 @@ df.duplicated().sum()
 
 
 ######################################################################################################################################################
+# Specify the columns to be dropped from the model_df
+model_columns_to_drop = ['days_attended', 'days_absent', 'school_membership', 'extended_school_year_y', 'environment_v']
+
+# Make sure the column exists before dropping
+model_df = model_df.drop(columns=[col for col in model_columns_to_drop if col in model_df.columns], errors='ignore')
+
+
+######################################################################################################################################################
 # Prepare the data for export
-# Columns not included in both df and model_df: home_status, limited_english, ell_instruction_type, ell_native_language and ell_parent_language
-# Columns not included in model_df: days_attended and days_absent
 
 # Specify the column order for the df
-df_columns = ['student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa',
+df_columns = ['student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa', 'days_attended', 'days_absent',
             'school_membership', 'percent_days_attended',  'current_grade',
             'scram_membership', 'regular_percent', 'environment', 'extended_school_year']
 
 df = df[df_columns]
 
 # Specify the column order for the model_df
-model_columns = (['student_number', 'ac_ind', 'overall_gpa', 'days_attended', 'days_absent', 
-                'school_membership', 'percent_days_attended', 'extended_school_year_y']
+model_columns = (['student_number', 'ac_ind', 'overall_gpa', 'percent_days_attended']
  + [col for col in model_df.columns if col.startswith('regular_percent')]
  + [col for col in model_df.columns if col.startswith('environment_')])
 
@@ -606,3 +623,12 @@ print('===========================================')
 print("Academic data exported successfully!")
 print("Next, run: 03_demographic-table.py")
 print('===========================================')
+
+student_number_to_lookup = "382716756"
+
+# Ensure student_number is treated as a string for consistency
+df['student_number'] = df['student_number'].astype(str)
+
+# Filter df for the given student_number
+student_data = df[df['student_number'] == student_number_to_lookup]
+student_data 

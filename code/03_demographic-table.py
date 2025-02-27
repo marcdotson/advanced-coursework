@@ -169,7 +169,8 @@ for year in years:
         ('Immigrant', 'immigrant'),
         ('ReadingIntervention', 'reading_intervention'),
         ('PassedCivicsExam', 'passed_civics_exam'),
-        ('ReadGradeLevel', 'read_grade_level')
+        ('ReadGradeLevel', 'read_grade_level'),
+        ('Gifted', 'gifted')
     ]
 
     # Apply the function to each column in the list if the column exists
@@ -580,39 +581,6 @@ df.head()
 
 
 ######################################################################################################################################################
-# Prepare the data for export 
-
-# Specify the column order for the df
-df_columns = ['student_number', 'gender', 'ethnicity', 'amerindian_alaskan', 'asian', 'black_african_amer', 
-            'hawaiian_pacific_isl', 'white', 'migrant', 'military_child', 'refugee_student',
-            'services_504', 'immigrant', 'passed_civics_exam', 'reading_intervention', 'homeless_y', 'part_time_home_school_y', 'ell_disability_group',
-            'hs_complete_status', 'tribal_affiliation', 'read_grade_level', 'exit_code', 
-            'ell_entry_date', 'entry_date','first_enroll_us']
-
-df = df[df_columns]
-
-# Specify the column order for the model_df
-model_columns = (
-    ['student_number']+
-    [col for col in model_df.columns if col.startswith('gender_')]
-    +[
-        'ethnicity_y', 'amerindian_alaskan_y', 'asian_y', 'black_african_amer_y', 
-        'hawaiian_pacific_isl_y', 'white_y', 'migrant_y', 'military_child_y', 'refugee_student_y', 'homeless_y', 'part_time_home_school_y',
-        'services_504_y', 'immigrant_y', 'passed_civics_exam_y', 'reading_intervention_y', 'ell_disability_group']
-    + [col for col in model_df.columns if col.startswith('ell_with')]
-    + [col for col in model_df.columns if col.startswith('hs_complete_status_')]
-    + [col for col in model_df.columns if col.startswith('tribal_affiliation_')]
-    + [col for col in model_df.columns if col.startswith('read_grade_level_')]
-    + [col for col in model_df.columns if col.startswith('exit_code_')]
-    + ['ell_entry_date', 'entry_date', 'first_enroll_us'])
-
-model_df = model_df[model_columns]
-
-model_df.head()
-df.head()
-
-
-######################################################################################################################################################
 # Now that all data has been merged, null values need to be addressed.  
 # These null values arise because the data comes from multiple years, and not every column exists in every year.  
 # When categorical columns are dummy-encoded and merged across different years, some students may not have entries  
@@ -642,6 +610,49 @@ columns_to_fix = ['tribal_affiliation', 'exit_code', 'hs_complete_status']
 
 # Convert columns to strings and ensure missing values remain as '0'
 df[columns_to_fix] = df[columns_to_fix].astype(str).replace('nan', '0')
+
+
+######################################################################################################################################################
+# Rename hs_complete_status_gc to hs_advanced_math_y in model_df
+model_df = model_df.rename(columns={'hs_complete_status_gq': 'hs_advanced_math_y'})
+
+# Specify the columns to be dropped from the model_df
+model_columns_to_drop = ['enviroment_v', 'gender_f', 'ell_entry_date', 'entry_date', 'first_enroll_us', 'gifted_y', 'reading_intervention_y',  
+    'tribal_affiliation_nan', 'exit_code_nan', 'read_grade_level_y']
+model_columns_to_drop += [col for col in model_df.columns if col.startswith('hs_complete_status_')]
+
+# Make sure the column exists before dropping
+model_df = model_df.drop(columns=[col for col in model_columns_to_drop if col in model_df.columns], errors='ignore')
+
+######################################################################################################################################################
+# Prepare the data for export 
+
+# Specify the column order for the df
+df_columns = ['student_number', 'gender', 'ethnicity', 'amerindian_alaskan', 'asian', 'black_african_amer', 
+            'hawaiian_pacific_isl', 'white', 'migrant', 'military_child', 'refugee_student',
+            'services_504', 'immigrant', 'passed_civics_exam', 'reading_intervention', 'homeless_y', 'part_time_home_school_y', 'ell_disability_group',
+            'hs_complete_status', 'tribal_affiliation', 'read_grade_level', 'exit_code', 
+            'ell_entry_date', 'entry_date','first_enroll_us']
+
+df = df[df_columns]
+
+# Specify the column order for the model_df
+model_columns = (
+    ['student_number']+
+    [col for col in model_df.columns if col.startswith('gender_')]
+    +[
+        'ethnicity_y', 'amerindian_alaskan_y', 'asian_y', 'black_african_amer_y', 
+        'hawaiian_pacific_isl_y', 'white_y', 'migrant_y', 'military_child_y', 'refugee_student_y', 'homeless_y', 'part_time_home_school_y',
+        'services_504_y', 'immigrant_y', 'passed_civics_exam_y', 'ell_disability_group', 'hs_advanced_math_y']
+    + [col for col in model_df.columns if col.startswith('ell_with')]
+    + [col for col in model_df.columns if col.startswith('tribal_affiliation_')]
+    + [col for col in model_df.columns if col.startswith('read_grade_level_')]
+    + [col for col in model_df.columns if col.startswith('exit_code_')])
+
+model_df = model_df[model_columns]
+
+model_df.head()
+df.head()
 
 
 ######################################################################################################################################################

@@ -3,6 +3,9 @@ import bambi as bmb
 import arviz as az
 import os 
 
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LogisticRegression
+
 # Define the folder path where the trace plots will be saved
 folder_path = "output/"
 
@@ -14,8 +17,21 @@ if not os.path.exists(folder_path):
 df = pd.read_csv('data/modeling_data.csv', low_memory=False)
 
 
+################################################################################################
+# RUN THE FLAT MODEL USING SCIKIT-LEARN AND EXPORT DRAWS TO A FILE
+################################################################################################
+
+y = df['ac_ind']
+X_drop = ['student_number', 'ac_ind', 'ell_disability_group']
+X = df.drop(columns=X_drop, axis=1)
+
+log_reg = LogisticRegression()
+log_reg.fit(X, y)
+
+# Save log_reg?
+
 ##################################################################################################################
-#PREP THE MODEL AND SPECIFY COLUMNS TO DROP
+# PREP THE MODEL AND SPECIFY COLUMNS TO DROP
 ##################################################################################################################
 
 # Columns to exclude from modeling
@@ -49,7 +65,7 @@ if __name__ == '__main__':
         #fit the model with the the flat_model that was created prior
         flat_fitted = flat_model.fit(
             # draws=2000, chains=4, tune=1000, target_accept=0.85, random_seed=42, idata_kwargs={"log_likelihood": True})
-            draws=2000, target_accept=0.85, random_seed=42, idata_kwargs={"log_likelihood": True})
+            draws=2000, inference_method='vi', random_seed=42)
         print("Sampling complete.")
 
     except Exception as e:

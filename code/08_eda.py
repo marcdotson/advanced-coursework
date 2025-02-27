@@ -14,13 +14,8 @@ print("CCSD Powerschool Exploratory Data Analysis\n")
 years = data['year'].unique()
 print(f"Years in data set: {years}\n", sep=', ')
 
-# Filter the data to include only the year 2017
-data= data[data['year'] != 2017]
-
-
 print("Data filtered to only include the year 2017\n")
 print(data.head())
-
 
 # Summary Statistics
 print("##############################################################################################################")
@@ -29,9 +24,9 @@ print("Summary Statistics:")
 data.info()
 data.describe(include='all')
 
-# # Display the count of missing values in each column
-# print("\nCount of missing values in each column:")
-# print(data.isna().sum())
+# Display the count of missing values in each column
+print("\nCount of missing values in each column:")
+print(data.isna().sum())
 
 # Display the first few rows of the data
 print("\nFirst few rows of data:")
@@ -45,7 +40,6 @@ for column in data.columns:
 # District-Wide Analysis
 print("##############################################################################################################")
 print("District-Wide Analysis\n")
-
 
 # Academic Data
 print("##############################################################################################################")
@@ -65,7 +59,7 @@ print(f"Total number of students: {total_students}")
 ac_ind_count = data[data['ac_ind'] == 1].shape[0]
 print(f"Number of students who have taken an AC course: {ac_ind_count} ( {ac_ind_count / total_students:.2f}% )")
 
- #Pie chart -  AC vs non-AC students
+#Pie chart -  AC vs non-AC students
 plt.figure(figsize=(8, 6))
 ac_counts = data['ac_ind'].value_counts()
 labels = ['Non-AC', 'AC']
@@ -76,11 +70,6 @@ plt.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
 plt.title('Distribution of AC and Non-AC Students')
 plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 plt.show()
-
-#Name this better****
-# Count of how many AC courses a student has taken
-avg_ac_count = round(data[data['ac_count'] > 0]['ac_count'].mean(), 2)
-print(f"Average number of AC courses taken by students who took AC courses: {avg_ac_count}")
 
 # Calculate average overall GPA (excluding 0s)
 average_gpa = data['overall_gpa'][data['overall_gpa'] != 0].mean()
@@ -94,7 +83,11 @@ print(f"Average overall GPA for ac_ind = 0 students: {non_ac_overall_gpa}")
 ac_overall_gpa = round(data[data['ac_ind'] == 1]['overall_gpa'].mean(), 2)
 print(f"Average overall GPA for ac_ind = 1 students: {ac_overall_gpa}")
 
-# # Drop all zeros in ac gpa (fail, pass, na)
+# Count how many AC courses a student has taken
+avg_ac_count = round(data[data['ac_count'] > 0]['ac_count'].mean(), 2)
+print(f"Average number of AC courses taken by students who took AC courses: {avg_ac_count}")
+
+# Histogram - AC GPA distribution (excluding zeros- fail, pass, na)
 filtered_ac_gpa = data['ac_gpa'][data['ac_gpa'] > 0]
 plt.figure(figsize=(8, 6))
 plt.hist(filtered_ac_gpa, bins=np.arange(0.0, 4.1, 0.5), color='blue', edgecolor='black')
@@ -102,7 +95,8 @@ plt.title('AC GPA Distribution')
 plt.xlabel('AC GPA')
 plt.ylabel('Frequency')
 plt.show()
-# Box plot - overall GPA by ac_ind, excluding zero GPAs
+
+# Box plot - Overall GPA by AC_ind (excluding zeros)
 plt.figure(figsize=(8, 6))
 sns.boxplot(x="overall_gpa", y="ac_ind", data=data[(data['ac_ind'].isin([0, 1])) & (data['overall_gpa'] > 0)], palette=['skyblue', 'navy'], orient='h')
 plt.title('Overall GPA Distribution by AC Course Status (Excluding Zero GPAs)')
@@ -112,16 +106,17 @@ plt.xlim(0, 4)  # Set x-axis range from 0 to 4
 plt.yticks([0, 1], ['Non-AC', 'AC'])  # Set y-axis labels
 plt.show()
 
-# Scatter plot - overall GPA vs AC course status
+# Scatter plot - Overall GPA vs AC Course Count
 plt.figure(figsize=(8, 6))
 sns.scatterplot(x="overall_gpa", y="ac_count", data=data[data['ac_ind'].isin([0,1]) & (data['overall_gpa'] > 0)], hue="ac_ind", palette=['skyblue', 'navy'])
-plt.title('Scatter Plot of Overall GPA vs AC Course Status')
+plt.title('Scatter Plot of Overall GPA vs AC Course Count')
 plt.xlabel('Overall GPA')
 plt.ylabel('AC Count')
 handles, labels = plt.gca().get_legend_handles_labels()
 plt.legend(handles=handles, title='AC Course Status', loc='upper right', labels=['Non-AC', 'AC'], facecolor='lightgrey', markerscale=1.5)
 plt.show()
 
+#********************fix this
 # Did not use model percent days attended because there were errors
 # Establish variable
 # data['percent_days_attended'] = np.nan
@@ -148,36 +143,39 @@ plt.show()
 # regularpercent_1 = data[(data['regular_percent'] == 1) & (data['ac_ind'] == 1)].shape[0]
 # print(f"Number of students in each regularpercent category with ac_ind=1:\n1: ", regularpercent_1, "\n2: ", regularpercent_2, "\n3: ", regularpercent_3)
 
-# is_one_percent = data['is_one_percent'].value_counts()
-# print(is_one_percent)
-
 extended = data['extended_school_year'].value_counts()
 print(extended)
+
+# dropped this
+# is_one_percent = data['is_one_percent'].value_counts()
+# print(is_one_percent)
 
 
 # Demographic Data
 print("\n##############################################################################################################")
 print("Demographic Data from 03_demographic_table - EOY Student Table\n")
 
-# still need to evaluate these columns:
+# ***********still need to evaluate these columns:
 # ell_instruction_type
 # ell_entry_date
     # how could we even use this??? maybe calculate diff between us enrollment and current year?
 # first_enroll_us
 
-# gifted
+# dropped this column
 # gifted = data['gifted'].value_counts()
 # print(gifted)
 #print(f"\nNumber of gifted students: {gifted}, proportion: {gifted / total_students:.2f}")
 
-# services_504
+# *********dropped this column?
 service_504 = data['services_504'].value_counts()
 print(service_504)
 #print(f"Number of services_504 students: {service_504}, proportion: {service_504 / total_students:.2f}")
 
-#Count total number of each ethnic group in district, ethnicity column represents hispanic
-#ethnic_counts = data[['amerindian_alaskan', 'asian', 'black_african_amer', 'hawaiian_pacific_isl', 'white', 'migrant', 'immigrant','refugee_student', 'ethnicity']].apply(pd.Series.value_counts).fillna(0)
-#print(f"\nTotal number of each ethnic group: {ethnic_counts}")
+#Count total number of each ethnic group
+#*************is this right? or do I need to make sure it has y???
+ethnic_counts = data[['amerindian_alaskan', 'asian', 'black_african_amer', 'hawaiian_pacific_isl', 'white', 'migrant', 'immigrant','refugee_student', 'ethnicity']].apply(pd.Series.value_counts).fillna(0)
+print(f"\nTotal number of each ethnic group: {ethnic_counts}")
+
 # Visualize the amount of 'Y' for each ethnic group
 plt.figure(figsize=(10, 6))
 ethnic_counts = data[['amerindian_alaskan', 'asian', 'black_african_amer', 'hawaiian_pacific_isl', 'white', 'migrant', 'immigrant', 'refugee_student', 'ethnicity']].apply(pd.Series.value_counts).fillna(0)
@@ -191,18 +189,20 @@ for p in plt.gca().patches:
 plt.show()
 
 # Count total number of each ethnic group for students taking AP courses
+#*************is this right? or do I need to make sure it has y???
 ethnic_counts_ap = data[data['ac_ind'] == 1][['amerindian_alaskan', 'asian', 'black_african_amer', 'hawaiian_pacific_isl', 'white', 'migrant', 'immigrant', 'refugee_student', 'ethnicity']].apply(pd.Series.value_counts).fillna(0)
-# print("\nAC Count By Ethnicity:")
-# print(ethnic_counts_ap['amerindian_alaskan'])
-# print(ethnic_counts_ap['asian'])
-# print(ethnic_counts_ap['black_african_amer'])
-# print(ethnic_counts_ap['hawaiian_pacific_isl'])
-# print(ethnic_counts_ap['white'])
-# print(ethnic_counts_ap['migrant'])
-# print(ethnic_counts_ap['immigrant'])
-# print(ethnic_counts_ap['refugee_student'])
-# print(ethnic_counts_ap['ethnicity'])
-# Visualize the amount of 'Y' for each ethnic group taking an AC course
+print("\nAC Count By Ethnicity:")
+print(ethnic_counts_ap['amerindian_alaskan'])
+print(ethnic_counts_ap['asian'])
+print(ethnic_counts_ap['black_african_amer'])
+print(ethnic_counts_ap['hawaiian_pacific_isl'])
+print(ethnic_counts_ap['white'])
+print(ethnic_counts_ap['migrant'])
+print(ethnic_counts_ap['immigrant'])
+print(ethnic_counts_ap['refugee_student'])
+print(ethnic_counts_ap['ethnicity'])
+
+#Visualize the amount of 'Y' for each ethnic group taking an AC course
 plt.figure(figsize=(10, 6))
 ethnic_counts_ap.loc['Y'].plot(kind='bar', color='steelblue')
 plt.title('AC Count By Ethnicity')
@@ -213,30 +213,32 @@ for p in plt.gca().patches:
     plt.text(p.get_x() + (p.get_width() / 2), p.get_y() + (p.get_height() / 2), '{:.0f}'.format(p.get_height()), ha='center')
 plt.show()
 
-# Count total number of each gender in district
+# Count proportion of gender
 print("\nTotal number of each gender:")
 gender_counts = data.groupby('gender')['gender'].count()
 print(gender_counts)
-# Examine AC enrollment rates by gender
+
+# Calculate AC enrollment rates by gender
 ac_enrollment_by_gender = data[data['ac_ind'] == 1].groupby('gender')['ac_ind'].value_counts()
 print("AC counts by gender: \n", ac_enrollment_by_gender)
 gender_ac = data[data['ac_ind'] == 1]['gender'].value_counts().sum()
 gender_proportion_ac = data[data['ac_ind'] == 1].groupby('gender')['ac_ind'].count() / gender_counts
 print(f"\nProportion of each gender taking AC courses:\n{gender_proportion_ac.map('{:.2%}'.format)}")
 
-# # Histogram = AC by gender
-# plt.figure(figsize=(10, 6))
-# ac_enrollment_by_gender = data[data['ac_ind'] == 1].groupby('gender')['ac_ind'].value_counts()
-# ac_enrollment_by_gender.plot(kind='bar', color='steelblue')
-# plt.title('AC Count By Gender')
-# plt.xlabel('Gender')
-# plt.ylabel('Count of Gender')
-# plt.xticks(rotation=45)
-# plt.xticks([0,1,2], ['Female', 'Male', 'Unknown'])
-# for p in plt.gca().patches:
-#     plt.text(p.get_x() + (p.get_width() / 2), p.get_y() + (p.get_height() / 2), '{:.0f}'.format(p.get_height()), ha='center')
-# plt.show()
+# Histogram = AC Status by gender
+plt.figure(figsize=(10, 6))
+ac_enrollment_by_gender = data[data['ac_ind'] == 1].groupby('gender')['ac_ind'].value_counts()
+ac_enrollment_by_gender.plot(kind='bar', color='steelblue')
+plt.title('AC Students By Gender')
+plt.xlabel('Gender')
+plt.ylabel('Student Count')
+plt.xticks(rotation=45)
+plt.xticks([0,1,2], ['Female', 'Male', 'Unknown'])
+for p in plt.gca().patches:
+    plt.text(p.get_x() + (p.get_width() / 2), p.get_y() + (p.get_height() / 2), '{:.0f}'.format(p.get_height()), ha='center')
+plt.show()
 
+#********what is going on here
 indicators = [
     'military_child', 'passed_civics_exam', 'read_grade_level',
     'reading_intervention', 'home_status', 'hs_complete_status', 'part_time_home_school',
@@ -258,19 +260,21 @@ for indicator in indicators:
 print("##############################################################################################################")
 print("Assessment Data from 04_assessment-table script\n")
 
-# Calculate average test composite scores for both groups
+# Calculate average test composite score in district
 data['composite_score'] = data['composite_score'] != 0
 avg_composite_score = data['composite_score'].mean()
-
 print(f"Average composite score in the district: {avg_composite_score:.2f}")
-#print(f"Average composite score for students with ac ind =1: {data[data['ac_ind'] == 1]['composite_score'].mean(): .2f}")
-#print(f"Average composite score for students with ac ind =0: {data[data['ac_ind'] == 0]['composite_score'].mean(): .2f}")
+
+# Average test score by AC Status
+print(f"Average composite score for students with ac ind =1: {data[data['ac_ind'] == 1]['composite_score'].mean(): .2f}")
+print(f"Average composite score for students with ac ind =0: {data[data['ac_ind'] == 0]['composite_score'].mean(): .2f}")
 
 
 # Course Master Data
 print("\n##############################################################################################################")
 print("Teacher Data from 05_teacher-table script\n")
 
+#******what was i even doing here
 teacher_columns = [col for col in modeldata.columns if col.startswith('teacher_')]
 # Remove 'teachers_had' and 'teacher_count' from the teacher_columns list
 teacher_columns = [col for col in teacher_columns if col not in ['teachers_had', 'teacher_count']]
@@ -298,6 +302,7 @@ print("School Data from 06_school-table script\n")
 # schools attended
 # current_school
 
+#****** I am pretty sure this is all wrong
 # Extract teacher and school columns for correlation analysis
 school_columns = [col for col in modeldata.columns if col.startswith('school_') and col != 'school_membership']
 
@@ -323,9 +328,9 @@ print(modelcorrelations.iloc[:10])
 # print("School Analysis\n")
 
 # Other things to look at:
-# How many AC classes each school offers???
-    # How many teachers teach AC classes in each school???
     # Days attended distributions by school
+
+#****proportion of ac students to each school student count???
 
 # #Count total number of students in each current school
 # school_counts = df.filter(like='current_school').sum()
@@ -406,11 +411,21 @@ plt.xlabel('School')
 plt.ylabel('Number of AC Students')
 plt.xticks(rotation=45)
 plt.show()
+# Calculate the average number of AC students to each non-AC student at each school
+average_ac_to_nonac_by_school = (school_ac_students / (school_ac_count - school_ac_students)).sort_values(ascending=False)
+print("\nAverage number of AC students to each non-AC student at each school:")
 
+# Filter for specific high schools
+high_schools = [706, 705, 704, 702]
+average_ac_to_nonac_by_school = average_ac_to_nonac_by_school.loc[high_schools]
+print(average_ac_to_nonac_by_school)
 
-# Compute the average AC classes per AP student per school
-average_ac_classes_per_ap_student_by_school = school_ac_count / school_ac_students
+# Calculate the average AC classes per AP student by school
+average_ac_classes_per_ap_student_by_school = (school_ac_count / school_ac_students).sort_values(ascending=False)
+# Filter the average AC classes per AP student by school for specific high schools
+average_ac_classes_per_ap_student_by_school = average_ac_classes_per_ap_student_by_school.loc[high_schools]
 
 # Print results
 print("\nAverage AC classes per AP student by school:")
 print(average_ac_classes_per_ap_student_by_school.sort_values(ascending=False))
+

@@ -236,3 +236,16 @@ plt.xlabel('GPA')
 plt.ylabel('Number of AC Courses')
 plt.legend(title='AC Status', loc='upper left')
 plt.show()
+
+# Histogram = AC Status by gender
+plt.figure(figsize=(10, 6))
+ac_enrollment_by_gender = data[data['ac_ind'] == 1].groupby('gender')['ac_ind'].value_counts()
+ac_enrollment_by_gender.plot(kind='bar', color='steelblue', edgecolor='black')
+plt.title('AC Students By Gender')
+plt.xlabel('Gender')
+plt.ylabel('Student Count')
+plt.xticks(rotation=45)
+plt.xticks([0,1,2], ['Female', 'Male', 'Unknown'])
+for p in plt.gca().patches:
+    plt.text(p.get_x() + (p.get_width() / 2), p.get_y() + (p.get_height() / 2), '{:.0f}'.format(p.get_height()), ha='center')
+plt.show()

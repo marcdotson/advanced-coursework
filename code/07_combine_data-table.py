@@ -28,7 +28,10 @@ with open('./data/student_data.pkl', 'rb') as f:
 all_students = []  # this will store the student_numbers from the student_tables
 
 # List of years for which we will process the data
-years = [2017, 2018, 2022, 2023, 2024]
+# years = [2017, 2018, 2022, 2023, 2024]
+
+# Post Covid years
+years = [2022, 2023, 2024]
 
 # Iterate through each of the student_tables to make a list of all student_numbers across all years
 for year in years:
@@ -77,8 +80,11 @@ df = df.drop_duplicates(keep = 'first')
 df.head()
 
 # Export the data
-df.to_csv('./data/exploratory_data.csv', index=False)
-model_df.to_csv('./data/modeling_data.csv', index=False)
+# df.to_csv('./data/exploratory_data.csv', index=False)
+# model_df.to_csv('./data/modeling_data.csv', index=False)
+
+df.to_csv('./data/post_covid_exploratory_data.csv', index=False)
+model_df.to_csv('./data/post_covid_modeling_data.csv', index=False)
 
 print('===========================================')
 print('Modeling data exported successfully!')

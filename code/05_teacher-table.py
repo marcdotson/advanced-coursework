@@ -4,7 +4,10 @@ import pandas as pd
 import pickle
 
 # Define the years to process
-years = [2017, 2018, 2022, 2023, 2024]
+# years = [2017, 2018, 2022, 2023, 2024]
+
+# Post Covid years
+years = [2022, 2023, 2024]
 
 # Specify the columns and their corresponding data types for each dataset to speed up the concatenation
 membership_columns = {'StudentNumber': 'int32', 'CourseRecordID': 'string'}

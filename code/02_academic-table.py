@@ -53,7 +53,10 @@ def process_numeric_student_columns(student_table, model_df, df, columns, rename
 
 ######################################################################################################################################################
 # Define the list of years to process
-years = [2017, 2018, 2022, 2023, 2024]
+# years = [2017, 2018, 2022, 2023, 2024]
+
+# Post Covid years
+years = [2022, 2023, 2024]
 
 # Create two empty dictionaries to store df and model_df for each year: df_dict and model_dict
 df_dict = {}
@@ -534,8 +537,11 @@ concat_scram_colums = [
     'environment_h', 'environment_r', 'environment_v', 'extended_school_year_y', 'current_grade'
 ]
 
+# Filter only existing columns
+combined_scram = concat_model.loc[:, concat_model.columns.intersection(concat_scram_colums)]
+
 # Filter the DataFrame for the specified columns
-combined_scram = concat_model[concat_scram_colums]
+# combined_scram = concat_model[concat_scram_colums]
 
 # Sort by grade level in descending order
 combined_scram = combined_scram.sort_values(by='current_grade', ascending=False)
@@ -559,8 +565,6 @@ model_df = pd.merge(model_df, combined_scram, on='student_number', how='left')
 
 model_df.head()
 
-df.duplicated(subset=['student_number', 'current_grade']).sum()
-df.duplicated().sum()
 
 
 ######################################################################################################################################################

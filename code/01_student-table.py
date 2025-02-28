@@ -26,7 +26,10 @@ columns_to_drop = [
 ]
 
 # List of years to process
-years = [2017, 2018, 2022, 2023, 2024]
+# years = [2017, 2018, 2022, 2023, 2024]
+
+# Post Covid years
+years = [2022, 2023, 2024]
 
 # Initialize dictionaries to store tables for all years
 student_tables = {} # Stores all students for each year

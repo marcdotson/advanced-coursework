@@ -3,6 +3,9 @@
 import pandas as pd
 import pickle
 
+# Define the list of years to process
+years = [2017, 2018, 2022, 2023, 2024]
+
 ######################################################################################################################################################
 # Function to process categorical variables. Add non-dummied columns to df and dummy-coded columns to model_df
 def process_categorical_column(df, model_df, reference_table, column_name, dummy_name, key_column='student_number'):
@@ -96,11 +99,6 @@ def student_binary_columns(df, model_df, reference_table, column_name, dummy_nam
     return df, model_df
 
 ######################################################################################################################################################
-# Define the list of years to process
-# years = [2017, 2018, 2022, 2023, 2024]
-
-# Post Covid years
-years = [2022, 2023, 2024]
 
 # Create two empty dictionaries to store df and model_df for each year: df_dict and model_dict
 df_dict = {}

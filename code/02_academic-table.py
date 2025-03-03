@@ -6,6 +6,9 @@ import pandas as pd
 import numpy as np
 import pickle
 
+# Define the list of years to process
+years = [2017, 2018, 2022, 2023, 2024]
+
 ######################################################################################################################################################
 # All of the data will be left joined with the df and model_df
 # (if we don't want to filter before)
@@ -52,12 +55,9 @@ def process_numeric_student_columns(student_table, model_df, df, columns, rename
 
 
 ######################################################################################################################################################
-# Define the list of years to process
-# years = [2017, 2018, 2022, 2023, 2024]
-
-# Post Covid years
-years = [2022, 2023, 2024]
-
+# Load Extracurricular file that contains a list of extracurricular classes
+extracurricular_list = pd.read_excel('data/Extracurricular Classes.xlsx')
+extracurricular_list.head()
 # Create two empty dictionaries to store df and model_df for each year: df_dict and model_dict
 df_dict = {}
 model_dict = {}
@@ -108,25 +108,28 @@ for year in years:
     # df will include all new columns while model_df will only include ac_ind
 
     # Merge membership and master data on the CourseRecordID from the membership table
-    membership_filtered = membership[['student_number', 'CourseRecordID', 'ConcurrEnrolled', 'GradeEarned']]
+    membership_filtered = membership[['student_number', 'CourseRecordID', 'CourseNumber', 'ConcurrEnrolled', 'GradeEarned']]
     master_filtered = master[['CourseTitle', 'CollegeGrantingCr', 'WhereTaughtCampus', 'CourseRecordID']]
-    advanced_courses = pd.merge(membership_filtered, master_filtered, on='CourseRecordID', how='left')
+    student_course_data = pd.merge(membership_filtered, master_filtered, on='CourseRecordID', how='left')
 
     # Drop identical rows
-    advanced_courses = advanced_courses.drop_duplicates()
+    student_course_data = student_course_data.drop_duplicates()
+
+    # Make sure CourseTitle has no leading spaces and is uppercase
+    student_course_data['CourseTitle'] = student_course_data['CourseTitle'].str.strip().str.upper()
 
     # Identify advanced courses
     # The result is converted to an integer type (1 for True, 0 for False)
-    advanced_courses['advanced_course'] = (
-        (advanced_courses['CollegeGrantingCr'].notnull()) | # Check for college credit
-        (advanced_courses['WhereTaughtCampus'].notnull()) | # Check for campus location
-        (advanced_courses['ConcurrEnrolled'] == 'Y') | # Check for concurrent enrollment
-        (advanced_courses['CourseTitle'].str.startswith('AP', na=False)) | # Check for AP courses
-        (advanced_courses['CourseTitle'].str.startswith('BTEC', na=False)) # Check for BTEC courses
+    student_course_data['advanced_course'] = (
+        (student_course_data['CollegeGrantingCr'].notnull()) | # Check for college credit
+        (student_course_data['WhereTaughtCampus'].notnull()) | # Check for campus location
+        (student_course_data['ConcurrEnrolled'] == 'Y') | # Check for concurrent enrollment
+        (student_course_data['CourseTitle'].str.startswith('AP', na=False)) | # Check for AP courses
+        (student_course_data['CourseTitle'].str.startswith('BTEC', na=False)) # Check for BTEC courses
     ).astype(int)
 
     # If CourseTitle is in the advanced_course list then add a 1 to the new column
-    advanced_summary = advanced_courses.groupby('student_number', as_index=False).agg(
+    advanced_summary = student_course_data.groupby('student_number', as_index=False).agg(
         ac_ind=('advanced_course', lambda x: 1 if x.sum() > 0 else 0),  # Has at least one advanced course
         ac_count=('advanced_course', 'sum')  # Total advanced courses
     )
@@ -156,7 +159,7 @@ for year in years:
     ######################################################################################################################################################
     # Calculate students gpa in advanced courses (ac_gpa)
     # Filter for advanced courses based on the advanced_courses list
-    ac_grade = advanced_courses[advanced_courses['advanced_course'] == 1][['student_number', 'GradeEarned']].copy()
+    ac_grade = student_course_data[student_course_data['advanced_course'] == 1][['student_number', 'GradeEarned']].copy()
 
     # Exclude 'P' from the calculation as it does not get factored into the GPA and replace 'F' with 0.0
     ac_grade = ac_grade[ac_grade['GradeEarned'] != 'P']
@@ -185,6 +188,47 @@ for year in years:
     df['ac_gpa'] = df['ac_gpa'].astype(float).round(3)
 
     df.head()
+
+
+    ######################################################################################################################################################
+    # Create a variable to track if a student has participated in extracurricular activitites or not
+    # Create a copy of the advanced_courses DataFrame from above specifically for processing extracurricular data
+    student_course_data = student_course_data[['student_number', 'CourseNumber']].copy()
+
+    # Ensure CourseNumber formatting is consistent for accurate matching
+    # extracurricular_list is defined before the loop
+    extracurricular_list['CourseNumber'] = extracurricular_list['CourseNumber'].astype(str).str.strip()
+    student_course_data['CourseNumber'] = student_course_data['CourseNumber'].astype(str).str.strip()
+
+    # Create a binary indicator for extracurricular participation
+    student_course_data['is_extracurricular'] = (
+        student_course_data['CourseNumber'].isin(extracurricular_list['CourseNumber']).astype(int)
+    )
+
+    # Summarize extracurricular participation per student
+    extracurricular_summary = student_course_data.groupby('student_number', as_index=False).agg(
+        extracurricular_ind=('is_extracurricular', lambda x: 1 if x.sum() > 0 else 0),  # 1 if any extracurriculars are taken
+        extracurricular_count=('is_extracurricular', 'sum'))  # Total count of extracurricular courses
+
+    # Dropping any duplicate rows from extracurricular_summary just in case any remain.
+    extracurricular_summary = extracurricular_summary.drop_duplicates()
+
+    # Make sure student_number is a string
+    extracurricular_summary['student_number'] = extracurricular_summary['student_number'].astype(str)
+    
+    # Only add extracurricular_ind to model_df
+    model_df = pd.merge(model_df, extracurricular_summary[['student_number', 'extracurricular_ind']], on='student_number', how='left')
+
+    # Add the extracurricular_summary data to the df (all extracurricular data)
+    df = pd.merge(df, extracurricular_summary, on='student_number', how='left')
+
+    # Fill null values with 0
+    df[['extracurricular_ind', 'extracurricular_count']] = df[['extracurricular_ind', 'extracurricular_count']].fillna(0)
+    model_df['extracurricular_ind'] = model_df['extracurricular_ind'].fillna(0)
+
+    df.head()
+    model_df.head()
+
 
 
     ######################################################################################################################################################
@@ -492,6 +536,25 @@ model_df.head()
 
 
 ######################################################################################################################################################
+# Filter the extracurricular_ind column for the model_df.
+# extracurricular_ind can only be 1 or 0, so we will return the max value for each student_number
+extracurricular_indicator = concat_model[['student_number', 'extracurricular_ind']].copy()
+
+# Group by student_number and get the row with the max extracurricular_ind
+extracurricular_indicator = extracurricular_indicator.groupby('student_number', as_index=False)['extracurricular_ind'].max()
+
+# Make sure student_number is a string
+extracurricular_indicator['student_number'] = extracurricular_indicator['student_number'].astype(str)
+
+extracurricular_indicator.head()
+
+# Merge with model_df
+model_df = pd.merge(model_df, extracurricular_indicator, on='student_number', how='left')
+
+model_df.head()
+
+
+######################################################################################################################################################
 # Add the most recent overall_gpa per student to the model_df
 combined_overall_gpa = concat_model[['student_number', 'overall_gpa', 'current_grade']].copy()
 
@@ -580,13 +643,13 @@ model_df = model_df.drop(columns=[col for col in model_columns_to_drop if col in
 
 # Specify the column order for the df
 df_columns = ['student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa', 'days_attended', 'days_absent',
-            'school_membership', 'percent_days_attended',  'current_grade',
+            'school_membership', 'percent_days_attended', 'extracurricular_ind', 'extracurricular_count', 'current_grade',
             'scram_membership', 'regular_percent', 'environment', 'extended_school_year']
 
 df = df[df_columns]
 
 # Specify the column order for the model_df
-model_columns = (['student_number', 'ac_ind', 'overall_gpa', 'percent_days_attended', 'scram_membership']
+model_columns = (['student_number', 'ac_ind', 'overall_gpa', 'percent_days_attended', 'extracurricular_ind', 'scram_membership']
  + [col for col in model_df.columns if col.startswith('regular_percent')]
  + [col for col in model_df.columns if col.startswith('environment_')])
 
@@ -614,4 +677,3 @@ print('===========================================')
 print("Academic data exported successfully!")
 print("Next, run: 03_demographic-table.py")
 print('===========================================')
-

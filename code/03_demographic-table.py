@@ -285,7 +285,7 @@ model_df.head()
 ######################################################################################################################################################
 # Retrieve the binary and categorical data associated with the students' most recent year they attended school for the model_df
 # Specify the columns to exclude from this step
-exclude_columns = ['ell_entry_date', 'entry_date', 'first_enroll_us']
+exclude_columns = ['ell_entry_date', 'entry_date', 'first_enroll_us', 'migrant_y']
 
 # Create a copy of concat_model to work with
 binary_categorical_data = concat_model.copy()
@@ -310,6 +310,28 @@ binary_categorical_data.head()
 
 # Merge the binary and categorical data with the model_df
 model_df = pd.merge(model_df, binary_categorical_data, on='student_number', how='left')
+
+model_df.head()
+
+
+######################################################################################################################################################
+# Migrant status can change after 3 years. 
+# Ensure that if a student was ever labeled migrant, we include that row in model_df
+
+# Select relevant columns
+migrant = concat_model[['student_number', 'migrant_y']].copy()
+
+# Sort migrant_y in descending order
+migrant = migrant.sort_values(by='migrant_y', ascending=False)
+
+# Drop all duplicates except the first instance
+migrant = migrant.drop_duplicates(keep='first')
+
+# Make sure student_number is a string
+migrant['student_number'] = migrant['student_number'].astype(str)
+
+# Merge with model_df
+model_df = pd.merge(model_df, migrant, on='student_number', how='left')
 
 model_df.head()
 

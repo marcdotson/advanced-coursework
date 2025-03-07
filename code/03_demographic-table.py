@@ -325,7 +325,7 @@ migrant = concat_model[['student_number', 'migrant_y']].copy()
 migrant = migrant.sort_values(by='migrant_y', ascending=False)
 
 # Drop all duplicates except the first instance
-migrant = migrant.drop_duplicates(keep='first')
+migrant = migrant.drop_duplicates(subset='student_number', keep='first')
 
 # Make sure student_number is a string
 migrant['student_number'] = migrant['student_number'].astype(str)

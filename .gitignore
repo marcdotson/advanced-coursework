@@ -20,6 +20,7 @@ private/*
 *.xls
 *.xlsx
 *.pkl
+*.nc
 code/src/*
 !code/src/*.R
 !code/src/*.py

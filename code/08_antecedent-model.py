@@ -1,9 +1,12 @@
-################################################################################################
-# Create a DAG
+import pandas as pd
+import pymc as pm
+import bambi as bmb
+import arviz as az
 import networkx as nx
 import matplotlib.pyplot as plt
 
-# Create a directed graph
+################################################################################################
+# Create a DAG
 G = nx.DiGraph()
 
 # Add edges based on the DAG structure
@@ -30,53 +33,28 @@ plt.title("DAG for Advanced Coursework ASC Project")
 plt.show()
 
 ################################################################################################
-import pymc as pm
-import pandas as pd
-
 # Load in the dataset
 df = pd.read_csv('data/modeling_data.csv', low_memory = False)
 
-# import polars as pl
-# import polars.selectors as cs
-# 
-# dfpl = pl.read_csv('data/modeling_data.csv')
-# dfpl.group_by(pl.col(['exit_code_nan'])).agg(n = pl.len())
-# dfpl.select(cs.contains('teacher')).columns
-# dfpl = (dfpl
-#     .with_columns(
-#         pl.sum_horizontal(cs.contains('school')).alias('new')
-#     )
-# )
-# dfpl.group_by(pl.col('new')).agg(n = pl.len())
+import polars as pl
+import polars.selectors as cs
+import seaborn.objects as so
 
-# TODO: Keep columns to drop here or move to the end of the 07_combine_data-table script?
-col_drop = ['student_number', 
-            # TODO: Decide on dropping ac_ind (needs to be included for Bambi)
-            # 'ac_ind', 
-            ###################################################
-            # TODO: Temporary dropped columsn for testing with a subset of obs
-            # 'environment_h', 'exit_code_11', 'exit_code_de', 'exit_code_ex',
-            # 'exit_code_he', 'exit_code_un', 'home_status_2', 'home_status_3',
-            # 'home_status_4', 'home_status_5', 'military_child_y',
-            # 'part_time_home_school_p', 'teacher_10', 'teacher_100642',
-            ###################################################
-            'days_attended', 'days_absent', 'school_membership', 
-            'extended_school_year_y', 'environment_v', 'gender_f', 'hs_complete_status_ao',
-            'hs_complete_status_ct', 'hs_complete_status_do', 'hs_complete_status_gc',
-            'hs_complete_status_gg', 'hs_complete_status_gr', 'hs_complete_status_rt',
-            # TODO: Update with changes Matt makes (see PR)
-            'ell_entry_date', 'entry_date', 'first_enroll_us', 'test_date',
-            'hs_complete_status_nan', 'tribal_affiliation_nan', 'exit_code_nan',
-            'reading_intervention_y', 'read_grade_level_y',
-            # TODO: Confirm grouping in PyMC and when to drop this string version of the group index
-            'ell_disability_group'
-]
+dfpl = pl.read_csv('data/modeling_data.csv')
+dfpl.group_by(pl.col('hs_advanced_math_y')).agg(n = pl.len())
 
-################################################################################################
-# Get a stratified subsample of the total number of rows 
-# TODO: Delete this and run with *all* of the observations
-# df = df.groupby("ell_disability_group", group_keys=False).apply(lambda x: x.sample(frac=0.75, random_state=42))
-################################################################################################
+(so.Plot(dfpl, x="scram_membership")
+    .add(so.Bars(), so.Hist())
+)
+
+dfpl = (dfpl
+    .with_columns(
+        pl.sum_horizontal(cs.contains('exit_code')).alias('new')
+    )
+)
+dfpl.group_by(pl.col('new')).agg(n = pl.len())
+
+col_drop = ['student_number']
 
 # Convert categorical group column to an integer array
 group_idx = df["ell_disability_group"].astype("category").cat.codes.values
@@ -91,9 +69,6 @@ y = df["ac_ind"].values
 
 ################################################################################################
 # RUN A FLAT TEST MODEL FIRST (using Bambi)
-import bambi as bmb
-import arviz as az
-
 df_new = df.drop(columns=col_drop, axis=1)
 
 predictors_new = "+".join(df_new.columns.difference(["ac_ind"]))

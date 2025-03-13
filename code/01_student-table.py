@@ -15,6 +15,9 @@
 import pandas as pd
 import pickle
 
+# List of years to process
+years = [2017, 2018, 2022, 2023, 2024]
+
 ##########################################################################################################################################################
 # Columns to drop if they exist in the student_table. Some years are missing columns.
 # Not all the columns below exist in every year
@@ -24,9 +27,6 @@ columns_to_drop = [
     "Biliteracy2Language", "EarlyNumeracyStatusBOY", "EarlyNumeracyStatusMOY", 
     "EarlyNumeracyStatusEOY", "EarlyNumeracyIntervention"
 ]
-
-# List of years to process
-years = [2017, 2018, 2022, 2023, 2024]
 
 # Initialize dictionaries to store tables for all years
 student_tables = {} # Stores all students for each year

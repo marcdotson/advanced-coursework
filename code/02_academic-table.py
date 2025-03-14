@@ -6,8 +6,11 @@ import pandas as pd
 import numpy as np
 import pickle
 
+# Define the list of years to process
+years = [2017, 2018, 2022, 2023, 2024]
+
 ######################################################################################################################################################
-# All of the data will be left joined with the df and model_df, therefore we can use the student_table rather than the high_school_students table 
+# All of the data will be left joined with the df and model_df
 # (if we don't want to filter before)
 
 def process_numeric_student_columns(student_table, model_df, df, columns, rename_map):
@@ -52,9 +55,9 @@ def process_numeric_student_columns(student_table, model_df, df, columns, rename
 
 
 ######################################################################################################################################################
-# Define the list of years to process
-years = [2017, 2018, 2022, 2023, 2024]
-
+# Load Extracurricular file that contains a list of extracurricular classes
+extracurricular_list = pd.read_excel('data/Extracurricular Classes.xlsx')
+extracurricular_list.head()
 # Create two empty dictionaries to store df and model_df for each year: df_dict and model_dict
 df_dict = {}
 model_dict = {}
@@ -64,7 +67,7 @@ model_dict = {}
 # 'as f' assigns the file object to 'f' for use within the block.
 # pickle.load(f) loads the saved Python objects (two dictionaries of DataFrames).
 with open('./data/student_data.pkl', 'rb') as f:
-    student_tables, high_school_students_tables = pickle.load(f)
+    student_tables = pickle.load(f)
 
 # Begin the for loop to process all the years of data
 for year in years:
@@ -73,7 +76,7 @@ for year in years:
     model_df = None
 
     ######################################################################################################################################################
-    # File Paths (import student_table and high_school_student (for now))
+    # File Paths
     master_file = f'data/{year} EOY Data - USU.xlsx'
     membership_file = f'data/{year} EOY Data - USU.xlsx'
     scram_file = f'data/{year} EOY Data - USU.xlsx'
@@ -83,9 +86,8 @@ for year in years:
     membership = pd.read_excel(membership_file, sheet_name='Course Membership')
     scram = pd.read_excel(scram_file, sheet_name='SCRAM')
 
-    # Retrieve the data for the specified year from the student_tables and high_school_students_tables dictionaries
+    # Retrieve the data for the specified year from the student_tables dictionary
     student_table = student_tables[year]
-    high_school_students = high_school_students_tables[year]
 
     # Rename 'StudentNumber' to 'student_number'
     membership = membership.rename(columns={'StudentNumber': 'student_number'})
@@ -93,15 +95,12 @@ for year in years:
 
     ######################################################################################################################################################
     # df will represent the exploratory data, and model_df will represent the model data
-    ####################################################################
-    # If we decided to filter at the end, all we need to do is change high_school_students to student_table when creating the df and model_df below
-    ####################################################################
 
-    # Create the df from the high_school_student student_numbers
-    df = high_school_students[['student_number']].copy()
+    # Create the df from the student_table student_numbers
+    df = student_table[['student_number']].copy()
 
-    # Create the model_df from the high_school_student student_numbers
-    model_df = high_school_students[['student_number']].copy()
+    # Create the model_df from the student_table student_numbers
+    model_df = student_table[['student_number']].copy()
 
     ######################################################################################################################################################
     # Determine if a class is an advanced course, determine if a student has taken an ac (ac_ind)
@@ -109,25 +108,28 @@ for year in years:
     # df will include all new columns while model_df will only include ac_ind
 
     # Merge membership and master data on the CourseRecordID from the membership table
-    membership_filtered = membership[['student_number', 'CourseRecordID', 'ConcurrEnrolled', 'GradeEarned']]
+    membership_filtered = membership[['student_number', 'CourseRecordID', 'CourseNumber', 'ConcurrEnrolled', 'GradeEarned']]
     master_filtered = master[['CourseTitle', 'CollegeGrantingCr', 'WhereTaughtCampus', 'CourseRecordID']]
-    advanced_courses = pd.merge(membership_filtered, master_filtered, on='CourseRecordID', how='left')
+    student_course_data = pd.merge(membership_filtered, master_filtered, on='CourseRecordID', how='left')
 
     # Drop identical rows
-    advanced_courses = advanced_courses.drop_duplicates()
+    student_course_data = student_course_data.drop_duplicates()
+
+    # Make sure CourseTitle has no leading spaces and is uppercase
+    student_course_data['CourseTitle'] = student_course_data['CourseTitle'].str.strip().str.upper()
 
     # Identify advanced courses
     # The result is converted to an integer type (1 for True, 0 for False)
-    advanced_courses['advanced_course'] = (
-        (advanced_courses['CollegeGrantingCr'].notnull()) | # Check for college credit
-        (advanced_courses['WhereTaughtCampus'].notnull()) | # Check for campus location
-        (advanced_courses['ConcurrEnrolled'] == 'Y') | # Check for concurrent enrollment
-        (advanced_courses['CourseTitle'].str.startswith('AP', na=False)) | # Check for AP courses
-        (advanced_courses['CourseTitle'].str.startswith('BTEC', na=False)) # Check for BTEC courses
+    student_course_data['advanced_course'] = (
+        (student_course_data['CollegeGrantingCr'].notnull()) | # Check for college credit
+        (student_course_data['WhereTaughtCampus'].notnull()) | # Check for campus location
+        (student_course_data['ConcurrEnrolled'] == 'Y') | # Check for concurrent enrollment
+        (student_course_data['CourseTitle'].str.startswith('AP', na=False)) | # Check for AP courses
+        (student_course_data['CourseTitle'].str.startswith('BTEC', na=False)) # Check for BTEC courses
     ).astype(int)
 
     # If CourseTitle is in the advanced_course list then add a 1 to the new column
-    advanced_summary = advanced_courses.groupby('student_number', as_index=False).agg(
+    advanced_summary = student_course_data.groupby('student_number', as_index=False).agg(
         ac_ind=('advanced_course', lambda x: 1 if x.sum() > 0 else 0),  # Has at least one advanced course
         ac_count=('advanced_course', 'sum')  # Total advanced courses
     )
@@ -157,7 +159,7 @@ for year in years:
     ######################################################################################################################################################
     # Calculate students gpa in advanced courses (ac_gpa)
     # Filter for advanced courses based on the advanced_courses list
-    ac_grade = advanced_courses[advanced_courses['advanced_course'] == 1][['student_number', 'GradeEarned']].copy()
+    ac_grade = student_course_data[student_course_data['advanced_course'] == 1][['student_number', 'GradeEarned']].copy()
 
     # Exclude 'P' from the calculation as it does not get factored into the GPA and replace 'F' with 0.0
     ac_grade = ac_grade[ac_grade['GradeEarned'] != 'P']
@@ -186,6 +188,47 @@ for year in years:
     df['ac_gpa'] = df['ac_gpa'].astype(float).round(3)
 
     df.head()
+
+
+    ######################################################################################################################################################
+    # Create a variable to track if a student has participated in extracurricular activitites or not
+    # Create a copy of the advanced_courses DataFrame from above specifically for processing extracurricular data
+    student_course_data = student_course_data[['student_number', 'CourseNumber']].copy()
+
+    # Ensure CourseNumber formatting is consistent for accurate matching
+    # extracurricular_list is defined before the loop
+    extracurricular_list['CourseNumber'] = extracurricular_list['CourseNumber'].astype(str).str.strip()
+    student_course_data['CourseNumber'] = student_course_data['CourseNumber'].astype(str).str.strip()
+
+    # Create a binary indicator for extracurricular participation
+    student_course_data['is_extracurricular'] = (
+        student_course_data['CourseNumber'].isin(extracurricular_list['CourseNumber']).astype(int)
+    )
+
+    # Summarize extracurricular participation per student
+    extracurricular_summary = student_course_data.groupby('student_number', as_index=False).agg(
+        extracurricular_ind=('is_extracurricular', lambda x: 1 if x.sum() > 0 else 0),  # 1 if any extracurriculars are taken
+        extracurricular_count=('is_extracurricular', 'sum'))  # Total count of extracurricular courses
+
+    # Dropping any duplicate rows from extracurricular_summary just in case any remain.
+    extracurricular_summary = extracurricular_summary.drop_duplicates()
+
+    # Make sure student_number is a string
+    extracurricular_summary['student_number'] = extracurricular_summary['student_number'].astype(str)
+    
+    # Only add extracurricular_ind to model_df
+    model_df = pd.merge(model_df, extracurricular_summary[['student_number', 'extracurricular_ind']], on='student_number', how='left')
+
+    # Add the extracurricular_summary data to the df (all extracurricular data)
+    df = pd.merge(df, extracurricular_summary, on='student_number', how='left')
+
+    # Fill null values with 0
+    df[['extracurricular_ind', 'extracurricular_count']] = df[['extracurricular_ind', 'extracurricular_count']].fillna(0)
+    model_df['extracurricular_ind'] = model_df['extracurricular_ind'].fillna(0)
+
+    df.head()
+    model_df.head()
+
 
 
     ######################################################################################################################################################
@@ -235,23 +278,17 @@ for year in years:
         'ScramMembership': 'scram_membership',
         'RegularPercent': 'regular_percent',
         'Environment': 'environment',
-        'IsOnePercent': 'is_one_percent',
         'ExtendedSchoolYear': 'extended_school_year'
     }
     scram = scram.rename(columns=scram_columns)
 
     ################################################################
-    # Dummy code the scram data (regular_percent, environment, is_one_percent and extended_school_year)
+    # Dummy code the scram data (regular_percent, environment and extended_school_year)
     # Create a dataframe for dummy variables. scram_membership is a number from 0-180 so it doesn't need to be dummied.
     scram_dummies = scram[['student_number', 'scram_membership']].copy()
 
     ################################################################
     # Dummy code regular_percent (regular_percent_1.0, regular_percent_2.0, regular_percent_3.0 and regular_percent_nan)
-    
-    ################################################################
-    # I'm not sure if or how the null values should be classified, therefore I have not dropped a column
-    # TODO: Check with Jeremy
-    ################################################################
     regular_percent_dummies = pd.get_dummies(scram['regular_percent'].astype(str), prefix='regular_percent').astype(int)
 
     # Concat with scram_dummies table
@@ -262,12 +299,6 @@ for year in years:
     ################################################################
     # Dummy code environment (environment_v = 1)
     # There are only two students in environment_h
-
-    ################################################################
-    # I'm assuming that null values would be classified as environment_v (regular school setting)
-    # TODO: Check with Jeremy
-    ################################################################
-
     environment_dummies = pd.get_dummies(scram['environment'].fillna('V').astype(str), prefix='environment').astype(int)
 
     # Lowercase column titles
@@ -278,29 +309,7 @@ for year in years:
 
     scram_dummies.head()
 
-    ################################################################
-    # Dummy code is_one_percent (is_one_percent_y = 1)
-    
-    ################################################################
-    # I'm assuming that null values would be classified as is_one_percent_n (No severe disability)
-    # TODO: Check with Jeremy
-    ################################################################
-    one_percent_dummies = pd.get_dummies(scram['is_one_percent'].replace(0, 'n'), prefix='is_one_percent').astype(int)
 
-    # Lowercase column titles
-    one_percent_dummies.columns = one_percent_dummies.columns.str.lower()
-
-    # Concat with scram_dummies table
-    scram_dummies = pd.concat([scram_dummies, one_percent_dummies], axis=1)
-
-    scram_dummies.head()
-
-    ################################################################
-    # Dummy code extended_school_year (extended_school_year_y = 1)
-    
-    ################################################################
-    # I'm assuming that null values would be classified as extended_school_year_n (No extended school year)
-    # TODO: Check with Jeremy
     ################################################################
     # Dummy code extended_school_year (extended_school_year_y)
     extended_year_dummies = pd.get_dummies(scram['extended_school_year'].replace(0, 'n'), prefix='extended_school_year').astype(int)
@@ -342,6 +351,9 @@ for year in years:
 # The logic will calculate absences differently based on the availability of these columns:
 # - If absence columns exist: Calculate school_membership as the sum of attendance and absence columns
 # - If absence columns are missing: Use the existing school_membership column to calculate absences by subtracting days_attended from school_membership
+# - If days_attended > 180 change the value of days_attended to 180
+# - If school_membership > 180 change the school_membership value to 180
+# - If school_membership < days attended and days_attended does not equal 0 change 
 # The days_absent column is created to standardize the representation of total absences across all years
 # This will be done separately for df_dict and model_dict
 
@@ -370,6 +382,15 @@ for year in years:
     else:
         # For years without detailed absence columns, absences are calculated as the difference between school_membership and days_attended
         df_year['days_absent'] = df_year['school_membership'] - df_year['days_attended']
+    
+    # Update days_attended and school_membership to 180 if days_attended is > 180 or school_membership is > 180
+    df_year.loc[(df['days_attended'] > 180), 'days_attended'] = 180
+    df_year.loc[(df['school_membership'] > 180), 'school_membership'] = 180
+
+    # Update school_membership to 180 if school_membership is < days_attended and days_attended is not 0
+    df_year.loc[
+        (df_year['school_membership'] < df_year['days_attended']) & (df_year['days_attended'] != 0), 
+        'school_membership'] = 180
 
     # Save the updated DataFrame back to the dictionary
     df_dict[f'df_{year}'] = df_year
@@ -398,6 +419,15 @@ for year in years:
     else:
         # For years without detailed absence columns, absences are calculated as the difference between school_membership and days_attended
         model_year['days_absent'] = model_year['school_membership'] - model_year['days_attended']
+
+    # Update days_attended and school_membership to 180 if days_attended is > 180 or school_membership is > 180
+    model_year.loc[(model_year['days_attended'] > 180), 'days_attended'] = 180
+    model_year.loc[(model_year['school_membership'] > 180), 'school_membership'] = 180
+
+    # Update school_membership to 180 if school_membership is < days_attended and days_attended is not 0
+    model_year.loc[
+        (model_year['school_membership'] < model_year['days_attended']) & (model_year['days_attended'] != 0), 
+        'school_membership'] = 180
 
     # Save the updated DataFrame back to the dictionary
     model_dict[f'model_df_{year}'] = model_year
@@ -444,13 +474,15 @@ model_attendance = model_attendance.groupby('student_number', as_index=False).su
 # Create percent_days_attended to calculate overall attendance percentage: days_attended divided by school_membership
 # If school_membership is 0 it is replaced with NA to avoid division issues.
 # This might be pointless.
-model_attendance['percent_days_attended'] = (
-    model_attendance['days_attended'] / model_attendance['school_membership'].replace(0, pd.NA)
-) * 100
 
-# Round percent_days_attended to two decimal places
-model_attendance['percent_days_attended'] = pd.to_numeric(model_attendance['percent_days_attended'], errors='coerce')
+# Perform the calculation
+model_attendance['percent_days_attended'] = (model_attendance['days_attended'] / model_attendance['school_membership']) * 100
+
+# Round the result to two decimal places
 model_attendance['percent_days_attended'] = model_attendance['percent_days_attended'].round(2)
+
+# If school_membership = 0 then percent_days_attended = 0 (avoid dividing by 0)
+model_attendance.loc[model_attendance['school_membership'] == 0, 'percent_days_attended'] = np.nan
 
 model_attendance.head()
 
@@ -468,9 +500,15 @@ model_df.head()
 # Calculate the percent_days_attended column for the df. This will be the percentage of days each student attended each year.
 # If school_membership is 0 it is replaced with NA to avoid division issues.
 # This might be pointless.
-df['percent_days_attended'] = (
-    df['days_attended'] / df['school_membership'].replace(0, pd.NA)
-) * 100
+
+# Perform the calculation
+df['percent_days_attended'] = (df['days_attended'] / df['school_membership']) * 100
+
+# Round the result to two decimal places
+df['percent_days_attended'] = df['percent_days_attended'].round(2) 
+
+# If school_membership = 0 then percent_days_attended = 0 (avoid dividing by 0)
+df.loc[df['school_membership'] == 0, 'percent_days_attended'] = np.nan  # Avoid division by zero
 
 # Round percent_days_attended to two decimal places
 df['percent_days_attended'] = pd.to_numeric(df['percent_days_attended'], errors='coerce')
@@ -493,6 +531,25 @@ advanced_course_indicator.head()
 
 # Merge with model_df
 model_df = pd.merge(model_df, advanced_course_indicator, on='student_number', how='left')
+
+model_df.head()
+
+
+######################################################################################################################################################
+# Filter the extracurricular_ind column for the model_df.
+# extracurricular_ind can only be 1 or 0, so we will return the max value for each student_number
+extracurricular_indicator = concat_model[['student_number', 'extracurricular_ind']].copy()
+
+# Group by student_number and get the row with the max extracurricular_ind
+extracurricular_indicator = extracurricular_indicator.groupby('student_number', as_index=False)['extracurricular_ind'].max()
+
+# Make sure student_number is a string
+extracurricular_indicator['student_number'] = extracurricular_indicator['student_number'].astype(str)
+
+extracurricular_indicator.head()
+
+# Merge with model_df
+model_df = pd.merge(model_df, extracurricular_indicator, on='student_number', how='left')
 
 model_df.head()
 
@@ -540,11 +597,14 @@ model_df.head()
 # Return the rest of Scram data for the most recent year of data per student
 concat_scram_colums = [
     'student_number', 'regular_percent_1.0', 'regular_percent_2.0', 'regular_percent_3.0', 'regular_percent_nan', 
-    'environment_h', 'environment_r', 'environment_v', 'is_one_percent_y', 'extended_school_year_y', 'current_grade'
+    'environment_h', 'environment_r', 'environment_v', 'extended_school_year_y', 'current_grade'
 ]
 
+# Filter only existing columns
+combined_scram = concat_model.loc[:, concat_model.columns.intersection(concat_scram_colums)]
+
 # Filter the DataFrame for the specified columns
-combined_scram = concat_model[concat_scram_colums]
+# combined_scram = concat_model[concat_scram_colums]
 
 # Sort by grade level in descending order
 combined_scram = combined_scram.sort_values(by='current_grade', ascending=False)
@@ -555,15 +615,8 @@ combined_scram = combined_scram.drop_duplicates(subset='student_number', keep='f
 # Drop current_grade from the Data Frame as it is not needed in the model_df
 #combined_scram = combined_scram.drop(columns='current_grade')
 
-###################################
-# TODO: I am assuming that regular_percent_nan does not need to be reclassified, therefore I will drop this column
-###################################
 # Drop the regular_percent_nan column
 combined_scram = combined_scram.drop(columns='regular_percent_nan')
-
-###################################
-# A environment column needs to be dropped, but some years have v, h, and r, while others only have v so I do not know which column to drop
-###################################
 
 # Make sure student number is a string
 combined_scram['student_number'] = combined_scram['student_number'].astype(str)
@@ -575,23 +628,28 @@ model_df = pd.merge(model_df, combined_scram, on='student_number', how='left')
 
 model_df.head()
 
-df.duplicated(subset=['student_number', 'current_grade']).sum()
-df.duplicated().sum()
+
+
+######################################################################################################################################################
+# Specify the columns to be dropped from the model_df
+model_columns_to_drop = ['days_attended', 'days_absent', 'school_membership', 'extended_school_year_y', 'environment_v']
+
+# Make sure the column exists before dropping
+model_df = model_df.drop(columns=[col for col in model_columns_to_drop if col in model_df.columns], errors='ignore')
 
 
 ######################################################################################################################################################
 # Prepare the data for export
+
 # Specify the column order for the df
-df_columns = ['student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa', 'days_attended',
-            'days_absent', 'school_membership', 'percent_days_attended',  'current_grade',
-            'scram_membership', 'regular_percent', 'environment', 'is_one_percent', 'extended_school_year']
+df_columns = ['student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa', 'days_attended', 'days_absent',
+            'school_membership', 'percent_days_attended', 'extracurricular_ind', 'extracurricular_count', 'current_grade',
+            'scram_membership', 'regular_percent', 'environment', 'extended_school_year']
 
 df = df[df_columns]
 
 # Specify the column order for the model_df
-model_columns = (['student_number', 'ac_ind', 'overall_gpa', 'days_attended', 'days_absent', 
-                'school_membership', 'percent_days_attended',
-                'is_one_percent_y', 'extended_school_year_y']
+model_columns = (['student_number', 'ac_ind', 'overall_gpa', 'percent_days_attended', 'extracurricular_ind', 'scram_membership']
  + [col for col in model_df.columns if col.startswith('regular_percent')]
  + [col for col in model_df.columns if col.startswith('environment_')])
 
@@ -599,6 +657,17 @@ model_df = model_df[model_columns]
 
 df.head()
 model_df.head()
+
+
+######################################################################################################################################################
+# Now that all data has been merged, null values need to be addressed.  
+# These null values arise because the data comes from multiple years, and not every column exists in every year.  
+# When categorical columns are dummy-encoded and merged across different years, some students may not have entries  
+# for certain categories, resulting in null values.  
+# To handle this, all columns will have missing values filled with 0.
+
+model_df.fillna(0, inplace=True)
+df.fillna(0, inplace=True)
 
 # Export both files
 df.to_csv('./data/02_academic_exploratory.csv', index=False)

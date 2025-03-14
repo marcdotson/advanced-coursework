@@ -6,19 +6,17 @@
 #      - Keys: Years (e.g., 2017, 2018, 2022, etc.).
 #      - Values: DataFrames containing the full student table for each year.
 #    - Example: student_tables[2017] provides the full student table for 2017.
-# 2. high_school_students_tables:
-#    - A dictionary where:
-#      - Keys: Years (e.g., 2017, 2018, 2022, etc.).
-#      - Values: DataFrames containing only high school students for each year.
-#    - Example: high_school_students_tables[2017] provides the high school student table for 2017.
-#############################################################################
-# TODO: Decide on how to filter for high school students only at the end of the data
-# The code currently uses high_school_students_tables for processing.
-# If filtering is moved to the end instead of the beginning, only 1-2 lines of code per script would need to be adjusted.
-#############################################################################
+
+#======================================================
+# Filtering has been moved back to the begining of the process
+# IsOnePercent = Y has been filtered out of the data.
+#======================================================
 
 import pandas as pd
 import pickle
+
+# List of years to process
+years = [2017, 2018, 2022, 2023, 2024]
 
 ##########################################################################################################################################################
 # Columns to drop if they exist in the student_table. Some years are missing columns.
@@ -30,22 +28,20 @@ columns_to_drop = [
     "EarlyNumeracyStatusEOY", "EarlyNumeracyIntervention"
 ]
 
-# List of years to process
-years = [2017, 2018, 2022, 2023, 2024]
-
 # Initialize dictionaries to store tables for all years
 student_tables = {} # Stores all students for each year
-high_school_students_tables = {} # Stores high school students for each year
 
 # Start the for loop
 for year in years:
     # Load the Excel file for the specific year
     file_path = f'data/{year} EOY Data - USU.xlsx'
     student = pd.read_excel(file_path, sheet_name='Student')
-
+    # Load the scram data to filter out IsOnePercent = Y
+    scram = pd.read_excel(file_path, sheet_name='SCRAM')
+    
     # Rename 'StudentNumber' to 'student_number' in all tables that contain 'student_number'
     student = student.rename(columns={'StudentNumber': 'student_number'})
-
+    scram = scram.rename(columns={'StudentNumber': 'student_number'})
 
     ##########################################################################################################################################################
     # Filter the student table down to 1 row per student. This will make everything easier moving forward
@@ -53,39 +49,48 @@ for year in years:
 
     # Drop the columns from the list above. If the data does not contain that column ignore the error and continue.
     student_table = student.drop(columns=[col for col in columns_to_drop if col in student.columns], errors='ignore')
+    
+    # Create a table with student_number and IsOnePercent from the scram data
+    scram_filter = scram[['student_number', 'IsOnePercent']].copy()
 
-    # Drop rows with null or empty student_numbers
+    # Merge the student table and the scram_filter table
+    student_table = pd.merge(student_table, scram_filter, on='student_number', how='left')
+    
+    # Drop rows from student_table where IsOnePercent is NOT null. 
+    # This column contains only 'Y' or null, so removing all non-null values accounts for any potential data entry inconsistencies.
+    student_table = student_table[student_table['IsOnePercent'].isna()]
+
+    # Now that we have filtered out IsOnePercent we can drop this column from the student_table
+    student_table = student_table.drop(columns=['IsOnePercent'])
+
+    # Ensure GradeLevel is numeric
+    student_table['GradeLevel'] = pd.to_numeric(student_table['GradeLevel'], errors='coerce')
+
+    # Drop rows with null or empty student_numbers and GradeLevels
     student_table.dropna(subset=['student_number'], inplace=True)
+    student_table = student_table.dropna(subset=['GradeLevel'])
+
+    # Make sure GradeLevel is an int
+    student_table['GradeLevel'] = student_table['GradeLevel'].astype(int)
 
     # Drop duplicate student_numbers but keep the row with the largest GradeLevel
     student_table = student_table.loc[student_table.groupby('student_number')['GradeLevel'].idxmax()].reset_index(drop=True)
 
-
-    ##########################################################################################################################################################
-    # Create a table that contains all the columns as the student_table but only includes student_numbers for high school students.
-    # Ensure GradeLevel is numeric
-    student_table['GradeLevel'] = pd.to_numeric(student_table['GradeLevel'], errors='coerce')
-
-    # Filter the student_table to only include student_numbers for students in grades > 8
-    high_school_students = student_table[student_table['GradeLevel'] > 8].copy()
-
-    student_table.head()
-    high_school_students.head()
-
+    # Filter out students that are not in high school
+    student_table = student_table[student_table['GradeLevel'] > 8]
 
     ##########################################################################################################################################################
     # Add the processed tables to their respective dictionaries
     student_tables[year] = student_table
-    high_school_students_tables[year] = high_school_students
 
 
 ##########################################################################################################################################################
 # Save the dictionaries into a single pickle file (student_data.pkl)
 # 'wb' opens the file in binary write mode (required for pickle)
 # 'as f' assigns the file object to 'f' for use within the block
-# pickle.dump((student_tables, high_school_students_tables), f) saves the two dictionaries 
+# pickle.dump((student_tables), f) saves the dictionary 
 with open('./data/student_data.pkl', 'wb') as f:
-    pickle.dump((student_tables, high_school_students_tables), f)
+    pickle.dump((student_tables), f)
 
 print('===========================================')
 print("Student tables exported successfully!")

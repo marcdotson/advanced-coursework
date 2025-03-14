@@ -1,7 +1,15 @@
-# This code compiles all of the modeling and exploratory data into two tables: '07_model_data.csv', '07_exploratory_data.csv'
+# This code compiles all modeling and exploratory data into four CSV files: 
+# 'model_data.csv', 'exploratory_data.csv' for full historical data 
+# and 'post_covid_model_data.csv', 'post_covid_exploratory_data.csv' for post-COVID data
 
 import pandas as pd
 import pickle
+
+# Define the years to process
+years = [2017, 2018, 2022, 2023, 2024]
+
+# Post Covid years
+post_covid_years = [2022, 2023, 2024]
 
 # Load in the modeling datasets that will be joined later
 # []_model represents modeling files
@@ -24,75 +32,53 @@ with open('./data/student_data.pkl', 'rb') as f:
     student_tables = pickle.load(f)
 
 ######################################################################################################################################################
-# Initialize empty list to store the student_numbers from the for loop
-all_students = []  # this will store the student_numbers from the student_tables
+# Function to process student data for given years (so post_covid years and all years can be processed at the same time)
+def process_student_data(years, prefix=""):
+    """
+    Processes student data for the specified years and exports both exploratory and modeling datasets.
+    Parameters:
+    - years (list): The list of years to process.
+    - prefix (str): Optional prefix for output file names (e.g., "post_covid_").
+    """
 
-# List of years for which we will process the data
-years = [2017, 2018, 2022, 2023, 2024]
+    all_students = []
 
-# Iterate through each of the student_tables to make a list of all student_numbers across all years
-for year in years:
-    # Load the student_table for the specific year from the pickle data
-    student_table = student_tables[year]  # Use the student_tables dictionary
+    for year in years:
+        student_table = student_tables[year]
+        all_students.append(student_table[['student_number']])
 
-    # Add the student_number from student_table to the all_students list
-    all_students.append(student_table[['student_number']])
+    df = pd.concat(all_students, ignore_index=True).drop_duplicates(keep='first')
+    model_df = df.copy()
 
+    # Merge model_df with all modeling datasets
+    model_df = pd.merge(model_df, academic_model, on='student_number', how='left')
+    model_df = pd.merge(model_df, demographic_model, on='student_number', how='left')
+    model_df = pd.merge(model_df, assessment_model, on='student_number', how='left')
+    model_df = pd.merge(model_df, teacher_model, on='student_number', how='left')
+    model_df = pd.merge(model_df, school_model, on='student_number', how='left')
 
-######################################################################################################################################################
-# Concatenate all of the student_numbers from the student tables into the df and model_df. 
-# Everything will be built by left joining with the df and model_df.
-df = pd.concat(all_students, ignore_index=True)
-model_df = pd.concat(all_students, ignore_index=True)
+    # Merge df with all exploratory datasets
+    df = pd.merge(df, academic_df, on='student_number', how='left')
+    df = pd.merge(df, demographic_df, on='student_number', how='left')
+    df = pd.merge(df, assessment_df, on='student_number', how='left')
+    df = pd.merge(df, teacher_df, on='student_number', how='left')
+    df = pd.merge(df, school_df, on='student_number', how='left')
 
-# We do not want any duplicate student_numbers, so we will drop all duplicates while only keeping the first duplicate.
-df = df.drop_duplicates(keep = 'first')
-model_df = model_df.drop_duplicates(keep = 'first')
+    df = df.drop_duplicates(keep='first')
 
-df.head()
-model_df.head()
-
-# Left join the model_df with all the datasets from above
-# Left join ensures that we keep all students in model_df, even if they have missing data in other tables.
-model_df = pd.merge(model_df, academic_model, on='student_number', how='left')
-model_df = pd.merge(model_df, demographic_model, on='student_number', how='left')
-model_df = pd.merge(model_df, assessment_model, on='student_number', how='left')
-model_df = pd.merge(model_df, teacher_model, on='student_number', how='left')
-model_df = pd.merge(model_df, school_model, on='student_number', how='left')
-
-model_df.head()
-
-# Left join the df with all the datasets from above
-# Left join ensures that we keep all students in df, even if they have missing data in other tables.
-df = pd.merge(df, academic_df, on='student_number', how='left')
-df = pd.merge(df, demographic_df, on='student_number', how='left')
-df = pd.merge(df, assessment_df, on='student_number', how='left')
-df = pd.merge(df, teacher_df, on='student_number', how='left')
-df = pd.merge(df, school_df, on='student_number', how='left')
-
-# Since df has multiple rows per student, there might be some duplicate rows after all the merges
-# Therefore we want to drop duplicate rows and keep the first instance of the duplicate
-df = df.drop_duplicates(keep = 'first')
-
-df.head()
+    # Export the data with an optional prefix
+    df.to_csv(f'./data/{prefix}exploratory_data.csv', index=False)
+    model_df.to_csv(f'./data/{prefix}modeling_data.csv', index=False)
 
 
 ######################################################################################################################################################
+# Process full historical data
+process_student_data(years, prefix="")
 
-# TODO: This is where I will add the code to remove columns from the data.
-
-######################################################################################################################################################
-
-# Fill NaN values with 0 before exporting
-df.fillna(0, inplace=True)
-model_df.fillna(0, inplace=True)
-
-# Export the data
-df.to_csv('./data/exploratory_data.csv', index=False)
-model_df.to_csv('./data/modeling_data.csv', index=False)
+# Process post-COVID data
+process_student_data(post_covid_years, prefix="post_covid_")
 
 print('===========================================')
-print('Modeling data exported successfully!')
-print('Exploratory data exported successfully!')
+print('Data exported successfully!')
 print("The workflow is complete!")
 print('===========================================')

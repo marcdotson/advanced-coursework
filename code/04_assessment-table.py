@@ -1,6 +1,4 @@
 # The code will output one data file: 04_assessment_data.csv
-# TODO: I need to figure out what we want the exploratory data to look like, if we want it to be different than the modeling data.
-
 import pandas as pd
 import numpy as np
 import pickle
@@ -131,7 +129,16 @@ df = df.sort_values(by = 'composite_score', ascending=False)
 # Drop all duplicate rows, and only keep the first instance of the duplicate
 df = df.drop_duplicates(subset='student_number', keep = 'first')
 
+# Fill the null values within each column with 0. 
+# These null values exist because some students have not taken the ACT yet.
+df.fillna(0, inplace=True)
+
 df.head()
+
+######################################################################################################################################################
+# Drop test_date column
+df = df.drop(columns='test_date')
+
 
 ######################################################################################################################################################
 # Export the data

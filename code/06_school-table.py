@@ -26,14 +26,14 @@ for year in years:
         f'data/{year} EOY Data - USU.xlsx', sheet_name='Course Membership', usecols=membership_columns.keys(), dtype=membership_columns
         ).drop_duplicates()
     
-    # Retrieve the data for the specified year from the student_tables dictionaries
+    # Retrieve the data for the specified year from the student_tables dictionary
     student_table_year = student_tables[year]
 
     # Assign the year to student_table_year table
     # I will later use this to join with students current school, to make sure data is accurate on yearly basis
     student_table_year['year'] = year  
     membership_year['year'] = year
-    
+
     # Ensure year is an integer
     student_table_year['year'] = student_table_year['year'].astype(int)
     membership_year['year'] = membership_year['year'].astype(int)
@@ -102,7 +102,6 @@ df = pd.merge(df, max_school_count, on=['student_number', 'year'], how='left')
 
 df.head()
 
-
 ######################################################################################################################################################
 # Pivot the merged table to create a grid of student_numbers by school_number
 school_grid = student_school.pivot_table(
@@ -143,8 +142,10 @@ student_school_list['school_count'] = school_grid.iloc[:, 1:].sum(axis=1)
 # Merge the student_school_list with the df
 df = pd.merge(df, student_school_list, on='student_number', how='left')
 
-
-df.head()
+# Fill all null values with 0.
+# The null values arise because there are some (290) students_numbers who do not have any recorded school_numbers in the membership table.
+model_df.fillna(0, inplace=True)
+df.fillna(0, inplace=True)
 
 df.duplicated(subset=['student_number', 'year']).sum()
 ######################################################################################################################################################

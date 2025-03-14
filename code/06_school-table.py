@@ -142,14 +142,12 @@ student_school_list['school_count'] = school_grid.iloc[:, 1:].sum(axis=1)
 # Merge the student_school_list with the df
 df = pd.merge(df, student_school_list, on='student_number', how='left')
 
-df.head()
-
 # Fill all null values with 0.
 # The null values arise because there are some (290) students_numbers who do not have any recorded school_numbers in the membership table.
 model_df.fillna(0, inplace=True)
 df.fillna(0, inplace=True)
 
-
+df.duplicated(subset=['student_number', 'year']).sum()
 ######################################################################################################################################################
 # Export the data
 df.to_csv('./data/06_school_exploratory_data.csv', index=False)

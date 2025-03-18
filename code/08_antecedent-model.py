@@ -12,12 +12,12 @@ G = nx.DiGraph()
 # Add edges based on the DAG structure
 edges = [
     ("Teacher", "AC_Ind"),
-    ("Teacher", "Grades"),
-    ("Attendance", "Grades"),
+    ("Teacher", "Overall_GPA"),
+    ("Attendance", "Overall_GPA"),
     ("School", "Teacher"),
-    ("School", "Grades"),
+    ("School", "Overall_GPA"),
     ("School", "AC_Ind"),
-    ("Disadvantage", "Grades"),
+    ("Disadvantage", "Overall_GPA"),
     ("Disadvantage", "Attendance"),
     ("Disadvantage", "AC_Ind"),
     ("Overall_GPA", "AC_Ind")

@@ -16,40 +16,20 @@ if not os.path.exists(folder_path):
 # Load in the dataset
 df = pd.read_csv('data/modeling_data.csv', low_memory=False)
 
-
-################################################################################################
-# RUN THE FLAT MODEL USING SCIKIT-LEARN AND EXPORT DRAWS TO A FILE
-################################################################################################
-
 # Define target and predictors
 df = pd.get_dummies(df, drop_first= False)
-
-y = df['ac_ind']
-X_drop = ['student_number', 'ac_ind', 'ell_disability_group_non_ell_without_disability']
-X = df.drop(columns=X_drop, axis=1)
-
-# Fit logistic regression model
-log_reg = LogisticRegression(fit_intercept=True, max_iter=10000)
-log_reg.fit(X, y)
-
-# Extract feature names and coefficients
-coef_df = pd.DataFrame({'Feature': X.columns, 'Coefficient': log_reg.coef_[0]})
-
-# Sort by absolute coefficient value (most influential first)
-coef_df = coef_df.sort_values(by='Coefficient', ascending=False)
-
-# Save to CSV
-coef_df.to_csv("output/scikit-flat-model-sorted-coefficients.csv", index=False)
-
-print("Sckit Logistic regression coefficients saved successfully!")
-
 
 ##################################################################################################################
 # PREP THE MODEL AND SPECIFY COLUMNS TO DROP
 ##################################################################################################################
 
 # Columns to exclude from modeling
-col_drop = ['student_number', 'ell_disability_group']
+col_drop = ['student_number', 'ell_disability_group_non_ell_without_disability']
+
+#add the teacher and exit codes to the dropped columns
+for col in df.columns:
+    if col.startswith('teacher') or col.startswith('exit'):
+        col_drop.append(col)
 
 # Define base dataframe after dropping columns
 df_base = df.drop(columns=col_drop, axis=1)
@@ -59,7 +39,6 @@ all_predictors = " + ".join(df_base.columns.difference(["ac_ind"]))
 
 #create the string formated model formula 
 model_formula =  f"ac_ind ~ {all_predictors}"
-
 
 ################################################################################################
 # RUN THE FLAT MODEL AND EXPORT DRAWS TO A FILE
@@ -98,7 +77,7 @@ if __name__ == '__main__':
        # Sort predictors by mean effect size (largest to smallest)
         sorted_summary = summary.reindex(summary["mean"].sort_values(ascending=False).index)
         # Save ordered model output to CSV
-        sorted_summary.to_csv("outputs/flat-model-output-ordered.csv")
+        sorted_summary.to_csv("output/flat-model-output-ordered.csv")
         print("Ordered model output saved successfully!")
 
     else:

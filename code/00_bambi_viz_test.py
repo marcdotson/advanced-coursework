@@ -18,7 +18,7 @@ if not os.path.exists(folder_path):
     os.makedirs(folder_path)
 
 # Load trace data from NetCDF file
-trace = az.from_netcdf("outputs/flat-model-output.nc")
+trace = az.from_netcdf("output/flat-model-output.nc")
 
 # Extract posterior summary statistics
 summary = az.summary(trace)
@@ -28,7 +28,7 @@ summary = az.summary(trace)
 #########################################################################
 
 # Rank predictors by mean effect size (most influential)
-summary["abs_mean"] = summary["mean"] # Use mean or median based on preference
+summary["abs_mean"] = summary["mean"].abs() # Use mean or median based on preference
 top_10_predictors = summary.nlargest(10, "abs_mean").index.tolist()
 
 # Plot only the top 10 influential predictors

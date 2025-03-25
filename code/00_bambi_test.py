@@ -3,9 +3,6 @@ import bambi as bmb
 import arviz as az
 import os 
 
-import matplotlib.pyplot as plt
-from sklearn.linear_model import LogisticRegression
-
 # Define the folder path where the trace plots will be saved
 folder_path = "output/"
 

@@ -51,8 +51,6 @@ if not os.path.exists(folder_path):
 
 # Columns to exclude from modeling 
 col_drop = ['student_number']
-
-#add the teacher and exit codes to the dropped columns
 for col in df.columns:
     if col.startswith('teacher') or col.startswith('exit'):
         col_drop.append(col)
@@ -60,11 +58,25 @@ for col in df.columns:
 # Define base dataframe after dropping columns
 df_base = df.drop(columns=col_drop, axis=1)
 
+# create a list of columns to include as random effects
+rand_effects = []
+for col in df_base.columns:
+    if col.startswith('school'): # Just include schools as random effects
+        rand_effects.append(col)
+
 # Extract potential predictors (excluding the target 'ac_ind')
-all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "ell_disability_group"]))
+# all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "ell_disability_group"]))
+fixed_effects = (" + ".join(df_base.columns
+    .difference(["ac_ind", "ell_disability_group"])
+    .difference(rand_effects))
+)
+
+rand_effects = " + ".join(rand_effects)
 
 #create the string formated model formula 
-model_formula = f"ac_ind ~ {all_predictors} + ({all_predictors} | ell_disability_group)"
+# model_formula = f"ac_ind ~ {all_predictors} + ({all_predictors} | ell_disability_group)"
+# model_formula = f"ac_ind ~ ({all_predictors} | ell_disability_group)"
+model_formula = f"ac_ind ~ {fixed_effects} + ({rand_effects} | ell_disability_group)"
 
 
 ################################################################################################

@@ -103,3 +103,19 @@ plt.close()
 print("Rank plot saved successfully!")
 
 # Our rank plot looks good. We believe that the sampling is fair and efficient.
+
+
+#########################################################################
+#                           POSTERIOR DISTRIBUTIONS
+#########################################################################
+
+# Create and save posterior distributions for all parameters
+az.plot_posterior(trace,
+                  kind="kde", # Kernel Density Estimate for smoothness
+                  hdi_prob=0.95,  # 95% Highest Density Interval
+                  ref_val=0)  # Reference line at 0 for effect size interpretation
+
+plt.title("Posterior Distributions for All Parameters")
+plt.savefig(f"{folder_path}/flat-model-posterior-distributions.png", format="png")
+plt.close()
+print("Posterior distributions plot saved successfully!")

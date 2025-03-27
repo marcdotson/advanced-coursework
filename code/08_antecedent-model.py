@@ -4,10 +4,11 @@ import arviz as az
 # import networkx as nx
 import os
 import matplotlib.pyplot as plt
+import glob
 
-# ################################################################################################
-# #                            #CREATE A DAG TO JUSTIFY THE MODEL
-# ################################################################################################
+# ################################################
+# #CREATE A DAG TO JUSTIFY THE MODEL
+# ################################################
 # G = nx.DiGraph()
 
 # # Add edges based on the DAG structure
@@ -33,8 +34,11 @@ import matplotlib.pyplot as plt
 # plt.title("DAG for Advanced Coursework ASC Project")
 # plt.show()
 
-################################################################################################
-# Load in the dataset
+
+########################################################
+# LOAD IN THE DATASET AND ESTABLISH FOLDER PATH
+########################################################
+
 df = pd.read_csv('data/modeling_data.csv', low_memory = False)
 
 # Define the folder path where the trace plots will be saved
@@ -45,9 +49,9 @@ if not os.path.exists(folder_path):
     os.makedirs(folder_path)
 
 
-##################################################################################################
-# PREP THE MODEL AND SPECIFY COLUMNS TO DROP
-##################################################################################################
+#######################################################
+# PREP THE MODEL AND SPECIFY THE MODEL FORMULA
+#######################################################
 
 # Columns to exclude from modeling 
 col_drop = ['student_number']
@@ -79,15 +83,15 @@ rand_effects = " + ".join(rand_effects)
 model_formula = f"ac_ind ~ {fixed_effects} + ({rand_effects} | ell_disability_group)"
 
 
-################################################################################################
-# RUN THE FLAT MODEL AND EXPORT DRAWS TO A FILE
-################################################################################################
+################################################
+# RUN THE MULTILEVEL MODEL 
+################################################
 
 if __name__ == '__main__':
     print("Starting model setup...")
 
     #establish the flat Logistic Regression Model
-    multilevel_model = bmb.Model(model_formula, df_base, family="bernoulli")
+    multilevel_model = bmb.Model(model_formula, df_base, family="bernoulli",  noncentered=True)
     # apply the .build() method prior to fitting the model
     multilevel_model.build() 
 
@@ -96,29 +100,54 @@ if __name__ == '__main__':
         print("Starting model sampling...")
         #fit the model with the the flat_model that was created prior
         multilevel_fitted = multilevel_model.fit(
-            draws=2000, inference_method='mcmc', random_seed=42, target_accept = .9)
+            draws=2000, inference_method='mcmc', random_seed=42, target_accept = .9, 
+            idata_kwargs={"log_likelihood": True})
         print("Sampling complete.")
 
     except Exception as e:
         print(f"Sampling failed: {e}")
         multilevel_fitted = None  # Set output to None if sampling fails
 
-    # Only try to export if it is not none
-    if multilevel_fitted is not None:
-        # Save trace to a NetCDF file
-        print('Saving Model Trace to a File...')
-        multilevel_fitted.to_netcdf(f"{folder_path}/multilevel-model-output.nc")
-        print('Trace successfully saved, look for it in the data folder')
 
-        # Extract posterior summary to save sorted predictors to a csv
-        summary = az.summary(multilevel_fitted)
-       # Sort predictors by mean effect size (largest to smallest)
-        sorted_summary = summary.reindex(summary["mean"].abs().sort_values(ascending=False).index)
 
-        # Save ordered model output to CSV
-        sorted_summary.to_csv(f"{folder_path}/multilevel-model-output-ordered.csv")
-        print("Ordered model output saved successfully!")
+###############################################################
+# SAVE THE MODEL OUTPUT AND THE SORTED MODEL OUTPUT
+###############################################################
 
-    else:
-        print("Trace is None, cannot save trace to a file.")
+# Function to find the next available output filename
+def get_next_filename(folder_path, base_name, extension):
+    """Finds the next available file number to avoid overwriting."""
+    existing_files = glob.glob(f"{folder_path}/{base_name}_*.{extension}")
+    existing_numbers = sorted(
+        [int(f.split("_")[-1].split(".")[0]) for f in existing_files if f.split("_")[-1].split(".")[0].isdigit()]
+    )
+
+    next_number = existing_numbers[-1] + 1 if existing_numbers else 1
+    return f"{folder_path}/{base_name}_{next_number:02d}.{extension}"
+
+
+# Only try to export if the model is not None
+if multilevel_fitted is not None:
+    print('Saving Model Trace to a File...')
+
+    # Generate incremented filenames
+    netcdf_filename = get_next_filename(folder_path, "multilevel-model-output", "nc")
+    csv_filename = get_next_filename(folder_path, "multilevel-model-output-ordered", "csv")
+
+    # Save the NetCDF file
+    multilevel_fitted.to_netcdf(netcdf_filename)
+    print(f'Trace successfully saved as {netcdf_filename}')
+
+    # Extract posterior summary
+    summary = az.summary(multilevel_fitted)
+
+    # Sort predictors by absolute mean effect size
+    sorted_summary = summary.reindex(summary["mean"].abs().sort_values(ascending=False).index)
+
+    # Save ordered model output to CSV
+    sorted_summary.to_csv(csv_filename)
+    print(f"Ordered model output saved as {csv_filename}!")
+
+else:
+    print("Trace is None, cannot save trace to a file.")
 

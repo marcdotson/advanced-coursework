@@ -41,7 +41,7 @@ import glob
 
 df = pd.read_csv('data/modeling_data.csv', low_memory = False)
 
-# Define the folder path where the trace plots will be saved
+# Define the folder path where the model output will be saved
 folder_path = "output/"
 
 # Check if the folder exists, and create it if not
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     print("Starting model setup...")
 
     #establish the flat Logistic Regression Model
-    multilevel_model = bmb.Model(model_formula, df_base, family="bernoulli",  noncentered=True)
+    multilevel_model = bmb.Model(model_formula, df_base, family = "bernoulli", noncentered = True)
     # apply the .build() method prior to fitting the model
     multilevel_model.build() 
 
@@ -99,9 +99,10 @@ if __name__ == '__main__':
     try:
         print("Starting model sampling...")
         #fit the model with the the flat_model that was created prior
-        multilevel_fitted = multilevel_model.fit(
-            draws=2000, inference_method='mcmc', random_seed=42, target_accept = .9, 
-            idata_kwargs={"log_likelihood": True})
+        # multilevel_fitted = multilevel_model.fit(
+        #     draws=2000, inference_method='mcmc', random_seed=42, target_accept = .9, 
+        #     idata_kwargs={"log_likelihood": True})
+        multilevel_fitted = multilevel_model.fit(idata_kwargs = {"log_likelihood": True})
         print("Sampling complete.")
 
     except Exception as e:
@@ -128,7 +129,7 @@ def get_next_filename(folder_path, base_name, extension):
 
 # Only try to export if the model is not None
 if multilevel_fitted is not None:
-    print('Saving Model Trace to a File...')
+    print('Saving Model Output to a File...')
 
     # Generate incremented filenames
     netcdf_filename = get_next_filename(folder_path, "multilevel-model-output", "nc")
@@ -136,7 +137,7 @@ if multilevel_fitted is not None:
 
     # Save the NetCDF file
     multilevel_fitted.to_netcdf(netcdf_filename)
-    print(f'Trace successfully saved as {netcdf_filename}')
+    print(f'Output successfully saved as {netcdf_filename}')
 
     # Extract posterior summary
     summary = az.summary(multilevel_fitted)
@@ -149,5 +150,5 @@ if multilevel_fitted is not None:
     print(f"Ordered model output saved as {csv_filename}!")
 
 else:
-    print("Trace is None, cannot save trace to a file.")
+    print("Cannot save output to a file.")
 

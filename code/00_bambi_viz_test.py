@@ -119,3 +119,21 @@ plt.title("Posterior Distributions for All Parameters")
 plt.savefig(f"{folder_path}/model-posterior-distributions.png", format="png")
 plt.close()
 print("Posterior distributions plot saved successfully!")
+
+
+
+
+#########################################################################
+#                           PAIR PLOTS
+#########################################################################
+
+# Create and save pair plots for a subset of parameters (you can select the most important ones)
+az.plot_pair(trace, 
+             var_names=top_10_predictors,  # Select top 10 predictors for pairwise comparison
+             kind='kde',  # Kernel Density Estimation for smoothness
+             marginals=True)  # Marginal histograms
+
+plt.title("Pair Plots for Top 10 Most Influential Predictors")
+plt.savefig(f"{folder_path}/model-pair-plots-top-10.png", format="png")
+plt.close()
+print("Pair plot for top 10 predictors saved successfully!")

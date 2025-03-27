@@ -1,7 +1,9 @@
 import pandas as pd
 import bambi as bmb
 import arviz as az
-import os 
+import os
+import matplotlib.pyplot as plt
+
 
 # Define the folder path where the trace plots will be saved
 folder_path = "output/"

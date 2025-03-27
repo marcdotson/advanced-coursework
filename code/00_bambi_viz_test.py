@@ -82,4 +82,58 @@ plt.savefig(f"{folder_path}/flat-model-trace-plot-all-predictors.png", format="p
 plt.close()
 
 
+#########################################################################
+#                           RANK PLOTS
+#########################################################################
 
+
+#It looks at how often different parameter values appear across all Markov Chain Monte Carlo (MCMC) samples.
+#If sampling is fair and efficient, the ranks should be evenly distributed across the range of values.
+#If ranks are skewed or clumped, it may mean the model has sampling bias or convergence issues.
+
+#Look for:
+# Even, flat bars → Good sampling, no bias.
+# Uneven or clumped bars → Possible sampling bias or poor mixing, which might require tuning.
+
+# Create and save rank plots for all parameters
+az.plot_rank(trace)
+plt.title("Rank Plots for All Parameters")
+plt.savefig(f"{folder_path}/rank-plot.png", format="png")
+plt.close()
+print("Rank plot saved successfully!")
+
+# Our rank plot looks good. We believe that the sampling is fair and efficient.
+
+
+#########################################################################
+#                           POSTERIOR DISTRIBUTIONS
+#########################################################################
+
+# Create and save posterior distributions for all parameters
+az.plot_posterior(trace,
+                  kind="kde", # Kernel Density Estimate for smoothness
+                  hdi_prob=0.95,  # 95% Highest Density Interval
+                  ref_val=0)  # Reference line at 0 for effect size interpretation
+
+plt.title("Posterior Distributions for All Parameters")
+plt.savefig(f"{folder_path}/model-posterior-distributions.png", format="png")
+plt.close()
+print("Posterior distributions plot saved successfully!")
+
+
+
+
+#########################################################################
+#                           PAIR PLOTS
+#########################################################################
+
+# Create and save pair plots for a subset of parameters (you can select the most important ones)
+az.plot_pair(trace, 
+             var_names=top_10_predictors,  # Select top 10 predictors for pairwise comparison
+             kind='kde',  # Kernel Density Estimation for smoothness
+             marginals=True)  # Marginal histograms
+
+plt.title("Pair Plots for Top 10 Most Influential Predictors")
+plt.savefig(f"{folder_path}/model-pair-plots-top-10.png", format="png")
+plt.close()
+print("Pair plot for top 10 predictors saved successfully!")

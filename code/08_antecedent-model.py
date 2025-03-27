@@ -41,6 +41,34 @@ import glob
 
 df = pd.read_csv('data/modeling_data.csv', low_memory = False)
 
+
+#######################################################
+# import polars as pl
+
+# df_pl = pl.DataFrame(df)
+
+# (df_pl
+#     .group_by(pl.col('ell_disability_group'))
+#     .agg(n = pl.len())
+# )
+
+# # Automatically identify all binary columns (True/False or 0/1)
+# binary_cols = [
+#     col for col, dtype in zip(df_pl.columns, df_pl.dtypes)
+#     if (dtype in [pl.Boolean, pl.Int8, pl.Int16, pl.Int32, pl.Int64]) and col != 'ell_disability_group'
+# ]
+
+# # Compute counts of binary columns grouped by categorical variable
+# counts = (df_pl
+#     .group_by(pl.col('ell_disability_group'))
+#     .agg([
+#         pl.col(bin_col).sum().alias(f"{bin_col}_count") for bin_col in binary_cols
+#     ])
+#     .sort(pl.col('ell_disability_group'))
+# )
+#######################################################
+
+
 # Define the folder path where the model output will be saved
 folder_path = "output/"
 
@@ -62,25 +90,43 @@ for col in df.columns:
 # Define base dataframe after dropping columns
 df_base = df.drop(columns=col_drop, axis=1)
 
-# create a list of columns to include as random effects
-rand_effects = []
+# # create a list of columns to include as random effects
+# rand_effects = []
+# for col in df_base.columns:
+#     if col.startswith('school'): # Just include schools as random effects
+#         rand_effects.append(col)
+fixed_effects = []
 for col in df_base.columns:
     if col.startswith('school'): # Just include schools as random effects
-        rand_effects.append(col)
+        fixed_effects.append(col)
 
-# Extract potential predictors (excluding the target 'ac_ind')
-# all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "ell_disability_group"]))
-fixed_effects = (" + ".join(df_base.columns
+# Includes zero counts!
+zero_counts = ['migrant_y', 'military_child_y', 'refugee_student_y', 'homeless_y',
+    'part_time_home_school_y', 'services_504_y', 'immigrant_y',
+    'tribal_affiliation_n', 'tribal_affiliation_p']
+
+# # Extract potential predictors (excluding the target 'ac_ind')
+# # all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "ell_disability_group"]))
+# fixed_effects = (" + ".join(df_base.columns
+#     .difference(["ac_ind", "ell_disability_group"])
+#     .difference(rand_effects))
+# )
+rand_effects = (" + ".join(df_base.columns
     .difference(["ac_ind", "ell_disability_group"])
-    .difference(rand_effects))
+    # .difference(fixed_effects))
+    .difference(fixed_effects)
+    .difference(zero_counts))
 )
 
-rand_effects = " + ".join(rand_effects)
+# rand_effects = " + ".join(rand_effects)
+fixed_effects_01 = " + ".join(fixed_effects)
+fixed_effects_02 = " + ".join(zero_counts)
 
 #create the string formated model formula 
 # model_formula = f"ac_ind ~ {all_predictors} + ({all_predictors} | ell_disability_group)"
 # model_formula = f"ac_ind ~ ({all_predictors} | ell_disability_group)"
-model_formula = f"ac_ind ~ {fixed_effects} + ({rand_effects} | ell_disability_group)"
+# model_formula = f"ac_ind ~ {fixed_effects} + ({rand_effects} | ell_disability_group)"
+model_formula = f"ac_ind ~ {fixed_effects_01} + {fixed_effects_02} + ({rand_effects} | ell_disability_group)"
 
 
 ################################################

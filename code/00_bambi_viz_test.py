@@ -116,6 +116,6 @@ az.plot_posterior(trace,
                   ref_val=0)  # Reference line at 0 for effect size interpretation
 
 plt.title("Posterior Distributions for All Parameters")
-plt.savefig(f"{folder_path}/flat-model-posterior-distributions.png", format="png")
+plt.savefig(f"{folder_path}/model-posterior-distributions.png", format="png")
 plt.close()
 print("Posterior distributions plot saved successfully!")

@@ -34,11 +34,12 @@ for year in years:
 
     # Retrieve the data for the specified year from the student_tables dictionary
     student_table_year = student_tables[year]
+    student_table_year['year'] = year
 
     # Append year-specific data to the respective lists
     all_membership.append(membership_year)
     all_master.append(master_year)
-    all_student_tables.append(student_table_year[['student_number']])
+    all_student_tables.append(student_table_year[['student_number', 'year']])
 
 
 ######################################################################################################################################################
@@ -64,7 +65,7 @@ teacher_student = pd.merge(membership, master, on='course_record_id', how='left'
 # Create the df from the student_table student_numbers
 # - df: exploratory data
 # - model_df: model data
-df = student_table[['student_number']].copy()
+df = student_table[['student_number', 'year']].copy()
 model_df = student_table[['student_number']].copy()
 
 # Left join model_df and teacher_student so we only have student_numbers from the model_df

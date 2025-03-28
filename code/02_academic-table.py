@@ -88,19 +88,23 @@ for year in years:
 
     # Retrieve the data for the specified year from the student_tables dictionary
     student_table = student_tables[year]
+    student_table['year'] = year
 
     # Rename 'StudentNumber' to 'student_number'
     membership = membership.rename(columns={'StudentNumber': 'student_number'})
     scram = scram.rename(columns={'StudentNumber': 'student_number'})
+    scram['year'] = year
 
     ######################################################################################################################################################
     # df will represent the exploratory data, and model_df will represent the model data
 
     # Create the df from the student_table student_numbers
-    df = student_table[['student_number']].copy()
+    df = student_table[['student_number', 'year']].copy()
+    df = df.drop_duplicates(subset=['student_number'], keep='first')
 
     # Create the model_df from the student_table student_numbers
     model_df = student_table[['student_number']].copy()
+    model_df = model_df.drop_duplicates(keep = 'first')
 
     ######################################################################################################################################################
     # Determine if a class is an advanced course, determine if a student has taken an ac (ac_ind)
@@ -328,8 +332,12 @@ for year in years:
     scram['student_number'] = scram['student_number'].astype(str)
     scram_dummies['student_number'] = scram_dummies['student_number'].astype(str)
 
+    scram = scram.sort_values(by=['scram_membership'], ascending=False)
+    scram = scram.drop_duplicates(subset=['student_number'], keep=False)
+
     # Merge the non-dummied data with the df
-    df = pd.merge(df, scram, on='student_number', how='left')
+    df = pd.merge(df, scram, on=['student_number', 'year'], how='left')
+
 
     # Merge the dummied data with the model_df
     model_df = pd.merge(model_df, scram_dummies, on='student_number', how='left')
@@ -338,9 +346,6 @@ for year in years:
     # Store the resulting DataFrames in dictionaries (i.e. df_2017, model_df_2017)
     df_dict[f'df_{year}'] = df.copy()
     model_dict[f'model_df_{year}'] = model_df.copy()
-
-    # Add a year column to df_dict. This may be important later
-    df_dict[f'df_{year}']['year'] = year
 
 
 
@@ -644,9 +649,10 @@ model_df = model_df.drop(columns=[col for col in model_columns_to_drop if col in
 # Specify the column order for the df
 df_columns = ['student_number', 'ac_ind', 'ac_count', 'ac_gpa', 'overall_gpa', 'days_attended', 'days_absent',
             'school_membership', 'percent_days_attended', 'extracurricular_ind', 'extracurricular_count', 'current_grade',
-            'scram_membership', 'regular_percent', 'environment', 'extended_school_year']
+            'scram_membership', 'regular_percent', 'environment', 'extended_school_year', 'year']
 
 df = df[df_columns]
+df = df.drop_duplicates(keep='first')
 
 # Specify the column order for the model_df
 model_columns = (['student_number', 'ac_ind', 'overall_gpa', 'percent_days_attended', 'extracurricular_ind', 'scram_membership']

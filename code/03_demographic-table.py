@@ -116,10 +116,10 @@ for year in years:
     ######################################################################################################################################################
     # Retrieve the data for the specified year from the student_tables dictionary
     student_table = student_tables[year]
-
     # df will represent the exploratory data, and model_df will represent the model data
     # Create the df from the student_table student_numbers
     df = student_table[['student_number']].copy()
+    df = df.drop_duplicates(subset=['student_number'], keep='first')
 
     # Create the model_df from the student_table student_numbers
     model_df = student_table[['student_number']].copy()
@@ -239,8 +239,7 @@ for year in years:
     df['student_number'] = df['student_number'].astype(str)
     model_df['student_number'] = model_df['student_number'].astype(str)
 
-    # Merge into df and model_df
-    df = pd.merge(df, extra_columns, on='student_number', how='left')
+    # Merge into model_df
     model_df = pd.merge(model_df, extra_columns, on='student_number', how='left')
 
 
@@ -396,7 +395,7 @@ model_df.head()
 # - model_df merges **after** dropping duplicates (ensuring only one row per student)
 
 # Extract relavant columns
-home_status_df = concat_model[['student_number', 'home_status']].copy()
+home_status_df = concat_model[['student_number', 'home_status', 'year']].copy()
 
 # Make sure home_status values are numbers and also fill null values with 0
 home_status_df['home_status'] = pd.to_numeric(home_status_df['home_status'], errors='coerce').fillna(0)
@@ -417,10 +416,10 @@ model_df['student_number'] = model_df['student_number'].astype(str)
 
 #=================================================================
 # Before dropping duplicates, merge home_status_df with df
-df = pd.merge(df, home_status_df, on='student_number', how='left')
+df = pd.merge(df, home_status_df, on=['student_number', 'year'], how='left')
 
 # Drop home_status from the df
-df = df.drop(columns=['home_status'])
+#df = df.drop(columns=['home_status'])
 #=================================================================
 
 # Drop duplicates, keeping the first occurrence (which will be homeless if applicable)
@@ -443,7 +442,7 @@ df.head()
 # - model_df retains part-time home school status if a student was ever enrolled (one row per student)
 
 # Extract only relevant columns and make a copy
-part_time_home_df = concat_model[['student_number', 'part_time_home_school']].copy()
+part_time_home_df = concat_model[['student_number', 'part_time_home_school' , 'year']].copy()
 
 # Create part_time_home_school_y column (1 if part_time_home_school is not null, else 0)
 part_time_home_df['part_time_home_school_y'] = part_time_home_df['part_time_home_school'].notna().astype(int)
@@ -456,13 +455,13 @@ part_time_home_df = part_time_home_df.drop(columns=['part_time_home_school'])
 
 # Convert student_number to string for consistency
 part_time_home_df['student_number'] = part_time_home_df['student_number'].astype(str)
-
+part_time_home_df.head()
 #=================================================================
 # Before dropping duplicates, merge part_time_home_df with df
-df = pd.merge(df, part_time_home_df[['student_number', 'part_time_home_school_y']], on='student_number', how='left')
+df = pd.merge(df, part_time_home_df, on=['student_number', 'year'], how='left')
 
 # Drop part_time_home_school from the df
-df = df.drop(columns=['part_time_home_school'])
+#df = df.drop(columns=['part_time_home_school'])
 #=================================================================
 
 # Drop duplicates, keeping the first occurrence (which is sorted by part_time_home_school_y in descending order)
@@ -520,7 +519,7 @@ academic_modeling_data = academic_modeling_data.drop(
 #======================================================================================================================================
 
 # Keep only student_number and regular_percent columns
-academic_df = academic_df[['student_number', 'regular_percent']].copy()
+academic_df = academic_df[['student_number', 'regular_percent', 'year']].copy()
 academic_model_df = academic_model_df[['student_number', 'regular_percent_1.0', 'regular_percent_2.0', 'regular_percent_3.0']].copy()
 
 # Extract ELL status columns from model_df
@@ -572,13 +571,13 @@ model_df = pd.merge(model_df, ell_disability_data, on='student_number', how='lef
 academic_df["disability_status"] = academic_df["regular_percent"].apply(lambda x: 1 if x in [1, 2, 3] else 0)
 
 # Only keep student_number and disability_status
-academic_df = academic_df[['student_number', 'disability_status']].copy()
+academic_df = academic_df[['student_number', 'disability_status', 'year']].copy()
 
 # Make sure student_number is a string
 academic_df['student_number'] = academic_df['student_number'].astype(str)
 
 # Merge disability_status from academic_df into df
-df = pd.merge(df, academic_df, on='student_number', how='left')
+df = pd.merge(df, academic_df, on=['student_number', 'year'], how='left')
 
 # Process ELL status for exploratory data
 # Convert limited_english to uppercase to ensure case consistency
@@ -592,6 +591,23 @@ df["ell_disability_group"] = df["ell_status"].astype(str) + "_" + df["disability
 
 # Apply mapping
 df["ell_disability_group"] = df["ell_disability_group"].map(group_mapping)
+
+# Define a priority mapping for the groups. this will help make sure we retain the max value per student per year
+group_priority = {
+    "ell_with_disability": 4,
+    "ell_without_disability": 3,
+    "non_ell_with_disability": 2,
+    "non_ell_without_disability": 1,
+}
+df['ell_group_priority'] = df['ell_disability_group'].map(group_priority).fillna(0)
+
+# Sort by student and row and keep the highest-priority row
+df = df.sort_values(by=['student_number', 'year', 'ell_group_priority'], ascending=[True, True, False])
+df = df.drop_duplicates(subset=['student_number', 'year'], keep='first')
+
+# Now that the correct row is retained, we can drop the helper column
+df = df.drop(columns=['ell_group_priority'])
+
 
 model_df.head()
 df.head()
@@ -641,18 +657,23 @@ model_columns_to_drop += [col for col in model_df.columns if col.startswith('hs_
 # Make sure the column exists before dropping
 model_df = model_df.drop(columns=[col for col in model_columns_to_drop if col in model_df.columns], errors='ignore')
 
+
+# Specify the columns to be dropped from the df
+df_columns_to_drop = ['ell_entry_date', 'entry_date', 'first_enroll_us']
+df = df.drop(columns = df_columns_to_drop, errors='ignore')
+
+
 ######################################################################################################################################################
 # Prepare the data for export 
 
 # Specify the column order for the df
-df_columns = ['student_number', 'gender', 'ethnicity', 'amerindian_alaskan', 'asian', 'black_african_amer', 
+df_columns = ['student_number', 'year', 'gender', 'ethnicity', 'amerindian_alaskan', 'asian', 'black_african_amer', 
             'hawaiian_pacific_isl', 'white', 'migrant', 'military_child', 'refugee_student',
             'services_504', 'immigrant', 'passed_civics_exam', 'reading_intervention', 'homeless_y', 'part_time_home_school_y', 'ell_disability_group',
-            'hs_complete_status', 'tribal_affiliation', 'read_grade_level', 'exit_code', 
-            'ell_entry_date', 'entry_date','first_enroll_us']
+            'hs_complete_status', 'tribal_affiliation', 'read_grade_level', 'exit_code']
 
 df = df[df_columns]
-
+df = df.drop_duplicates(keep='first')
 # Specify the column order for the model_df
 model_columns = (
     ['student_number']+

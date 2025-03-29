@@ -486,8 +486,15 @@ df.head()
 #   - ell_without_disability
 #   - non_ell_with_disability
 #   - non_ell_without_disability
-# This column will contain one of the four group labels.
-# The exploratory data will follow the same process, but will assign a group for each year a student_number appears in the data.
+# === Modeling Data ===
+# - We compute one-hot encoded dummy variables for each group using `ell_disability_data`.
+# - These dummy variables are merged into `model_df` on `student_number`.
+# - "non_ell_without_disability" is used as the reference category and excluded from the dummy variables.
+# === Exploratory Data ===
+# - Each row represents a student in a specific year.
+# - We compute ELL and disability status per row.
+# - To ensure consistent classification, we assign a group priority and retain only the highest-priority group per student per year.
+# - The final column `ell_disability_group` reflects the group a student belonged to in that year.
 
 #======================================================================================================================================
 # The regular_percent columns were originally created in the 02_academic-table.py script.
@@ -566,8 +573,17 @@ group_mapping = {
 # Apply mapping
 ell_disability_data["ell_disability_group"] = ell_disability_data["ell_disability_group"].map(group_mapping)
 
-# Merge into model_df
-model_df = pd.merge(model_df, ell_disability_data, on='student_number', how='left')
+# One-hot encode the ell_disability_group column, drop the reference category (non_ell_without_disability)
+ell_disability_dummies = pd.get_dummies(
+    ell_disability_data["ell_disability_group"],
+    dtype=int
+).drop(columns=["non_ell_without_disability"], errors='ignore')
+
+# Attach the student_number to the dummy variables
+ell_disability_dummies = pd.concat([ell_disability_data["student_number"], ell_disability_dummies], axis=1)
+
+# Merge into model_df to ensure correct alignment
+model_df = pd.merge(model_df, ell_disability_dummies, on="student_number", how="left")
 
 # ====== Processing Groups for Exploratory Data (row-level not student level) ======
 # Process disability status in academic_df
@@ -682,8 +698,7 @@ model_columns = (
     +[
         'ethnicity_y', 'amerindian_alaskan_y', 'asian_y', 'black_african_amer_y', 
         'hawaiian_pacific_isl_y', 'white_y', 'migrant_y', 'military_child_y', 'refugee_student_y', 'homeless_y', 'part_time_home_school_y',
-        'services_504_y', 'immigrant_y', 'passed_civics_exam_y', 'ell_disability_group', 'hs_advanced_math_y']
-    + [col for col in model_df.columns if col.startswith('ell_with')]
+        'services_504_y', 'immigrant_y', 'passed_civics_exam_y', 'non_ell_with_disability', 'ell_with_disability', 'ell_without_disability', 'hs_advanced_math_y']
     + [col for col in model_df.columns if col.startswith('tribal_affiliation_')]
     + [col for col in model_df.columns if col.startswith('read_grade_level_')]
     + [col for col in model_df.columns if col.startswith('exit_code_')])

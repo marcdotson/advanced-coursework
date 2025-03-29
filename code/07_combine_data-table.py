@@ -48,9 +48,10 @@ def process_student_data(years, prefix=""):
         student_table['year'] = year
         all_students.append(student_table[['student_number', 'year']])
 
-    df = pd.concat(all_students, ignore_index=True).drop_duplicates(subset=['student_number'], keep='first')
+    df = pd.concat(all_students, ignore_index=True).drop_duplicates(subset=['student_number', 'year'], keep='first')
     model_df = df.copy()
     model_df = model_df.drop(columns='year')
+    model_df = model_df.drop_duplicates(keep='first')
 
     # Merge model_df with all modeling datasets
     model_df = pd.merge(model_df, academic_model, on='student_number', how='left')

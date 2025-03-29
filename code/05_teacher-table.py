@@ -66,7 +66,9 @@ teacher_student = pd.merge(membership, master, on='course_record_id', how='left'
 # - df: exploratory data
 # - model_df: model data
 df = student_table[['student_number', 'year']].copy()
+df = df.drop_duplicates(subset=['student_number', 'year'], keep='first')
 model_df = student_table[['student_number']].copy()
+model_df = model_df.drop_duplicates(keep='first')
 
 # Left join model_df and teacher_student so we only have student_numbers from the model_df
 # Only include the student_number and teacher_id from the teacher_student table

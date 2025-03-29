@@ -226,6 +226,11 @@ model_df = model_df.fillna(0)
 model_df['high_school'] = model_df['high_school'].apply(map_school_name)
 model_df['middle_school'] = model_df['middle_school'].apply(map_school_name)
 
+# Replace "None" values with 0
+model_df['middle_school'] = model_df['middle_school'].replace("None", 0)
+model_df['high_school'] = model_df['high_school'].replace("None", 0)
+
+model_df = model_df.drop_duplicates(keep='first')
 model_df.head()
 
 ######################################################################################################################################################
@@ -240,4 +245,3 @@ print('===========================================')
 print('School data exported successfully!')
 print("Next, run: 07_combine_data-table.py")
 print('===========================================')
-df['student_number'].value_counts().max()

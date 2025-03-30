@@ -40,6 +40,7 @@ import glob
 ########################################################
 
 df = pd.read_csv('data/modeling_data.csv', low_memory = False)
+# df = pd.read_csv('data/post_covid_modeling_data.csv', low_memory = False)
 
 # TODO: 
 # - Rerun the data cleaning and then the models on the post-covid modeling data!
@@ -119,6 +120,7 @@ df_base = df.drop(columns=col_drop, axis=1)
 # for col in df_base.columns:
 #     if col.startswith('school'): # Just include schools as random effects
 #         fixed_effects.append(col)
+rand_effects = " + ".join(df_base.columns.difference(["ac_ind", "high_school", "middle_school"]))
 
 # # Includes zero counts!
 # zero_counts = ['migrant_y', 'military_child_y', 'refugee_student_y', 'homeless_y',
@@ -127,7 +129,20 @@ df_base = df.drop(columns=col_drop, axis=1)
 
 # Extract potential predictors (excluding the target 'ac_ind')
 # all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "ell_disability_group"]))
-all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "high_school", "middle_school"]))
+# all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "high_school", "middle_school"]))
+
+# Include secondary schools as fixed effects.
+df_high_schools = pd.get_dummies(df_base['high_school'], dtype = float).rename(columns = {'0': 'Unknown_High', 'Cache High': 'Cache_High', 'Green Canyon': 'Green_Canyon', 'Mountain Crest': 'Mountain_Crest', 'Ridgeline': 'Ridgeline', 'Sky View': 'Sky_View'})
+df_middle_schools = pd.get_dummies(df_base['middle_school'], dtype = float).rename(columns = {'0': 'Unknown_Middle', 'North Cache Middle': 'North_Cache_Middle', 'South Cache Middle': 'South_Cache_Middle', 'Spring Creek Middle': 'Spring_Creek_Middle'})
+df_base = pd.concat([df_base, df_high_schools, df_middle_schools], axis = 1)
+
+fixed_effects = []
+for col in df_high_schools.columns:
+    fixed_effects.append(col)
+for col in df_middle_schools.columns:
+    fixed_effects.append(col)
+
+fixed_effects = " + ".join(fixed_effects)
 
 # # fixed_effects = (" + ".join(df_base.columns
 # #     .difference(["ac_ind", "ell_disability_group"])
@@ -146,7 +161,8 @@ all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "high_school",
 
 #create the string formated model formula 
 # model_formula = f"ac_ind ~ {all_predictors} + ({all_predictors} | ell_disability_group)"
-model_formula = f"ac_ind ~ ({all_predictors} | high_school)"
+# model_formula = f"ac_ind ~ ({all_predictors} | high_school)"
+model_formula = f"ac_ind ~ {fixed_effects} + ({rand_effects} | high_school)"
 # model_formula = f"ac_ind ~ {fixed_effects} + ({rand_effects} | ell_disability_group)"
 # model_formula = f"ac_ind ~ {fixed_effects_01} + {fixed_effects_02} + ({rand_effects} | ell_disability_group)"
 

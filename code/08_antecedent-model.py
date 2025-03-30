@@ -41,16 +41,36 @@ import glob
 
 df = pd.read_csv('data/modeling_data.csv', low_memory = False)
 
+# TODO: 
+# - Rerun the data cleaning and then the models on the post-covid modeling data!
+# - Figure out how to deal with observations in multiple groups? McElreath?
+# - Keep track of models run and their correspoding saved files.
 
 #######################################################
-# import polars as pl
+import polars as pl
 
-# df_pl = pl.DataFrame(df)
+df_pl = pl.DataFrame(df)
 
-# (df_pl
-#     .group_by(pl.col('ell_disability_group'))
-#     .agg(n = pl.len())
-# )
+df_pl.shape
+df_pl.columns
+
+df_pl.select(pl.col('student_number')).shape
+df_pl.select(pl.col('student_number')).unique().shape
+
+(df_pl
+    .group_by(pl.col('extracurricular_ind'))
+    .agg(n = pl.len())
+)
+
+(df_pl
+    .group_by(pl.col('high_school'))
+    .agg(n = pl.len())
+)
+
+(df_pl
+    .group_by(pl.col('middle_school'))
+    .agg(n = pl.len())
+)
 
 # # Automatically identify all binary columns (True/False or 0/1)
 # binary_cols = [
@@ -90,43 +110,45 @@ for col in df.columns:
 # Define base dataframe after dropping columns
 df_base = df.drop(columns=col_drop, axis=1)
 
-# # create a list of columns to include as random effects
-# rand_effects = []
+# # # create a list of columns to include as random effects
+# # rand_effects = []
+# # for col in df_base.columns:
+# #     if col.startswith('school'): # Just include schools as random effects
+# #         rand_effects.append(col)
+# fixed_effects = []
 # for col in df_base.columns:
 #     if col.startswith('school'): # Just include schools as random effects
-#         rand_effects.append(col)
-fixed_effects = []
-for col in df_base.columns:
-    if col.startswith('school'): # Just include schools as random effects
-        fixed_effects.append(col)
+#         fixed_effects.append(col)
 
-# Includes zero counts!
-zero_counts = ['migrant_y', 'military_child_y', 'refugee_student_y', 'homeless_y',
-    'part_time_home_school_y', 'services_504_y', 'immigrant_y',
-    'tribal_affiliation_n', 'tribal_affiliation_p']
+# # Includes zero counts!
+# zero_counts = ['migrant_y', 'military_child_y', 'refugee_student_y', 'homeless_y',
+#     'part_time_home_school_y', 'services_504_y', 'immigrant_y',
+#     'tribal_affiliation_n', 'tribal_affiliation_p']
 
-# # Extract potential predictors (excluding the target 'ac_ind')
-# # all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "ell_disability_group"]))
-# fixed_effects = (" + ".join(df_base.columns
+# Extract potential predictors (excluding the target 'ac_ind')
+# all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "ell_disability_group"]))
+all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "high_school", "middle_school"]))
+
+# # fixed_effects = (" + ".join(df_base.columns
+# #     .difference(["ac_ind", "ell_disability_group"])
+# #     .difference(rand_effects))
+# # )
+# rand_effects = (" + ".join(df_base.columns
 #     .difference(["ac_ind", "ell_disability_group"])
-#     .difference(rand_effects))
+#     # .difference(fixed_effects))
+#     .difference(fixed_effects)
+#     .difference(zero_counts))
 # )
-rand_effects = (" + ".join(df_base.columns
-    .difference(["ac_ind", "ell_disability_group"])
-    # .difference(fixed_effects))
-    .difference(fixed_effects)
-    .difference(zero_counts))
-)
 
-# rand_effects = " + ".join(rand_effects)
-fixed_effects_01 = " + ".join(fixed_effects)
-fixed_effects_02 = " + ".join(zero_counts)
+# # rand_effects = " + ".join(rand_effects)
+# fixed_effects_01 = " + ".join(fixed_effects)
+# fixed_effects_02 = " + ".join(zero_counts)
 
 #create the string formated model formula 
 # model_formula = f"ac_ind ~ {all_predictors} + ({all_predictors} | ell_disability_group)"
-# model_formula = f"ac_ind ~ ({all_predictors} | ell_disability_group)"
+model_formula = f"ac_ind ~ ({all_predictors} | high_school)"
 # model_formula = f"ac_ind ~ {fixed_effects} + ({rand_effects} | ell_disability_group)"
-model_formula = f"ac_ind ~ {fixed_effects_01} + {fixed_effects_02} + ({rand_effects} | ell_disability_group)"
+# model_formula = f"ac_ind ~ {fixed_effects_01} + {fixed_effects_02} + ({rand_effects} | ell_disability_group)"
 
 
 ################################################

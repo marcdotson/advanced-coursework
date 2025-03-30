@@ -43,7 +43,8 @@ df = pd.read_csv('data/modeling_data.csv', low_memory = False)
 # df = pd.read_csv('data/post_covid_modeling_data.csv', low_memory = False)
 
 # TODO: 
-# - Rerun the data cleaning and then the models on the post-covid modeling data!
+# - Can I run a model with fixed effects for secondary schools while also using high schools to group?
+# - Run the models on the post-covid modeling data!
 # - Figure out how to deal with observations in multiple groups? McElreath?
 # - Keep track of models run and their correspoding saved files.
 
@@ -135,11 +136,12 @@ rand_effects = " + ".join(df_base.columns.difference(["ac_ind", "high_school", "
 df_high_schools = pd.get_dummies(df_base['high_school'], dtype = float).rename(columns = {'0': 'Unknown_High', 'Cache High': 'Cache_High', 'Green Canyon': 'Green_Canyon', 'Mountain Crest': 'Mountain_Crest', 'Ridgeline': 'Ridgeline', 'Sky View': 'Sky_View'})
 df_middle_schools = pd.get_dummies(df_base['middle_school'], dtype = float).rename(columns = {'0': 'Unknown_Middle', 'North Cache Middle': 'North_Cache_Middle', 'South Cache Middle': 'South_Cache_Middle', 'Spring Creek Middle': 'Spring_Creek_Middle'})
 df_base = pd.concat([df_base, df_high_schools, df_middle_schools], axis = 1)
+# df_base = pd.concat([df_base, df_high_schools], axis = 1)
 
 fixed_effects = []
-for col in df_high_schools.columns:
+for col in df_high_schools.columns.difference(['Unknown_High']):
     fixed_effects.append(col)
-for col in df_middle_schools.columns:
+for col in df_middle_schools.columns.difference(['Unknown_Middle']):
     fixed_effects.append(col)
 
 fixed_effects = " + ".join(fixed_effects)

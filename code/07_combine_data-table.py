@@ -57,14 +57,14 @@ def process_student_data(years, prefix=""):
     model_df = pd.merge(model_df, academic_model, on='student_number', how='left')
     model_df = pd.merge(model_df, demographic_model, on='student_number', how='left')
     model_df = pd.merge(model_df, assessment_model, on='student_number', how='left')
-    model_df = pd.merge(model_df, teacher_model, on='student_number', how='left')
+    # model_df = pd.merge(model_df, teacher_model, on='student_number', how='left')
     model_df = pd.merge(model_df, school_model, on='student_number', how='left')
 
     # Merge df with all exploratory datasets
     df = pd.merge(df, academic_df, on=['student_number', 'year'], how='left')
     df = pd.merge(df, demographic_df, on=['student_number', 'year'], how='left')
     df = pd.merge(df, assessment_df, on=['student_number'], how='left')
-    df = pd.merge(df, teacher_df, on=['student_number', 'year'], how='left')
+    # df = pd.merge(df, teacher_df, on=['student_number', 'year'], how='left')
     df = pd.merge(df, school_df, on=['student_number', 'year'], how='left')
 
     df = df.drop_duplicates(keep='first')

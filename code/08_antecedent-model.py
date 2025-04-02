@@ -242,5 +242,5 @@ else:
 # 01 - All schools as random effects | ell_disability_group, otherwise fixed effects.
 # 02 - Everything but school as random effects | ell_disability_group, otherwise fixed effects.
 # 03 - Everything as random effects | high_school (including the intercept), no other schools.
-# 04 - Everything as random effects | high_school and middle_school (including the intercept).
-
+# 04 - Everything as random effects | both high_school and middle_school (including the intercept).
+# 05 - Model 04, run longer...

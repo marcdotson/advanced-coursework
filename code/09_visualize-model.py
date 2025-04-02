@@ -15,7 +15,7 @@ import seaborn as sns
 
 # Load trace from the NetCDF file saved from model output and the dataset file
 try:
-    idata = az.from_netcdf("output\multilevel-model-output_01.nc")
+    idata = az.from_netcdf("output\multilevel-model-output_05.nc")
 
 except Exception as e:
     print(f"Loading Data failed: {e}")
@@ -70,7 +70,6 @@ def get_next_filename(folder_path, base_name, extension, group=None):
     else:
         return f"{folder_path}/{base_name}-{next_number:02d}.{extension}"
 
-
 #create a USU color pallete for our visuals
 usu_palette = ["#0F2439", "#1D3F6E", "#A7A8AA"]  # Navy, Aggie Blue, and Gray
 
@@ -85,60 +84,111 @@ summary = az.summary(idata)
 # Drop `_sigma` variables and Intercept
 filtered_idata = idata.posterior.drop_vars([var for var in idata.posterior.data_vars if '_sigma' in var or var == 'Intercept'])
 
-#function to sort and filter our inference data object from the model
-def process_idata_groups(idata, var_list, group_dim=None):
-
-    # Filter only the relevant variables
-    relevant_vars = [var for var in idata.data_vars if var in var_list]
+#function to sort the data and remove the "other groups labeled with a 0"
+def process_idata_groups(idata, var_list, group_dims=None):
+    # Filter only relevant variables that match our list
+    relevant_vars = [var for var in idata.data_vars if any(f"{v}" in f"{var}" for v in var_list)]
+    
+    if not relevant_vars:
+        print("No matching variables found.")
+        return None
+    
+ # Drop any data related to 'high_school[0]' for each dimension in group_dims
+    for dimension in group_dims:
+        try:
+            idata = idata.drop_sel({dimension: '0'})
+        except:
+            print(f"{dimension} not present in the dataset, moving on.")
 
     # Compute medians across chains and draws
     medians = {
-        var: idata[var].median(dim=("chain", "draw"))
-        for var in relevant_vars
-    }
+        var: idata[var].median(dim=("chain", "draw"), skipna=True)
+        for var in relevant_vars}
+    
+    # Detect all extra grouping dimensions automatically
+    all_group_dims = set()
+    for var in relevant_vars:
+        all_group_dims.update(set(medians[var].dims) - {"chain", "draw"})
+    
+    # Keep only the specified group dimensions (if provided), otherwise use all detected
+    group_dims = group_dims or list(all_group_dims)
 
-    # If there's a grouping dimension, compute overall median per variable
-    if group_dim:
-        overall_medians = {
-            var: medians[var].mean(dim=group_dim).item()
-            for var in relevant_vars
-        }
-    else:
-        overall_medians = {
-            var: medians[var].item()
-            for var in relevant_vars
-        }
+    # Compute overall median per variable, considering multiple grouping dimensions
+    overall_medians = {}
+    for var in relevant_vars:
+        median_value = medians[var]
+
+        # If there are grouping dimensions, compute the mean across them
+        if group_dims and any(dim in median_value.dims for dim in group_dims):
+            median_value = median_value.mean(dim=[dim for dim in group_dims if dim in median_value.dims], skipna=True)
+
+        # Convert to a scalar safely
+        overall_medians[var] = median_value.item() if median_value.size == 1 else float(median_value.mean().values)
 
     # Sort variables by median effect size (descending)
     sorted_vars = sorted(overall_medians, key=overall_medians.get, reverse=True)
 
-    # Return the sorted dataset
+    # Return the sorted subset of idata
     return idata[sorted_vars]
 
-#all the schools
-school_vars = [var for var in filtered_idata.data_vars if 'school_' in var and 'part_time' not in var]
+#funtion to get only the signficant vars if needed
+def get_significant_vars_only(idata):
 
-#list of all academic collumns
-academic_vars = ['overall_gpa', 'scram_membership', 'percent_days_attended', 
-                'composite_score', 'english_score', 'hs_advanced_math_y', 'math_score', 
-                'reading_score', 'science_score', 'writing_score' ]
+    hdi_dataset = az.hdi(idata, hdi_prob=0.95)  # Ensure you're using the correct HDI probability
 
-#list of all demographic vars
-demographic_vars = [
-    "ethnicity_y", "amerindian_alaskan_y", "asian_y", "black_african_amer_y",
-    "hawaiian_pacific_isl_y", "white_y", "migrant_y", "military_child_y",
-     "services_504_y", "immigrant_y", "passed_civics_exam_y",
-    'gender_m', 'gender_u', 'homeless_y', 'hs_advanced_math_y', 'part_time_home_school_y', 'tribal_affiliation_u', 'tribal_affiliation_n', 
-     'tribal_affiliation_p', 'tribal_affiliation_s', 'tribal_affiliation_o']
+    significant_vars = []
 
-#create the seperated and filtered inference data objects
-sorted_school_idata = process_idata_groups(filtered_idata, school_vars, group_dim="ell_disability_group__factor_dim")
-sorted_academic_idata = process_idata_groups(filtered_idata, academic_vars)
-sorted_demographic_idata = process_idata_groups(filtered_idata, demographic_vars)
+    # Loop through all data variables in the dataset
+    for var_name in hdi_dataset.data_vars:
+        var_data = hdi_dataset[var_name]
 
-#Store all the filter idata in a list to run in a for loop for our visuals
-all_idata = [sorted_school_idata, sorted_academic_idata, sorted_demographic_idata]
+        # Determine the grouping structure from dimensions
+        factor_dim = None
+        for dim in var_data.dims:
+            if "factor_dim" in dim:  # Identify the factor level for grouping variables
+                factor_dim = dim
+                break
 
+        if factor_dim:
+            # Loop over factor levels
+            for i, level in enumerate(var_data[factor_dim].values):
+                lower, upper = var_data[i].sel(hdi="lower").item(), var_data[i].sel(hdi="higher").item()
+                
+                # Check significance: exclude intervals containing 0
+                if lower > 0 or upper < 0:
+                    full_name = f"{var_name}[{level}]"  # Construct full variable name
+                    significant_vars.append(var_name)
+        else:
+            # If no factor grouping, just check the single HDI range
+            lower, upper = var_data.sel(hdi="lower").item(), var_data.sel(hdi="higher").item()
+            if lower > 0 or upper < 0:
+                significant_vars.append(var_name)
+    return significant_vars
+
+# Define groups
+groups = {
+    "Academic Performance": ["composite_score", "english_score", "math_score", "reading_score",
+                             "science_score", "writing_score", "overall_gpa", "percent_days_attended",
+                             "passed_civics_exam", "hs_advanced_math_y", "extracurricular_ind" "part_time_home_school_y"],
+
+    "Environmental Factors": ["immigrant_y", "migrant_y",
+                     "homeless_y", "military_child_y", "refugee_student_y"],
+
+    "Disability & ELL Status": ["ell_with_disability", "ell_without_disability",
+                                 "non_ell_with_disability", "services_504_y", "environment_h", 
+                                 "environment_r", "scram_membership"],
+
+
+    "Demograophic": ["tribal_affiliation_g", "tribal_affiliation_n", "tribal_affiliation_o",
+                           "tribal_affiliation_p", "tribal_affiliation_s", "tribal_affiliation_u",
+                           "amerindian_alaskan_y", "asian_y", "black_african_amer_y", "hawaiian_pacific_isl_y",
+                     "white_y", "ethnicity_y", "gender_m", "gender_u"]
+}
+
+#create our sorted IDATA for all the vars in all the groups
+sorted_all_variables_idata = process_idata_groups(filtered_idata, filtered_idata.data_vars, group_dims = ["high_school__factor_dim", 'middle_school__factor_dim'])
+
+significant_vars = get_significant_vars_only(filtered_idata)
 # ##############################################################################
 #                     # EXTACT OUR MOST INFLUENTIAL FACTORS
 # ##############################################################################
@@ -201,17 +251,24 @@ all_idata = [sorted_school_idata, sorted_academic_idata, sorted_demographic_idat
 # ###############################################################################
 
 # *******CHANGE THIS NAME HERE BASED ON HOW YOU WOULD LIKE IT TO SAVE***********
-interval_plot_base_name = 'interval-plot-multilevel'
+interval_plot_base_name = 'interval-plot-multilevel-model05'
 
 # Loop over all the data in `all_idata`
-for idx, (data, group_name) in enumerate(zip(all_idata, group_names)):
-    print(f'Starting plot for {group_name} group ({idx + 1})')
+# Loop through and plot each group
+for group_name, base_names in groups.items():
+    # Select variables that match the base names
+    variables = [var for var in sorted_all_variables_idata if any(var.startswith(base) for base in base_names)
+                 and var in significant_vars]
 
+    print(f'Starting plot for {group_name}')
     # Generate the forest plot
-    az.plot_forest(data, combined=True)
-
-     # Set title and labels
-    plt.title(f"Forest Plot for {group_name.capitalize()} Group")
+    az.plot_forest(sorted_all_variables_idata,
+        var_names=variables,  # Pass the final filtered list
+        filter_vars="like", 
+        combined=True, kind="ridgeplot",
+        ridgeplot_truncate=True, ridgeplot_overlap=1, ridgeplot_quantiles=[0.5]
+    )
+    plt.title(group_name.capitalize())
     plt.xlabel("Effect Size")  # Label for the x-axis (you can adjust as needed)
     plt.ylabel("Variables")  # Label for the y-axis (you can adjust as needed)
 

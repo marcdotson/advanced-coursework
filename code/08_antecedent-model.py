@@ -39,53 +39,51 @@ import glob
 # LOAD IN THE DATASET AND ESTABLISH FOLDER PATH
 ########################################################
 
-df = pd.read_csv('data/modeling_data.csv', low_memory = False)
-# df = pd.read_csv('data/post_covid_modeling_data.csv', low_memory = False)
+# df = pd.read_csv('data/modeling_data.csv', low_memory = False)
+df = pd.read_csv('data/post_covid_modeling_data.csv', low_memory = False)
 
-# TODO: Run the models on the post-covid modeling data!
 
 #######################################################
-import polars as pl
+# import polars as pl
 
-df_pl = pl.DataFrame(df)
+# df_pl = pl.DataFrame(df)
 
-df_pl.shape
-df_pl.columns
+# df_pl.shape
+# df_pl.columns
 
-df_pl.select(pl.col('student_number')).shape
-df_pl.select(pl.col('student_number')).unique().shape
+# df_pl.select(pl.col('student_number')).shape
+# df_pl.select(pl.col('student_number')).unique().shape
 
-(df_pl
-    .group_by(pl.col('extracurricular_ind'))
-    .agg(n = pl.len())
-)
-
-(df_pl
-    .group_by(pl.col('high_school'))
-    .agg(n = pl.len())
-)
-
-(df_pl
-    .group_by(pl.col('middle_school'))
-    .agg(n = pl.len())
-)
-
-# # Automatically identify all binary columns (True/False or 0/1)
-# binary_cols = [
-#     col for col, dtype in zip(df_pl.columns, df_pl.dtypes)
-#     if (dtype in [pl.Boolean, pl.Int8, pl.Int16, pl.Int32, pl.Int64]) and col != 'ell_disability_group'
-# ]
-
-# # Compute counts of binary columns grouped by categorical variable
-# counts = (df_pl
-#     .group_by(pl.col('ell_disability_group'))
-#     .agg([
-#         pl.col(bin_col).sum().alias(f"{bin_col}_count") for bin_col in binary_cols
-#     ])
-#     .sort(pl.col('ell_disability_group'))
+# (df_pl
+#     .group_by(pl.col('extracurricular_ind'))
+#     .agg(n = pl.len())
 # )
-#######################################################
 
+# (df_pl
+#     .group_by(pl.col('high_school'))
+#     .agg(n = pl.len())
+# )
+
+# (df_pl
+#     .group_by(pl.col('middle_school'))
+#     .agg(n = pl.len())
+# )
+
+# # # Automatically identify all binary columns (True/False or 0/1)
+# # binary_cols = [
+# #     col for col, dtype in zip(df_pl.columns, df_pl.dtypes)
+# #     if (dtype in [pl.Boolean, pl.Int8, pl.Int16, pl.Int32, pl.Int64]) and col != 'ell_disability_group'
+# # ]
+
+# # # Compute counts of binary columns grouped by categorical variable
+# # counts = (df_pl
+# #     .group_by(pl.col('ell_disability_group'))
+# #     .agg([
+# #         pl.col(bin_col).sum().alias(f"{bin_col}_count") for bin_col in binary_cols
+# #     ])
+# #     .sort(pl.col('ell_disability_group'))
+# # )
+#######################################################
 
 # Define the folder path where the model output will be saved
 folder_path = "output/"
@@ -99,10 +97,16 @@ if not os.path.exists(folder_path):
 # PREP THE MODEL AND SPECIFY THE MODEL FORMULA
 #######################################################
 
-# Columns to exclude from modeling 
+# # Columns to exclude from modeling for model_data
+# col_drop = ['student_number']
+# for col in df.columns:
+#     if col.startswith('teacher') or col.startswith('exit'):
+#         col_drop.append(col)
+
+# Columns to exclude from modeling for post_covid_modeling_data
 col_drop = ['student_number']
 for col in df.columns:
-    if col.startswith('teacher') or col.startswith('exit'):
+    if col.startswith('teacher') or col.startswith('exit') or col.startswith('envi') or col.startswith('tribal_affiliation_g'):
         col_drop.append(col)
 
 # Define base dataframe after dropping columns
@@ -160,9 +164,9 @@ all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "high_school",
 
 #create the string formated model formula 
 # model_formula = f"ac_ind ~ {all_predictors} + ({all_predictors} | ell_disability_group)"
-# model_formula = f"ac_ind ~ ({all_predictors} | high_school)"
 
-model_formula = f"ac_ind ~ ({all_predictors} | middle_school) + ({all_predictors} | high_school)"
+model_formula = f"ac_ind ~ ({all_predictors} | high_school)"
+# model_formula = f"ac_ind ~ ({all_predictors} | middle_school) + ({all_predictors} | high_school)"
 
 # model_formula = f"ac_ind ~ {fixed_effects} + ({rand_effects} | high_school)"
 # model_formula = f"ac_ind ~ {fixed_effects} + ({rand_effects} | ell_disability_group)"
@@ -188,8 +192,8 @@ if __name__ == '__main__':
         # multilevel_fitted = multilevel_model.fit(
         #     draws=2000, inference_method='mcmc', random_seed=42, target_accept = .9, 
         #     idata_kwargs={"log_likelihood": True})
-        # multilevel_fitted = multilevel_model.fit(idata_kwargs = {"log_likelihood": True})
-        multilevel_fitted = multilevel_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
+        multilevel_fitted = multilevel_model.fit(idata_kwargs = {"log_likelihood": True})
+        # multilevel_fitted = multilevel_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
         print("Sampling complete.")
 
     except Exception as e:
@@ -243,4 +247,5 @@ else:
 # 02 - Everything but school as random effects | ell_disability_group, otherwise fixed effects.
 # 03 - Everything as random effects | high_school (including the intercept), no other schools.
 # 04 - Everything as random effects | both high_school and middle_school (including the intercept).
-# 05 - Model 04, run longer...
+# 05 - Model 04, run for twice as long.
+# 06 - Model 03, run on the post-COVID data.

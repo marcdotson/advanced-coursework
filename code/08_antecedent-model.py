@@ -165,8 +165,8 @@ all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "high_school",
 #create the string formated model formula 
 # model_formula = f"ac_ind ~ {all_predictors} + ({all_predictors} | ell_disability_group)"
 
-model_formula = f"ac_ind ~ ({all_predictors} | high_school)"
-# model_formula = f"ac_ind ~ ({all_predictors} | middle_school) + ({all_predictors} | high_school)"
+# model_formula = f"ac_ind ~ ({all_predictors} | high_school)"
+model_formula = f"ac_ind ~ ({all_predictors} | middle_school) + ({all_predictors} | high_school)"
 
 # model_formula = f"ac_ind ~ {fixed_effects} + ({rand_effects} | high_school)"
 # model_formula = f"ac_ind ~ {fixed_effects} + ({rand_effects} | ell_disability_group)"
@@ -192,8 +192,8 @@ if __name__ == '__main__':
         # multilevel_fitted = multilevel_model.fit(
         #     draws=2000, inference_method='mcmc', random_seed=42, target_accept = .9, 
         #     idata_kwargs={"log_likelihood": True})
-        multilevel_fitted = multilevel_model.fit(idata_kwargs = {"log_likelihood": True})
-        # multilevel_fitted = multilevel_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
+        # multilevel_fitted = multilevel_model.fit(idata_kwargs = {"log_likelihood": True})
+        multilevel_fitted = multilevel_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
         print("Sampling complete.")
 
     except Exception as e:
@@ -249,3 +249,4 @@ else:
 # 04 - Everything as random effects | both high_school and middle_school (including the intercept).
 # 05 - Model 04, run for twice as long.
 # 06 - Model 03, run on the post-COVID data.
+# 07 - Model 04, run for twice as long on the post-COVID data.

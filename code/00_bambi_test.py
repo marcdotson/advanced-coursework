@@ -2,7 +2,7 @@ import pandas as pd
 import bambi as bmb
 import arviz as az
 import os
-import matplotlib.pyplot as plt
+
 
 
 # Define the folder path where the trace plots will be saved
@@ -13,22 +13,23 @@ if not os.path.exists(folder_path):
     os.makedirs(folder_path)
 
 # Load in the dataset
-df = pd.read_csv('data/modeling_data.csv', low_memory=False)
+df = pd.read_csv('data/post_covid_modeling_data.csv', low_memory=False)
 
 # Define target and predictors
-df = pd.get_dummies(df, drop_first= False)
+# df = pd.get_dummies(df, drop_first= False)
 
 ##################################################################################################################
 # PREP THE MODEL AND SPECIFY COLUMNS TO DROP
 ##################################################################################################################
 
 # Columns to exclude from modeling
-col_drop = ['student_number', 'ell_disability_group_non_ell_without_disability']
+col_drop = ['student_number']
 
 #add the teacher and exit codes to the dropped columns
 for col in df.columns:
-    if col.startswith('teacher') or col.startswith('exit'):
+    if col.startswith('teacher') or col.startswith('exit') or col.startswith('envi') or col.startswith('tribal_affiliation_g'):
         col_drop.append(col)
+
 
 # Define base dataframe after dropping columns
 df_base = df.drop(columns=col_drop, axis=1)
@@ -56,8 +57,7 @@ if __name__ == '__main__':
         print("Starting model sampling...")
         #fit the model with the the flat_model that was created prior
         flat_fitted = flat_model.fit(
-            # draws=2000, chains=4, tune=1000, target_accept=0.85, random_seed=42, idata_kwargs={"log_likelihood": True})
-            draws=2000, inference_method='mcmc', random_seed=42)
+             random_seed=42, idata_kwargs={"log_likelihood": True})
         print("Sampling complete.")
 
     except Exception as e:
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     if flat_fitted is not None:
         # Save trace to a NetCDF file
         print('Saving Model Trace to a File...')
-        flat_fitted.to_netcdf("output/flat-model-output.nc")
+        flat_fitted.to_netcdf("output/flat-model-output-post-covid.nc")
         print('Trace successfully saved, look for it in the data folder')
 
         # Extract posterior summary to save sorted predictors to a csv
@@ -76,7 +76,7 @@ if __name__ == '__main__':
        # Sort predictors by mean effect size (largest to smallest)
         sorted_summary = summary.reindex(summary["mean"].sort_values(ascending=False).index)
         # Save ordered model output to CSV
-        sorted_summary.to_csv("output/flat-model-output-ordered.csv")
+        sorted_summary.to_csv("output/flat-model-output-post-covid.csv")
         print("Ordered model output saved successfully!")
 
     else:

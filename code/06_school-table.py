@@ -8,6 +8,7 @@ years = [2017, 2018, 2022, 2023, 2024]
 
 # Specify the columns and their corresponding data types for each dataset to speed up the concatenation
 membership_columns = {'StudentNumber': 'int32', 'SchoolNumber': 'int16'}
+date = ['CourseEntryDate']
 
 # Load the pickled data (student_tables)
 with open('./data/student_data.pkl', 'rb') as f:
@@ -23,7 +24,9 @@ all_student_tables = []
 # Loop through each year and load the data and drop duplicates immediatly to clean the data and speed up the loop
 for year in years:
     membership_year = pd.read_excel(
-        f'data/{year} EOY Data - USU.xlsx', sheet_name='Course Membership', usecols=membership_columns.keys(), dtype=membership_columns
+        f'data/{year} EOY Data - USU.xlsx', sheet_name='Course Membership', usecols=list(membership_columns.keys()) + date,
+    dtype=membership_columns,
+    parse_dates=date
         ).drop_duplicates()
     
     # Retrieve the data for the specified year from the student_tables dictionary
@@ -32,7 +35,7 @@ for year in years:
     # Assign the year to student_table_year table
     # I will later use this to join with students current school, to make sure data is accurate on yearly basis
     student_table_year['year'] = year  
-    membership_year['year'] = year
+    membership_year['year'] = pd.to_datetime(membership_year['CourseEntryDate'], errors='coerce').dt.year
 
     # Ensure year is an integer
     student_table_year['year'] = student_table_year['year'].astype(int)
@@ -52,9 +55,6 @@ student_current_school = pd.concat(all_student_tables, ignore_index=True) # I wi
 # Rename column names in membership table
 membership = membership.rename(columns={'StudentNumber': 'student_number', 'SchoolNumber': 'school_number'})
 
-# We can drop the year column from the student_table as it is not needed in the modeling data
-student_table = student_table.drop(columns=['year'])
-
 # Remove all duplicates from the dataframes after the data is concatenated
 membership = membership.drop_duplicates(keep='first')
 student_table = student_table.drop_duplicates(keep='first')
@@ -66,41 +66,15 @@ student_current_school = student_current_school.drop_duplicates(subset=['student
 # - df: exploratory data (created from the student_current_school)
 # - model_df: model data (created from student_table)
 df = student_current_school[['student_number', 'year']].copy()
-model_df = student_table[['student_number']].copy()
+model_df = student_table['student_number'].copy()
 
 # Merge model_df and the membership table
 student_school = pd.merge(model_df, membership, on='student_number', how='left')
 
+# Drop useless columns from student_school
+student_school = student_school.drop(columns=['CourseEntryDate', 'year'])
 student_school.head()
 
-
-######################################################################################################################################################
-# Count the number of times each school is attended per student per year
-# Because the data might indicate that a student attended multiple schools per year (if they took a course at another school)
-# I will count the number of times a student 
-# attended a school for each year, then I will keep the row with the max 'school_count' per year.
-school_counts = (
-    membership.groupby(['student_number', 'year', 'school_number'])
-    .size()  # Count occurrences
-    .reset_index(name='school_count')  # Rename the count column
-)
-
-# Rename school_number to current_school
-school_counts = school_counts.rename(columns={'school_number': 'current_school'})
-
-# Find the school with the maximum count per student per year
-max_school_count = school_counts.loc[
-    school_counts.groupby(['student_number', 'year'])['school_count'].idxmax()
-]
-
-# Drop the school_count column as it counts schools by students per year. 
-# Later I will calculate the number of schools a student has attended in ccsd(not by year).
-max_school_count.drop(columns=['school_count'], inplace=True)
-
-# Merge max_school_count with the df
-df = pd.merge(df, max_school_count, on=['student_number', 'year'], how='left')
-
-df.head()
 
 ######################################################################################################################################################
 # Pivot the merged table to create a grid of student_numbers by school_number
@@ -127,28 +101,142 @@ model_df.head()
 
 
 ######################################################################################################################################################
-# Create a list of all the schools a student has attended for the exploratory data
-# This will create a column named schools_attended with a list of all the schools students have attended for the exploratory data
-student_school_list = (
-    student_school.groupby('student_number')['school_number']
-    .apply(list)  # Aggregate school_number as a list
+# Define the school number to name mapping. This will be used later in the script
+# Full school number to name mapping
+school_name_map = {
+    710: "Cache High", 706: "Sky View", 705: "Ridgeline", 703: "Green Canyon", 702: "Mountain Crest",
+    410: "South Cache Middle", 406: "North Cache Middle", 330: "Spring Creek Middle", 170: "Wellesville Elem.", 166: "Sunrise Elem.",
+    164: "Summit Elem.", 160: "River Heights Elem.", 156: "Providence Elem.", 152: "White Pine Elem.", 144: "North Park Elem.",
+    140: "Nibley Elem.", 132: "Millville Elem.", 130: "Mountainside Elem.", 128: "Lincoln Elem.", 124: "Lewiston Elem.",
+    120: "Heritage Elem.", 118: "Greenville Elem.", 111: "Cedar Ridge Elem.", 109: "Canyon Elem.", 106: "Birch Creek Elem."
+}
+
+# Function to map school number to school name, handling unknowns and zeros
+def map_school_name(x):
+    # If school number is 0, return "None"
+    if x == 0:
+        return "None"
+    # Try to get the name from the school_name_map dictionary
+    # If the school number isn't found, return "Other"
+    return school_name_map.get(x, "Other")
+
+
+######################################################################################################################################################
+# Create columns current_school, schools_attended, and school_count for the df
+df = df.drop_duplicates()
+
+# Merge df with membership to get school info
+current_schools = pd.merge(df, membership, on=['student_number', 'year'], how='left')
+
+# Sort to keep the most recent year per student
+current_schools = current_schools.sort_values(by=['year'], ascending=False)
+
+# Rename for clarity
+current_schools = current_schools.rename(columns={'school_number': 'current_school'})
+
+# Drop duplicates to keep the most recent school per student per year
+current_schools = current_schools.drop_duplicates(subset=['student_number', 'year'])
+
+# Fill null current_school values with 0
+current_schools['current_school'] = current_schools['current_school'].fillna(0)
+
+# Apply the school name mapping to the current_school column
+current_schools['current_school'] = current_schools['current_school'].apply(map_school_name)
+
+# Create a new DataFrame to track schools_attended and school_count
+school_history = current_schools.copy()
+school_history = (
+    current_schools
+    .groupby('student_number')['current_school']
+    .agg(schools_attended=lambda x: sorted(x.unique()))
     .reset_index()
-    .rename(columns={'school_number': 'schools_attended'})
 )
 
-# Add a column to count the number of schools attended by each student
-student_school_list['school_count'] = school_grid.iloc[:, 1:].sum(axis=1)
+# Create column school_count
+school_history['school_count'] = school_history['schools_attended'].apply(len)
 
-# Merge the student_school_list with the df
-df = pd.merge(df, student_school_list, on='student_number', how='left')
+# Make sure student_number is a string
+current_schools['student_number'] = current_schools['student_number'].astype(str)
+school_history['student_number'] = school_history['student_number'].astype(str)
+df['student_number'] = df['student_number'].astype(str)
 
-# Fill all null values with 0.
-# The null values arise because there are some (290) students_numbers who do not have any recorded school_numbers in the membership table.
-model_df.fillna(0, inplace=True)
-df.fillna(0, inplace=True)
+# Drop useless columns from current_schools
+current_schools = current_schools.drop(columns=['CourseEntryDate'])
 
-df.duplicated(subset=['student_number', 'year']).sum()
+# Merge student_history and current_schools
+current_schools = pd.merge(current_schools, school_history, on='student_number', how='left')
+# Merge with df
+df = pd.merge(df, current_schools, on=['student_number', 'year'], how='left')
+
+df.head()
+
 ######################################################################################################################################################
+# Create two new columns: high_school and middle_school for the model_df
+# - Both are assigned based on the most recent school a student attended 
+
+# List of all middle and high school ids
+middle_school_ids = [330, 406, 410]
+high_school_ids = [710, 706, 705, 703, 702]
+
+middle_schools = membership.copy()
+
+# Filter for middle schools
+middle_schools = middle_schools[middle_schools['school_number'].isin(middle_school_ids)]
+
+# Sort by year to get the most recent record per student
+middle_schools = middle_schools.sort_values(by=['year'], ascending=False)
+
+# Keep only the most recent middle school entry per student
+middle_schools = middle_schools.drop_duplicates(subset=['student_number'], keep='first')
+
+# Rename school_number to middle_school
+middle_schools = middle_schools.rename(columns={'school_number': 'middle_school'})
+
+# Drop extra columns that aren't needed after processing
+middle_schools = middle_schools.drop(columns=['CourseEntryDate', 'year'])
+
+# Merge with model_df
+model_df = pd.merge(model_df, middle_schools, on='student_number', how='left')
+
+#=======================================================================================
+# Do the same process, now for high schools
+high_schools = membership.copy()
+
+# Filter for high schools only
+high_schools = high_schools[high_schools['school_number'].isin(high_school_ids)]
+
+# Sort by year to get the most recent record per student
+high_schools = high_schools.sort_values(by=['year'], ascending=False)
+
+# Drop duplicates to keep the most recent high school per student
+high_schools = high_schools.drop_duplicates(subset=['student_number'], keep='first')
+
+# Rename school_number to high_school
+high_schools = high_schools.rename(columns={'school_number': 'high_school'})
+
+# Drop unnecessary columns
+high_schools = high_schools.drop(columns=['CourseEntryDate', 'year'])
+
+# Merge with model_df
+model_df = pd.merge(model_df, high_schools, on='student_number', how='left')
+
+model_df = model_df.fillna(0)
+
+# Map the values in the current_school, high_school and middle_school columns
+model_df['high_school'] = model_df['high_school'].apply(map_school_name)
+model_df['middle_school'] = model_df['middle_school'].apply(map_school_name)
+
+# Replace "None" values with 0
+model_df['middle_school'] = model_df['middle_school'].replace("None", 0)
+model_df['high_school'] = model_df['high_school'].replace("None", 0)
+
+model_df = model_df.drop_duplicates()
+model_df.head()
+
+######################################################################################################################################################
+# Drop the school_grid columns from model_df since they are no longer needed for export, but keep the original code above
+model_df = model_df.drop(columns=[col for col in model_df.columns if col.startswith('school_')])
+
 # Export the data
 df.to_csv('./data/06_school_exploratory_data.csv', index=False)
 model_df.to_csv('./data/06_school_modeling_data.csv', index=False)

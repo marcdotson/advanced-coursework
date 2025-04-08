@@ -1,3 +1,4 @@
+# The code will output two data files: '07_clearinghouse_exploratory_data.csv' and '07_clearinghouse_model_data.csv'
 
 import pandas as pd
 import pickle
@@ -31,26 +32,46 @@ years = [2017, 2018, 2022, 2023, 2024]
 all_membership = []
 all_master = []
 all_students = []
+all_student_years = [] # This will be used to track years for post and pre-covid data
 
 for year in years:
     master_year = pd.read_excel(f'data/{year} EOY Data - USU.xlsx', sheet_name='Course Master')
     membership_year = pd.read_excel(f'data/{year} EOY Data - USU.xlsx', sheet_name='Course Membership')
     student_year = student_tables[year]
+    student_year['student_year'] = year # This will be used to track years for post and pre-covid data
 
     all_master.append(master_year[['CollegeGrantingCr', 'WhereTaughtCampus', 'CourseTitle', 'CourseRecordID']].drop_duplicates())
-    all_membership.append(membership_year[['StudentNumber', 'ConcurrEnrolled', 'CourseRecordID']].drop_duplicates())
+    all_membership.append(membership_year[['StudentNumber', 'ConcurrEnrolled', 'CourseRecordID', 'CourseEntryDate']].drop_duplicates())
     all_students.append(student_year[['student_number']].drop_duplicates())
+    all_student_years.append(student_year[['student_number', 'student_year']].drop_duplicates()) # This will be used to track years for post and pre-covid data
 
 # Concat all the data from the for loop
 master = pd.concat(all_master, ignore_index=True)
 membership = pd.concat(all_membership, ignore_index=True)
 student = pd.concat(all_students, ignore_index=True)
+student_years = pd.concat(all_student_years, ignore_index=True) # This will be used to track years for post and pre-covid data
+
+#==============================================================
+# Clean up a few columns from membership table (this will be helpful later in the script)
+# Convert CourseEntryDate to datetime format
+membership['CourseEntryDate'] = pd.to_datetime(membership['CourseEntryDate'].astype(str), format='%Y%m%d', errors='coerce')
+# Extract year from CourseEntryDate
+membership['year'] = membership['CourseEntryDate'].dt.year
+# Drop CourseEntryDate now that we have the year column
+membership = membership.drop(columns=['CourseEntryDate'])
+# Rename StudentNumber to student_number
+membership = membership.rename(columns={'StudentNumber': 'student_number'})
+# Make sure student_number is a string
+membership['student_number'] = membership['student_number'].astype(str)
+#==============================================================
 
 # Drop duplicate rows from each DataFrame
 master = master.drop_duplicates()
 membership = membership.drop_duplicates()
 student = student.drop_duplicates()
+student_years = student_years.drop_duplicates() # This will be used to track years for post and pre-covid data
 
+#==============================================================
 # Create a df named 'student_clearing' that only includes clearinghouse data for the student_numbers we have
 # This df will be used throught the scrip
 # Make sure student_number is a string
@@ -122,8 +143,11 @@ model_df = pd.merge(model_df, college_grad, on='student_number', how='left')
 # Merge the master and membership table to get a list of advanced courses
 ac_list = pd.merge(master, membership, on='CourseRecordID', how='left').drop_duplicates()
 
+# Drop the 'year' column from ac_list to avoid issues
+ac_list = ac_list.drop(columns=['year'])
+
 # Rename columns
-ac_list = ac_list.rename(columns={'StudentNumber': 'student_number', 'CourseTitle': 'course_title'})
+ac_list = ac_list.rename(columns={'CourseTitle': 'course_title'})
 
 # Filter down ac_list to only include advanced courses
 ac_list = ac_list[
@@ -303,5 +327,55 @@ college_grid = college_grid.drop_duplicates()
 # Merge the college grid back into the main df
 df = pd.merge(df, college_grid, on='student_number', how='left')
 
-df.shape
-model_df.shape
+
+######################################################################################################################################################
+# Add logic to identify the most recent high school year per student
+# (This will be important if we separate by pre- and post-COVID years in the combined script.)
+
+# The 'year' column from the membership table is generally more accurate but is missing for some students.
+# As a fallback, we use the 'year' column from the student table (i.e., the year the student_number appears in the data). 
+# The steps below merge both sources to ensure each student has the most recent year available.
+
+# STEPS:
+# 1. Extract the most recent year per student from the student table (student_years)
+# 2. Extract the most recent year per student from the membership table (membership_years)
+# 3. Merge both datasets and create a new 'year' column using membership_year if available, else student_year
+
+# STEP 1: Get the most recent year per student from the student table
+latest_year = student_years.copy()
+latest_year = latest_year.sort_values(by='student_year', ascending=False)
+latest_year = latest_year.drop_duplicates(subset=['student_number'], keep='first')
+latest_year['student_number'] = latest_year['student_number'].astype(str)
+
+# STEP 2: Get the most recent year per student from the membership table
+membership_years = membership[['student_number', 'year']].copy()
+membership_years = membership_years.rename(columns={'year': 'membership_year'})
+membership_years = membership_years.sort_values(by='membership_year', ascending=False)
+membership_years = membership_years.drop_duplicates(subset=['student_number'], keep='first')
+
+# STEP 3: Merge and finalize the year column
+latest_year = pd.merge(latest_year, membership_years, on='student_number', how='left')
+latest_year['year'] = latest_year['membership_year'].fillna(latest_year['student_year'])
+
+# Clean up temporary columns
+latest_year = latest_year.drop(columns=['student_year', 'membership_year'])
+
+# Ensure only the most recent year per student remains
+latest_year = latest_year.sort_values(by='year', ascending=False)
+latest_year = latest_year.drop_duplicates(subset=['student_number'], keep='first')
+
+# Merge with df and model_df
+# df = pd.merge(df, latest_year, on='student_number', how='left')
+model_df = pd.merge(model_df, latest_year, on='student_number', how='left')
+
+
+######################################################################################################################################################
+# Export data
+
+df.to_csv('./data/07_clearinghouse_exploratory_data.csv', index=False)
+model_df.to_csv('./data/07_clearinghouse_model_data.csv', index=False)
+
+print('===========================================')
+print('Clearinghouse data exported successfully!')
+print("Next, run: 08_combine_data-table.py")
+print('===========================================')

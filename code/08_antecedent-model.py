@@ -104,10 +104,13 @@ if not os.path.exists(folder_path):
 #         col_drop.append(col)
 
 # Columns to exclude from modeling for post_covid_modeling_data
-col_drop = ['student_number']
+col_drop = ['student_number', 'hs_advanced_math_y']
 for col in df.columns:
     if col.startswith('teacher') or col.startswith('exit') or col.startswith('envi') or col.startswith('tribal_affiliation_g'):
         col_drop.append(col)
+
+#filter students out from cache high and who have no high school assigned
+df = df[~df['high_school'].isin(['Cache High', '0'])]
 
 # Define base dataframe after dropping columns
 df_base = df.drop(columns=col_drop, axis=1)

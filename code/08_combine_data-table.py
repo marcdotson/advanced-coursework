@@ -107,8 +107,12 @@ model_df = model_df.fillna(0)
 
 ######################################################################################################################################################
 # Export the data that includes all years
-# Before model data is exported, we need to drop the 'year' column
-model_df = model_df.drop(columns=['year'])
+# Drop rows where the student's most recent high school record was before 2017
+df = df[df['year'] >= 2017]
+model_df = model_df[model_df['year'] >= 2017]
+
+# Since the modeling data includes all years, we'll use 'start_college_y' as the target variable. To avoid multicollinearity, drop 'college_grad_y'
+model_df = model_df.drop(columns=['college_grad_y'])
 
 df.to_csv('data/clearinghouse_exploratory_data.csv')
 model_df.to_csv('data/clearinghouse_model_data.csv')

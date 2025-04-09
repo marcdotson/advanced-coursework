@@ -38,12 +38,12 @@ for year in years:
     master_year = pd.read_excel(f'data/{year} EOY Data - USU.xlsx', sheet_name='Course Master')
     membership_year = pd.read_excel(f'data/{year} EOY Data - USU.xlsx', sheet_name='Course Membership')
     student_year = student_tables[year]
-    student_year['student_year'] = year # This will be used to track years for post and pre-covid data
+    student_year['year'] = year # This will be used to track years for post and pre-covid data
 
     all_master.append(master_year[['CollegeGrantingCr', 'WhereTaughtCampus', 'CourseTitle', 'CourseRecordID']].drop_duplicates())
-    all_membership.append(membership_year[['StudentNumber', 'ConcurrEnrolled', 'CourseRecordID', 'CourseEntryDate']].drop_duplicates())
+    all_membership.append(membership_year[['StudentNumber', 'ConcurrEnrolled', 'CourseRecordID']].drop_duplicates())
     all_students.append(student_year[['student_number']].drop_duplicates())
-    all_student_years.append(student_year[['student_number', 'student_year']].drop_duplicates()) # This will be used to track years for post and pre-covid data
+    all_student_years.append(student_year[['student_number', 'year']].drop_duplicates()) # This will be used to track years for post and pre-covid data
 
 # Concat all the data from the for loop
 master = pd.concat(all_master, ignore_index=True)
@@ -53,12 +53,6 @@ student_years = pd.concat(all_student_years, ignore_index=True) # This will be u
 
 #==============================================================
 # Clean up a few columns from membership table (this will be helpful later in the script)
-# Convert CourseEntryDate to datetime format
-membership['CourseEntryDate'] = pd.to_datetime(membership['CourseEntryDate'].astype(str), format='%Y%m%d', errors='coerce')
-# Extract year from CourseEntryDate
-membership['year'] = membership['CourseEntryDate'].dt.year
-# Drop CourseEntryDate now that we have the year column
-membership = membership.drop(columns=['CourseEntryDate'])
 # Rename StudentNumber to student_number
 membership = membership.rename(columns={'StudentNumber': 'student_number'})
 # Make sure student_number is a string
@@ -332,37 +326,14 @@ df = pd.merge(df, college_grid, on='student_number', how='left')
 # Add logic to identify the most recent high school year per student
 # (This will be important if we separate by pre- and post-COVID years in the combined script.)
 
-# The 'year' column from the membership table is generally more accurate but is missing for some students.
-# As a fallback, we use the 'year' column from the student table (i.e., the year the student_number appears in the data). 
-# The steps below merge both sources to ensure each student has the most recent year available.
-
-# STEPS:
-# 1. Extract the most recent year per student from the student table (student_years)
-# 2. Extract the most recent year per student from the membership table (membership_years)
-# 3. Merge both datasets and create a new 'year' column using membership_year if available, else student_year
-
-# STEP 1: Get the most recent year per student from the student table
+# Get the most recent year per student from the student table
 latest_year = student_years.copy()
-latest_year = latest_year.sort_values(by='student_year', ascending=False)
+latest_year = latest_year.sort_values(by='year', ascending=False)
 latest_year = latest_year.drop_duplicates(subset=['student_number'], keep='first')
 latest_year['student_number'] = latest_year['student_number'].astype(str)
 
-# STEP 2: Get the most recent year per student from the membership table
-membership_years = membership[['student_number', 'year']].copy()
-membership_years = membership_years.rename(columns={'year': 'membership_year'})
-membership_years = membership_years.sort_values(by='membership_year', ascending=False)
-membership_years = membership_years.drop_duplicates(subset=['student_number'], keep='first')
-
-# STEP 3: Merge and finalize the year column
+# Merge and finalize the year column
 latest_year = pd.merge(latest_year, membership_years, on='student_number', how='left')
-latest_year['year'] = latest_year['membership_year'].fillna(latest_year['student_year'])
-
-# Clean up temporary columns
-latest_year = latest_year.drop(columns=['student_year', 'membership_year'])
-
-# Ensure only the most recent year per student remains
-latest_year = latest_year.sort_values(by='year', ascending=False)
-latest_year = latest_year.drop_duplicates(subset=['student_number'], keep='first')
 
 # Merge with df and model_df
 # df = pd.merge(df, latest_year, on='student_number', how='left')

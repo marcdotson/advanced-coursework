@@ -127,6 +127,20 @@ post_high_grid.columns = [f'teacher_{int(c)}' for c in post_high_grid.columns]
 post_middle_grid.columns = [f'teacher_{int(c)}' for c in post_middle_grid.columns]
 
 
+######################################################################################################################################################
+# Export Data
+high_school_grid.to_csv('data/hs_teacher_data.csv')
+middle_school_grid.to_csv('data/ms_teacher_data.csv')
+post_high_grid.to_csv('data/hs_post_covid_teacher_data.csv')
+post_middle_grid.to_csv('data/ms_post_covid_teacher_data.csv')
+
+# Number of Schools a Teacher Taught At
+#                                 |   1 School  |  >1 School  |  >2 Schools  |  >3 Schools  |  >4 Schools
+# --------------------------------|-------------|-------------|--------------|--------------|--------------
+#     High School (All Years)     |     320     |     129     |      51      |      8       |      0
+#     High School (Post-COVID)    |     143     |      54     |      22      |      1       |      0
+#     Middle School (All Years)   |     108     |       6     |       1      |      0       |      0
+#     Middle School (Post-COVID)  |      50     |       6     |       1      |      0       |      0
 # # The code will output two data files: 05_teacher_exploratory_data.csv and 05_teacher_modeling_data.csv
 
 # import pandas as pd

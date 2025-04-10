@@ -112,6 +112,9 @@ for col in df.columns:
 #filter students out from cache high and who have no high school assigned
 df = df[~df['high_school'].isin(['Cache High', '0'])]
 
+#filter students who have no middle school assigned
+df = df[~df['middle_school'].isin(['0'])]
+
 # Define base dataframe after dropping columns
 df_base = df.drop(columns=col_drop, axis=1)
 

@@ -214,8 +214,8 @@ groups = {
 }
 
 # #create our sorted IDATA for all the vars in all the groups
-sorted_multi = process_filtered_idata(idata_multi, idata_multi.data_vars, group_dims = ["high_school__factor_dim", 'middle_school__factor_dim'])
-sorted_multi_pc = process_filtered_idata(idata_multi_pc, idata_multi_pc.data_vars, group_dims = ["high_school__factor_dim", 'middle_school__factor_dim'])
+sorted_multi = process_filtered_idata(idata_multi, idata_multi.posterior.data_vars, group_dims = ["high_school__factor_dim", 'middle_school__factor_dim'])
+sorted_multi_pc = process_filtered_idata(idata_multi_pc, idata_multi_pc.posterior.data_vars, group_dims = ["high_school__factor_dim", 'middle_school__factor_dim'])
 
 sig_multi, sig_multi_pc, sig_flat, sig_flat_pc = get_significant_vars_only(all_idata)
 
@@ -225,67 +225,67 @@ summary_flat_pc = az.summary(idata_flat_pc)
 # ##############################################################################
 #             # EXTACT OUR MOST INFLUENTIAL FACTORS FOR FLAT MODEL
 # ##############################################################################
-# all_summaries = [summary_flat, summary_flat_pc]
-# summary_names = ["flat-model-all-years", "flat-model-post-covid"]  # Corresponding names for file output
+all_summaries = [summary_flat, summary_flat_pc]
+summary_names = ["flat-model-all-years", "flat-model-post-covid"]  # Corresponding names for file output
 
-# for i, summary in enumerate(all_summaries):
-#     # Filter to exclude random effect standard deviations (_sigma), the Intercept, and the 'refugee_student_y' variable
-#     fixed_effects_summary = summary[
-#         (~summary.index.str.contains('_sigma')) & 
-#         (~summary.index.str.contains("Intercept")) & 
-#         (~summary.index.str.contains("refugee_student_y"))
-#     ]
+for i, summary in enumerate(all_summaries):
+    # Filter to exclude random effect standard deviations (_sigma), the Intercept, and the 'refugee_student_y' variable
+    fixed_effects_summary = summary[
+        (~summary.index.str.contains('_sigma')) & 
+        (~summary.index.str.contains("Intercept")) & 
+        (~summary.index.str.contains("refugee_student_y"))
+    ]
     
-#     # Filter for significant effects (hdi_3% > 0 or hdi_97% < 0)
-#     significant_effects = fixed_effects_summary[
-#         (fixed_effects_summary["hdi_3%"] > 0) | (fixed_effects_summary["hdi_97%"] < 0)
-#     ]
+    # Filter for significant effects (hdi_3% > 0 or hdi_97% < 0)
+    significant_effects = fixed_effects_summary[
+        (fixed_effects_summary["hdi_3%"] > 0) | (fixed_effects_summary["hdi_97%"] < 0)
+    ]
     
-#     # Sort by absolute mean effect size (largest to smallest)
-#     sorted_fixed_effects = significant_effects.reindex(
-#         significant_effects["mean"].abs().sort_values(ascending=False).index
-#     )
+    # Sort by absolute mean effect size (largest to smallest)
+    sorted_fixed_effects = significant_effects.reindex(
+        significant_effects["mean"].abs().sort_values(ascending=False).index
+    )
     
-#     # Select the top 10 most influential fixed effects (excluding Intercept and 'refugee_student_y')
-#     top_10_fixed_effects = sorted_fixed_effects.head(10)
+    # Select the top 10 most influential fixed effects (excluding Intercept and 'refugee_student_y')
+    top_10_fixed_effects = sorted_fixed_effects.head(10)
     
-#     # Plot absolute sorted values
-#     plt.figure(figsize=(10, 6))
-#     sns.barplot(
-#         x=top_10_fixed_effects["mean"], 
-#         y=top_10_fixed_effects.index, 
-#         palette=usu_palette
-#     )
-#     plt.axvline(x=0, color="black", linestyle="--", alpha=0.7)
-#     plt.xlabel("Effect Size (Mean)")
-#     plt.ylabel("Predictor")
-#     plt.title(f"Top 10 Most Influential Predictors ({summary_names[i]})")
-#     plt.subplots_adjust(left=0.4)
-#     plt.savefig(f"{folder_path}/top10-plot-{summary_names[i]}.png", format="png")
-#     plt.close()
+    # Plot absolute sorted values
+    plt.figure(figsize=(10, 6))
+    sns.barplot(
+        x=top_10_fixed_effects["mean"], 
+        y=top_10_fixed_effects.index, 
+        palette=usu_palette
+    )
+    plt.axvline(x=0, color="black", linestyle="--", alpha=0.7)
+    plt.xlabel("Effect Size (Mean)")
+    plt.ylabel("Predictor")
+    plt.title(f"Top 10 Most Influential Predictors ({summary_names[i]})")
+    plt.subplots_adjust(left=0.4)
+    plt.savefig(f"{folder_path}/top10-plot-{summary_names[i]}.png", format="png")
+    plt.close()
     
-#     # Sort by raw mean effect size (largest to smallest)
-#     sorted_fixed_effects_not_abs = significant_effects.reindex(
-#         significant_effects["mean"].sort_values(ascending=False).index
-#     )
+    # Sort by raw mean effect size (largest to smallest)
+    sorted_fixed_effects_not_abs = significant_effects.reindex(
+        significant_effects["mean"].sort_values(ascending=False).index
+    )
     
-#     # Select the top 10 most influential fixed effects (excluding Intercept and 'refugee_student_y')
-#     top_10_fixed_effects_non_abs = sorted_fixed_effects_not_abs.head(10)
+    # Select the top 10 most influential fixed effects (excluding Intercept and 'refugee_student_y')
+    top_10_fixed_effects_non_abs = sorted_fixed_effects_not_abs.head(10)
     
-#     # Plot non-absolute sorted values
-#     plt.figure(figsize=(10, 6))
-#     sns.barplot(
-#         x=top_10_fixed_effects_non_abs["mean"], 
-#         y=top_10_fixed_effects_non_abs.index, 
-#         palette=usu_palette
-#     )
-#     plt.axvline(x=0, color="black", linestyle="--", alpha=0.7)
-#     plt.xlabel("Effect Size (Mean)")
-#     plt.ylabel("Predictor")
-#     plt.title(f"Top 10 Most Influential Predictors ({summary_names[i]})")
-#     plt.subplots_adjust(left=0.4)
-#     plt.savefig(f"{folder_path}/top10-plot-non-abs-{summary_names[i]}.png", format="png")
-#     plt.close()
+    # Plot non-absolute sorted values
+    plt.figure(figsize=(10, 6))
+    sns.barplot(
+        x=top_10_fixed_effects_non_abs["mean"], 
+        y=top_10_fixed_effects_non_abs.index, 
+        palette=usu_palette
+    )
+    plt.axvline(x=0, color="black", linestyle="--", alpha=0.7)
+    plt.xlabel("Effect Size (Mean)")
+    plt.ylabel("Predictor")
+    plt.title(f"Top 10 Most Influential Predictors ({summary_names[i]})")
+    plt.subplots_adjust(left=0.4)
+    plt.savefig(f"{folder_path}/top10-plot-non-abs-{summary_names[i]}.png", format="png")
+    plt.close()
 
 
 # ###############################################################################
@@ -293,86 +293,90 @@ summary_flat_pc = az.summary(idata_flat_pc)
 # ###############################################################################
 
 # *******CHANGE THIS NAME HERE BASED ON HOW YOU WOULD LIKE IT TO SAVE***********
-# interval_plot_base_name = 'interval-plot-multilevel-model05'
+interval_plot_base_name = 'interval-plot-multilevel-model'
 
-# # Loop over all the data in `all_idata`
-# # Loop through and plot each group
-# for group_name, base_names in groups.items():
-#     # Select variables that match the base names
-#     variables = [var for var in sorted_all_variables_idata if any(var.startswith(base) for base in base_names)
-#                  and var in significant_vars]
+#Interval plot of sorted effects and to compare multiple models
+def compare_group_effects(
+    models,
+    labels,
+    var_name,
+    filename,
+    group_dim="high_school__factor_dim",
+    hdi_prob=0.94,
+    sort_by="mean"
+):
+    """
+    Compare group-level effects across multiple models (e.g., pre/post-COVID) using forest plots.
 
-#     print(f'Starting plot for {group_name}')
-#     # Generate the forest plot
-#     az.plot_forest(sorted_all_variables_idata,
-#         var_names=variables,  # Pass the final filtered list
-#         filter_vars="like", 
-#         combined=True, kind="ridgeplot",
-#         ridgeplot_truncate=True, ridgeplot_overlap=1, ridgeplot_quantiles=[0.5]
-#     )
-#     plt.title(group_name.capitalize())
-#     plt.xlabel("Effect Size")  # Label for the x-axis (you can adjust as needed)
-#     plt.ylabel("Variables")  # Label for the y-axis (you can adjust as needed)
+    Parameters:
+    - models: list of ArviZ InferenceData objects
+    - labels: list of labels corresponding to each model
+    - var_name: str, name of the variable to plot (must be present in each model)
+    - group_dim: str, dimension that identifies the group (e.g., schools)
+    - hdi_prob: float, HDI width (default: 0.94)
+    - sort_by: str, "mean" or "median" (default: "mean")
+    - filename: str, name of the file to save to under figures/model-plots/
+    """
 
-#     plt.axvline(0, color='black', linewidth=1, linestyle='--') 
-#     plt.tight_layout()
+    # USU color palette
+    colors = ["#00274C", "#9EA2A2", "#D6D6D6"]
 
-#     # Generate the next available filename
-#     plot_filename = get_next_filename(folder_path, interval_plot_base_name, extension, group = group_name )
+    # Directory handling
+    output_dir = "figures/model-plots"
+    os.makedirs(output_dir, exist_ok=True)
+    full_path = os.path.join(output_dir, filename)
+
+    # Collect summaries
+    summaries = []
+    for i, model in enumerate(models):
+        summary = az.summary(model, var_names=[var_name], hdi_prob=hdi_prob)
+        group_labels = model[var_name].coords[group_dim].values
+        summary["group"] = group_labels
+        summary["model"] = labels[i]
+        summaries.append(summary)
+
+    # Merge summaries
+    all_summary = summaries[0].copy()
+    for s in summaries[1:]:
+        all_summary = all_summary.merge(s, how="outer")
+
+    # Use the first model's sorting logic
+    sort_column = sort_by if sort_by in all_summary.columns else "mean"
+    sorted_groups = summaries[0].sort_values(sort_column)["group"].values
+    y_pos = np.arange(len(sorted_groups))
+
+    # Plotting
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    for i, summary in enumerate(summaries):
+        summary = summary.set_index("group").loc[sorted_groups].reset_index()
+        offset = (i - len(summaries) / 2) * 0.2  # Adjust offset for overlapping points
+        ax.errorbar(
+            summary["mean"],
+            y_pos + offset,
+            xerr=[
+                summary["mean"] - summary[f"hdi_{int((1 - hdi_prob)/2 * 100)}%"],
+                summary[f"hdi_{int((1 + hdi_prob)/2 * 100)}%"] - summary["mean"]
+            ],
+            fmt='o',
+            color=colors[i % len(colors)],
+            label=labels[i],
+            capsize=4
+        )
+
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(sorted_groups)
+    ax.set_xlabel(f"Estimated Effect ({sort_by.title()} with {int(hdi_prob*100)}% HDI)")
+    ax.set_title(f"Posterior Comparison: {var_name}")
+    ax.legend()
     
-#     # Save the plot
-#     plt.savefig(plot_filename)
-#     print(f"Plot saved as: {plot_filename}")
-#     plt.close()  # Close the current plot to avoid overlapping in the next iteration
+    ax.grid(True, axis='x', linestyle='--', alpha=0.5)
 
-
-# ###############################################################################
-#                # INTERVAL PLOTS COMPARING ALL YEARS AND POST COVID
-# ###############################################################################
-
-
-# *******CHANGE THIS NAME HERE BASED ON HOW YOU WOULD LIKE IT TO SAVE***********
-interval_plot_base_name = 'interval-plot-multilevel-comparing-model-03-06'
-
-# Loop over all the data in `all_idata`
-# Loop through and plot each group
-for group_name, base_names in groups.items():
-    # Select variables that match the base names
-    variables = [var for var in sorted_all_variables_idata if any(var.startswith(base) for base in base_names)
-                 and var in significant_vars]
-
-    print(f'Starting plot for {group_name}')
-    # Generate the forest plot
-    az.plot_forest(sorted_all_variables_idata,
-        var_names=variables,  # Pass the final filtered list
-        filter_vars="like", 
-        combined=True, kind="ridgeplot",
-        ridgeplot_truncate=True, ridgeplot_overlap=1, ridgeplot_quantiles=[0.5]
-    )
-    plt.title(group_name.capitalize())
-    plt.xlabel("Effect Size")  # Label for the x-axis (you can adjust as needed)
-    plt.ylabel("Variables")  # Label for the y-axis (you can adjust as needed)
-
-    plt.axvline(0, color='black', linewidth=1, linestyle='--') 
     plt.tight_layout()
+    plt.savefig(full_path, dpi=300)
+    plt.close()
 
-    # Generate the next available filename
-    plot_filename = get_next_filename(folder_path, interval_plot_base_name, extension, group = group_name )
-    
-    # Save the plot
-    plt.savefig(plot_filename)
-    print(f"Plot saved as: {plot_filename}")
-    plt.close()  # Close the current plot to avoid overlapping in the next iteration
+    print(f"✅ Plot saved to: {full_path}")
 
-
-
-#     az.plot_forest(
-#     [sorted_multi, sorted_multi_pc],
-#     var_names= 'hs_advanced_math_y|high_school',
-#     model_names=["Model 3 (All Years)", "Model 6 (Post Covid)"],
-#     combined= True,
-#     figsize=(9, 7)
-# )
-
-
-# plt.show()
+#SAVE THE PLOT, First two parameters must be wrapped in a [] in order to treat like a list
+compare_group_effects([sorted_multi, sorted_multi_pc], ['Model 08', 'Model 07'], 'non_ell_with_disability|high_school', interval_plot_base_name)

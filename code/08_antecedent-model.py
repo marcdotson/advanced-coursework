@@ -1,5 +1,6 @@
 import pandas as pd
 import bambi as bmb
+import arviz as az
 import os
 import glob
 
@@ -11,7 +12,7 @@ import glob
 data_model_ind = 1          # Use the entire modeling data
 data_post_covid_ind = 0     # Use the post-covid modeling data
 group_high_school_ind = 1   # Group by high schools
-group_middle_school_ind = 0 # Group by middle schools
+group_middle_school_ind = 1 # Group by middle schools
 
 
 ########################################################
@@ -37,34 +38,26 @@ if not os.path.exists(folder_path):
 # PREP THE MODEL AND SPECIFY THE MODEL FORMULA
 #######################################################
 
-# Columns to exclude from modeling for model_data
-if data_model_ind == 1:
-    col_drop = ['student_number', 'hs_advanced_math_y']
-    for col in df.columns:
-        if col.startswith('teacher') or col.startswith('exit'):
-            col_drop.append(col)
-
-# Columns to exclude from modeling for post_covid_modeling_data
-if data_post_covid_ind == 1:
-    col_drop = ['student_number', 'hs_advanced_math_y', 'tribal_affiliation_g']
-    for col in df.columns:
-        if col.startswith('teacher') or col.startswith('exit') or col.startswith('envi'):
-            col_drop.append(col)
+# Columns to exclude from modeling
+col_drop = ['student_number', 'hs_advanced_math_y', 'tribal_affiliation_g']
+for col in df.columns:
+    if col.startswith('teacher') or col.startswith('exit') or col.startswith('envi'):
+        col_drop.append(col)
 
 # Filter students out from Cache High who have no high school assigned
-if group_high_school_ind == 1:
-    df = df[~df['high_school'].isin(['Cache High', '0'])]
+# if group_high_school_ind == 1:
+df = df[~df['high_school'].isin(['Cache High', '0'])]
 
-# Filter students who have no middle school assigned and drop more columns
-if group_middle_school_ind == 1:
-    df = df[~df['middle_school'].isin(['0'])]
-
-    more_col_drop = ['gender_u', 'migrant_y', 'military_child_y', 
-        'refugee_student_y', 'homeless_y', 'part_time_home_school_y', 
-        'immigrant_y', 'tribal_affiliation_n', 'tribal_affiliation_p', 
-        'tribal_affiliation_s', 'tribal_affiliation_u']
-
-    col_drop = col_drop + more_col_drop
+# # Filter students who have no middle school assigned and drop more columns
+# if group_middle_school_ind == 1:
+#     df = df[~df['middle_school'].isin(['0'])]
+# 
+#     more_col_drop = ['gender_u', 'migrant_y', 'military_child_y', 
+#         'refugee_student_y', 'homeless_y', 'part_time_home_school_y', 
+#         'immigrant_y', 'tribal_affiliation_n', 'tribal_affiliation_p', 
+#         'tribal_affiliation_s', 'tribal_affiliation_u']
+# 
+#     col_drop = col_drop + more_col_drop
 
 # Define base data frame after dropping columns and specify predictors
 df_base = df.drop(columns = col_drop, axis=1)
@@ -157,4 +150,4 @@ else:
 # 06 - Model 03, run on the post-COVID data.
 # 07 - Model 04, run for twice as long on the post-COVID data.
 # 08 - Model 03 without hs_advanced_math_y and with "Cache High" and "0" students filtered out.
-# 09 - Model 04 with 2000 draws and without `hs_advanced_math_y` and Cache High or "other" students.
+# 09 - Model 06 without hs_advanced_math_y and with "Cache High" and "0" students filtered out.

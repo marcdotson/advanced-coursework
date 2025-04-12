@@ -12,7 +12,7 @@ import glob
 data_model_ind = 1          # Use the entire modeling data
 data_post_covid_ind = 0     # Use the post-covid modeling data
 group_high_school_ind = 1   # Group by high schools
-group_middle_school_ind = 1 # Group by middle schools
+group_middle_school_ind = 0 # Group by middle schools
 
 
 ########################################################
@@ -65,7 +65,8 @@ all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "high_school",
 
 # Specify the model formula
 if group_high_school_ind == 1:
-    model_formula = f"ac_ind ~ ({all_predictors} | high_school)"
+    # model_formula = f"ac_ind ~ ({all_predictors} | high_school)"
+    model_formula = f"ac_ind ~ {all_predictors} + ({all_predictors} | high_school)"
 
 if group_middle_school_ind == 1:
     model_formula = f"ac_ind ~ ({all_predictors} | middle_school) + ({all_predictors} | high_school)"
@@ -82,7 +83,7 @@ if __name__ == '__main__':
     multilevel_model = bmb.Model(model_formula, df_base, family = "bernoulli", noncentered = True)
     
     # Apply the .build() method prior to fitting the model
-    multilevel_model.build() 
+    multilevel_model.build()
 
     # Run the sampling (ADJUST THE AMOUNT OF SAMPLING (TUNE, DRAW, ETC.) HERE AS NEEDED)
     try:
@@ -146,8 +147,10 @@ else:
 # 02 - Everything but school as random effects | ell_disability_group, otherwise fixed effects.
 # 03 - Everything as random effects | high_school (including the intercept), no other schools.
 # 04 - Everything as random effects | both high_school and middle_school (including the intercept).
-# 05 - Model 04, run for twice as long.
-# 06 - Model 03, run on the post-COVID data.
-# 07 - Model 04, run for twice as long on the post-COVID data.
+# 05 - Model 04 run for twice as long.
+# 06 - Model 03 run on the post-COVID data.
+# 07 - Model 04 run for twice as long on the post-COVID data.
 # 08 - Model 03 without hs_advanced_math_y and with "Cache High" and "0" students filtered out.
-# 09 - Model 06 without hs_advanced_math_y and with "Cache High" and "0" students filtered out.
+# 09 - Model 08 run on the post-COVID data.
+# 
+# Model 06 without hs_advanced_math_y and with "Cache High" and "0" students filtered out.

@@ -16,7 +16,7 @@ import seaborn as sns
 # Load trace from the NetCDF file saved from model output and the dataset file
 try:
     #Inerence data for all years
-    idata_multi = az.from_netcdf("output\multilevel-model-output_05.nc")
+    idata_multi = az.from_netcdf("output\multilevel-model-output_08.nc")
 
     #inference data for multilevel model post covid
     idata_multi_pc = az.from_netcdf("output\multilevel-model-output_07.nc")

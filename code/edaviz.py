@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
+import numpy as np
 
 warnings.filterwarnings("ignore")
 pd.set_option('display.max_rows', None)
@@ -22,8 +23,13 @@ def print_section_header(title):
     print("\n" + title)
     print("=" * 50)
 
-def plot_ac_courses_and_students(data, post_covid_years=None):
+def filter_high_schools(data, high_schools):
+    """Filter the dataset to include only high schools."""
+    return data[data['current_school'].isin(high_schools)]
+
+def plot_ac_courses_and_students(data, high_schools, post_covid_years=None):
     """Plot AC courses and AC students by school."""
+    data = filter_high_schools(data, high_schools)
     if post_covid_years:
         data = data[data['year'].isin(post_covid_years)]
         title_suffix = " (Post-COVID)"
@@ -46,8 +52,9 @@ def plot_ac_courses_and_students(data, post_covid_years=None):
     plt.tight_layout()
     plt.show()
 
-def plot_ac_vs_non_ac_distribution(data):
+def plot_ac_vs_non_ac_distribution(data, high_schools):
     """Plot the distribution of AC vs Non-AC students."""
+    data = filter_high_schools(data, high_schools)
     plt.figure(figsize=(8, 6))
     ac_counts = data['ac_ind'].value_counts()
     labels = ['Non-AC', 'AC']
@@ -58,8 +65,9 @@ def plot_ac_vs_non_ac_distribution(data):
     plt.axis('equal')
     plt.show()
 
-def plot_ac_gpa_distribution(data):
+def plot_ac_gpa_distribution(data, high_schools):
     """Plot the distribution of AC GPA."""
+    data = filter_high_schools(data, high_schools)
     filtered_ac_gpa = data['ac_gpa'][data['ac_gpa'] > 0]
     plt.figure(figsize=(8, 6))
     plt.hist(filtered_ac_gpa, bins=np.arange(0.0, 4.0, 0.5), color='steelblue', edgecolor='black')
@@ -69,8 +77,9 @@ def plot_ac_gpa_distribution(data):
     plt.tight_layout()
     plt.show()
 
-def plot_ac_gpa_by_school(data):
+def plot_ac_gpa_by_school(data, high_schools):
     """Plot the AC GPA distribution by school."""
+    data = filter_high_schools(data, high_schools)
     plt.figure(figsize=(6, 12))
     sns.boxplot(
         x='ac_gpa', y='current_school',
@@ -83,8 +92,9 @@ def plot_ac_gpa_by_school(data):
     plt.tight_layout()
     plt.show()
 
-def plot_gpa_density(data):
+def plot_gpa_density(data, high_schools):
     """Plot GPA density for AC and Non-AC students."""
+    data = filter_high_schools(data, high_schools)
     plt.figure(figsize=(10, 6))
     sns.kdeplot(data[data['ac_ind'] == 1]['overall_gpa'], label='AC Students', shade=True, color='steelblue')
     sns.kdeplot(data[data['ac_ind'] == 0]['overall_gpa'], label='Non-AC Students', shade=True, color='red')
@@ -107,8 +117,9 @@ def plot_gpa_density(data):
     plt.tight_layout()
     plt.show()
 
-def plot_ethnic_group_proportions(data, total_students):
+def plot_ethnic_group_proportions(data, high_schools, total_students):
     """Plot the proportion of ethnic groups in AC courses."""
+    data = filter_high_schools(data, high_schools)
     ethnic_counts = data[['amerindian_alaskan', 'asian', 'black_african_amer', 'hawaiian_pacific_isl', 'white', 'migrant', 'immigrant', 'refugee_student', 'ethnicity']].apply(pd.Series.value_counts).fillna(0)
     ethnic_proportions = (ethnic_counts.loc['Y'] / total_students) * 100
     plt.figure(figsize=(10, 6))
@@ -121,8 +132,9 @@ def plot_ethnic_group_proportions(data, total_students):
     plt.tight_layout()
     plt.show()
 
-def plot_ethnic_ac_participation(data):
+def plot_ethnic_ac_participation(data, high_schools):
     """Plot participation of ethnic groups in AC courses."""
+    data = filter_high_schools(data, high_schools)
     ethnic_counts_total = data[['amerindian_alaskan', 'asian', 'black_african_amer', 'hawaiian_pacific_isl', 'white', 'migrant', 'immigrant', 'refugee_student']].apply(pd.Series.value_counts).fillna(0).loc['Y']
     ethnic_counts_ac = data[data['ac_ind'] == 1][['amerindian_alaskan', 'asian', 'black_african_amer', 'hawaiian_pacific_isl', 'white', 'migrant', 'immigrant', 'refugee_student']].apply(pd.Series.value_counts).fillna(0).loc['Y']
     ethnic_proportions_ac = (ethnic_counts_ac / ethnic_counts_total) * 100
@@ -136,8 +148,9 @@ def plot_ethnic_ac_participation(data):
     plt.tight_layout()
     plt.show()
 
-def plot_gpa_vs_ac_count(data):
+def plot_gpa_vs_ac_count(data, high_schools):
     """Plot GPA vs AC course count."""
+    data = filter_high_schools(data, high_schools)
     plt.figure(figsize=(12, 6))
     sns.scatterplot(x='overall_gpa', y='ac_count', hue='ac_ind', data=data, palette={0: 'red', 1: 'steelblue'})
     plt.title('Relationship Between GPA and AC Course Count')
@@ -147,8 +160,9 @@ def plot_gpa_vs_ac_count(data):
     plt.tight_layout()
     plt.show()
 
-def plot_ac_students_by_gender(data):
+def plot_ac_students_by_gender(data, high_schools):
     """Plot AC enrollment by gender."""
+    data = filter_high_schools(data, high_schools)
     plt.figure(figsize=(10, 6))
     ac_enrollment_by_gender = data[data['ac_ind'] == 1].groupby('gender').size()
     ac_enrollment_by_gender.plot(kind='bar', color='steelblue', edgecolor='black')
@@ -161,34 +175,35 @@ def plot_ac_students_by_gender(data):
 
 # === Main Processing ===
 if __name__ == "__main__":
-    total_students = data.shape[0]
+    high_schools = ['Green Canyon', 'Sky View', 'Mountain Crest', 'Ridgeline']
+    total_students = filter_high_schools(data, high_schools).shape[0]
 
     print_section_header("EDA Visualizations")
 
     # Plot AC courses and students by school (total and post-COVID)
-    plot_ac_courses_and_students(data)
-    plot_ac_courses_and_students(data, post_covid_years=[2022, 2023, 2024])
+    plot_ac_courses_and_students(data, high_schools)
+    plot_ac_courses_and_students(data, high_schools, post_covid_years=[2022, 2023, 2024])
 
     # Plot AC vs Non-AC distribution
-    plot_ac_vs_non_ac_distribution(data)
+    plot_ac_vs_non_ac_distribution(data, high_schools)
 
     # Plot AC GPA distribution
-    plot_ac_gpa_distribution(data)
+    plot_ac_gpa_distribution(data, high_schools)
 
     # Plot AC GPA by school
-    plot_ac_gpa_by_school(data)
+    plot_ac_gpa_by_school(data, high_schools)
 
     # Plot GPA density
-    plot_gpa_density(data)
+    plot_gpa_density(data, high_schools)
 
     # Plot ethnic group proportions
-    plot_ethnic_group_proportions(data, total_students)
+    plot_ethnic_group_proportions(data, high_schools, total_students)
 
     # Plot ethnic AC participation
-    plot_ethnic_ac_participation(data)
+    plot_ethnic_ac_participation(data, high_schools)
 
     # Plot GPA vs AC course count
-    plot_gpa_vs_ac_count(data)
+    plot_gpa_vs_ac_count(data, high_schools)
 
     # Plot AC enrollment by gender
-    plot_ac_students_by_gender(data)
+    plot_ac_students_by_gender(data, high_schools)

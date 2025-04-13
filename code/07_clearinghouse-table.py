@@ -3,6 +3,7 @@
 import pandas as pd
 import pickle
 import numpy as np
+import re
 
 # Load the clearinghouse data. We have two files, so we will load both and combine them
 clearing_old = pd.read_csv('data/Clearing House Data - USU Version.csv').drop_duplicates()
@@ -159,6 +160,15 @@ ac_list = pd.merge(ac_list, mapping_df, on='course_title', how='left')
 # Create a new dataframe that will be used to create a grid (student_number = rows, course_title = columns)
 # Note: Using clean_course_title instead of course_number since course numbers can vary across schools
 ac_grid = ac_list[['student_number', 'clean_course_title']].copy()
+
+# Replace spaces with underscores and remove special characters
+ac_grid['clean_course_title'] = (
+    ac_grid['clean_course_title']
+    .str.replace('&', 'and', regex=False)         # Replace & with "and"
+    .str.replace('/', '_', regex=False)           # Replace / with "_"
+    .str.replace(' ', '_', regex=False)           # Replace spaces with "_"
+    .str.replace(r'[^A-Za-z0-9_]', '', regex=True)  # Remove other special characters
+)
 
 ac_grid = ac_grid.drop_duplicates()
 

@@ -123,14 +123,18 @@ if __name__ == '__main__':
         print("Starting model sampling...")
         
         if group_high_school_ind == 1:
-            multilevel_fitted = multilevel_model.fit(idata_kwargs = {"log_likelihood": True})
-            # multilevel_fitted = multilevel_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
+            # multilevel_fitted = multilevel_model.fit(idata_kwargs = {"log_likelihood": True})
+            multilevel_fitted = multilevel_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
+            flat_fitted = None
         
         if group_middle_school_ind == 1:
             multilevel_fitted = multilevel_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
+            flat_fitted = None
         
         else:
-            flat_fitted = flat_model.fit(idata_kwargs = {"log_likelihood": True})
+            # flat_fitted = flat_model.fit(idata_kwargs = {"log_likelihood": True})
+            flat_fitted = flat_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
+            multilevel_fitted = None
 
         print("Sampling complete.")
 
@@ -206,9 +210,11 @@ if group_high_school_ind == 0 and group_middle_school_ind == 0 and flat_fitted i
 else:
     print("Cannot save output to a file.")
 
+# Flat Models:
+# 03 - Original flat effects model.
+# 04 - Flat model 03 run for longer.
+
 # Multilevel Models:
 # 12 - Original multilevel effects model.
 
-# Flat Models:
-# 03 - Original flat effects model.
 

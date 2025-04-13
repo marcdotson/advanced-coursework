@@ -11,7 +11,7 @@ import glob
 
 data_model_ind = 1          # Use the entire modeling data
 # data_post_covid_ind = 0     # Use the post-covid modeling data
-group_high_school_ind = 0   # Group by high schools
+group_high_school_ind = 1   # Group by high schools
 group_middle_school_ind = 0 # Group by middle schools
 
 
@@ -90,7 +90,6 @@ all_predictors = " + ".join(df_base.columns.difference(["start_college_y", "high
 # Specify the model formula
 if group_high_school_ind == 1:
     model_formula = f"start_college_y ~ ({all_predictors} | high_school)"
-    # model_formula = f"ac_ind ~ {all_predictors} + ({all_predictors} | high_school)"
 
 if group_middle_school_ind == 1:
     model_formula = f"start_college_y ~ ({all_predictors} | middle_school) + ({all_predictors} | high_school)"

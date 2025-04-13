@@ -11,7 +11,7 @@ import glob
 
 data_model_ind = 1          # Use the entire modeling data
 data_post_covid_ind = 0     # Use the post-covid modeling data
-group_high_school_ind = 1   # Group by high schools
+group_high_school_ind = 0   # Group by high schools
 group_middle_school_ind = 0 # Group by middle schools
 
 
@@ -65,12 +65,14 @@ all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "high_school",
 
 # Specify the model formula
 if group_high_school_ind == 1:
-    # model_formula = f"ac_ind ~ ({all_predictors} | high_school)"
-    model_formula = f"ac_ind ~ {all_predictors} + ({all_predictors} | high_school)"
+    model_formula = f"ac_ind ~ ({all_predictors} | high_school)"
+    # model_formula = f"ac_ind ~ {all_predictors} + ({all_predictors} | high_school)"
 
 if group_middle_school_ind == 1:
     model_formula = f"ac_ind ~ ({all_predictors} | middle_school) + ({all_predictors} | high_school)"
 
+else:
+    model_formula = f"ac_ind ~ {all_predictors}"
 
 ################################################
 # RUN THE MULTILEVEL MODEL 
@@ -79,11 +81,19 @@ if group_middle_school_ind == 1:
 if __name__ == '__main__':
     print("Starting model setup...")
 
-    # Establish the Multilevel Logistic Regression Model
-    multilevel_model = bmb.Model(model_formula, df_base, family = "bernoulli", noncentered = True)
-    
-    # Apply the .build() method prior to fitting the model
-    multilevel_model.build()
+    if group_high_school_ind == 1 or group_middle_school_ind == 1:
+        # Establish the Multilevel Logistic Regression Model
+        multilevel_model = bmb.Model(model_formula, df_base, family = "bernoulli", noncentered = True)
+        
+        # Apply the .build() method prior to fitting the model
+        multilevel_model.build()
+
+    else:
+        # Establish the Flat Logistic Regression Model
+        flat_model = bmb.Model(model_formula, df_base, family = "bernoulli")
+        
+        # Apply the .build() method prior to fitting the model
+        flat_model.build()
 
     # Run the sampling (ADJUST THE AMOUNT OF SAMPLING (TUNE, DRAW, ETC.) HERE AS NEEDED)
     try:
@@ -91,15 +101,24 @@ if __name__ == '__main__':
         
         if group_high_school_ind == 1:
             multilevel_fitted = multilevel_model.fit(idata_kwargs = {"log_likelihood": True})
+            # multilevel_fitted = multilevel_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
         
         if group_middle_school_ind == 1:
             multilevel_fitted = multilevel_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
         
+        else:
+            flat_fitted = flat_model.fit(idata_kwargs = {"log_likelihood": True})
+
         print("Sampling complete.")
 
     except Exception as e:
         print(f"Sampling failed: {e}")
-        multilevel_fitted = None  # Set output to None if sampling fails
+
+        if group_high_school_ind == 1 or group_middle_school_ind == 1:
+            multilevel_fitted = None  # Set output to None if sampling fails
+
+        else:
+            flat_fitted = None        # Set output to None if sampling fails
 
 
 ###############################################################
@@ -119,7 +138,7 @@ def get_next_filename(folder_path, base_name, extension):
 
 
 # Only try to export if the model is not None
-if multilevel_fitted is not None:
+if (group_high_school_ind == 1 or group_middle_school_ind == 1) and multilevel_fitted is not None:
     print('Saving Model Output to a File...')
 
     # Generate incremented filenames
@@ -140,9 +159,31 @@ if multilevel_fitted is not None:
     sorted_summary.to_csv(csv_filename)
     print(f"Ordered model output saved as {csv_filename}!")
 
+if group_high_school_ind == 0 and group_middle_school_ind == 0 and flat_fitted is not None:
+    print('Saving Model Output to a File...')
+
+    # Generate incremented filenames
+    netcdf_filename = get_next_filename(folder_path, "flat-model-output", "nc")
+    csv_filename = get_next_filename(folder_path, "flat-model-output-ordered", "csv")
+
+    # Save the NetCDF file
+    flat_fitted.to_netcdf(netcdf_filename)
+    print(f'Output successfully saved as {netcdf_filename}')
+
+    # Extract posterior summary
+    summary = az.summary(flat_fitted)
+
+    # Sort predictors by absolute mean effect size
+    sorted_summary = summary.reindex(summary["mean"].abs().sort_values(ascending=False).index)
+
+    # Save ordered model output to CSV
+    sorted_summary.to_csv(csv_filename)
+    print(f"Ordered model output saved as {csv_filename}!")
+
 else:
     print("Cannot save output to a file.")
 
+# Multilevel Models:
 # 01 - All schools as random effects | ell_disability_group, otherwise fixed effects.
 # 02 - Everything but school as random effects | ell_disability_group, otherwise fixed effects.
 # 03 - Everything as random effects | high_school (including the intercept), no other schools.
@@ -152,5 +193,10 @@ else:
 # 07 - Model 04 run for twice as long on the post-COVID data.
 # 08 - Model 03 without hs_advanced_math_y and with "Cache High" and "0" students filtered out.
 # 09 - Model 08 run on the post-COVID data.
+# 10 - Model 08 as a mixed effect model, including all predictors as both fixed and random effects.
+# 11 - Model 10 run for twice as long.
+
+# Flat Models:
+# 01 - Original flat model.
 # 
-# Model 06 without hs_advanced_math_y and with "Cache High" and "0" students filtered out.
+

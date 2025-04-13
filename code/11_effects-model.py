@@ -208,19 +208,8 @@ else:
     print("Cannot save output to a file.")
 
 # Multilevel Models:
-# 01 - All schools as random effects | ell_disability_group, otherwise fixed effects.
-# 02 - Everything but school as random effects | ell_disability_group, otherwise fixed effects.
-# 03 - Everything as random effects | high_school (including the intercept), no other schools.
-# 04 - Everything as random effects | both high_school and middle_school (including the intercept).
-# 05 - 04 run for twice as long.
-# 06 - 03 run on the post-COVID data.
-# 07 - 04 run for twice as long on the post-COVID data.
-# 08 - 03 without hs_advanced_math_y and with "Cache High" and "0" students filtered out.
-# 09 - 08 run on the post-COVID data.
-# 10 - 08 as a mixed effect model, including all predictors as both fixed and random effects.
-# 11 - 10 run for twice as long.
+# 12 - Original multilevel effects model.
 
 # Flat Models:
-# 01 - Original flat model.
-# 02 - Flat model that corresponds with Multilevel Model 08.
+# 03 - Original flat effects model.
 

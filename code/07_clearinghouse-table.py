@@ -2,6 +2,7 @@
 
 import pandas as pd
 import pickle
+import numpy as np
 
 # Load the clearinghouse data. We have two files, so we will load both and combine them
 clearing_old = pd.read_csv('data/Clearing House Data - USU Version.csv').drop_duplicates()
@@ -136,9 +137,6 @@ model_df = pd.merge(model_df, college_grad, on='student_number', how='left')
 # Create a grid using student_number as rows and advanced courses course_titles as column headings
 # Merge the master and membership table to get a list of advanced courses
 ac_list = pd.merge(master, membership, on='CourseRecordID', how='left').drop_duplicates()
-
-# Drop the 'year' column from ac_list to avoid issues
-ac_list = ac_list.drop(columns=['year'])
 
 # Rename columns
 ac_list = ac_list.rename(columns={'CourseTitle': 'course_title'})
@@ -332,8 +330,6 @@ latest_year = latest_year.sort_values(by='year', ascending=False)
 latest_year = latest_year.drop_duplicates(subset=['student_number'], keep='first')
 latest_year['student_number'] = latest_year['student_number'].astype(str)
 
-# Merge and finalize the year column
-latest_year = pd.merge(latest_year, membership_years, on='student_number', how='left')
 
 # Merge with df and model_df
 # df = pd.merge(df, latest_year, on='student_number', how='left')

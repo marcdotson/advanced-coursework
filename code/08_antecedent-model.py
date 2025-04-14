@@ -10,9 +10,9 @@ import glob
 ########################################################
 
 data_model_ind = 1          # Use the entire modeling data
-data_post_covid_ind = 0     # Use the post-covid modeling data
-group_high_school_ind = 1   # Group by high schools
-group_middle_school_ind = 1 # Group by middle schools
+data_post_covid_ind = 1     # Use the post-covid modeling data
+group_high_school_ind = 0   # Group by high schools
+group_middle_school_ind = 0 # Group by middle schools
 
 
 ########################################################
@@ -203,4 +203,5 @@ else:
 # Flat Models:
 # 01 - Original flat model.
 # 02 - Flat model that corresponds with Multilevel Model 08.
+# 05 - Flat model that corresponds with Multilevel Model 09.
 

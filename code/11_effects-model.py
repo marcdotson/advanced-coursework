@@ -107,6 +107,7 @@ if __name__ == '__main__':
     if group_high_school_ind == 1 or group_middle_school_ind == 1:
         # Establish the Multilevel Logistic Regression Model
         multilevel_model = bmb.Model(model_formula, df_base, family = "bernoulli", noncentered = True)
+        flat_model = None
         
         # Apply the .build() method prior to fitting the model
         multilevel_model.build()
@@ -114,6 +115,7 @@ if __name__ == '__main__':
     else:
         # Establish the Flat Logistic Regression Model
         flat_model = bmb.Model(model_formula, df_base, family = "bernoulli")
+        multilevel_model = None
         
         # Apply the .build() method prior to fitting the model
         flat_model.build()
@@ -127,7 +129,7 @@ if __name__ == '__main__':
             multilevel_fitted = multilevel_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
             flat_fitted = None
         
-        if group_middle_school_ind == 1:
+        elif group_middle_school_ind == 1:
             multilevel_fitted = multilevel_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
             flat_fitted = None
         
@@ -216,5 +218,4 @@ else:
 
 # Multilevel Models:
 # 12 - Original multilevel effects model.
-
 

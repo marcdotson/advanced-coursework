@@ -11,8 +11,8 @@ import glob
 
 data_model_ind = 1          # Use the entire modeling data
 data_post_covid_ind = 0     # Use the post-covid modeling data
-group_high_school_ind = 0   # Group by high schools
-group_middle_school_ind = 0 # Group by middle schools
+group_high_school_ind = 1   # Group by high schools
+group_middle_school_ind = 1 # Group by middle schools
 
 
 ########################################################
@@ -99,13 +99,17 @@ if __name__ == '__main__':
     try:
         print("Starting model sampling...")
         
-        if group_high_school_ind == 1:
-            multilevel_fitted = multilevel_model.fit(idata_kwargs = {"log_likelihood": True})
-            # multilevel_fitted = multilevel_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
+        # if group_high_school_ind == 1:
+        #     multilevel_fitted = multilevel_model.fit(idata_kwargs = {"log_likelihood": True})
+        #     # multilevel_fitted = multilevel_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
         
-        if group_middle_school_ind == 1:
+        # if group_middle_school_ind == 1:
+        #     multilevel_fitted = multilevel_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
+        
+        if group_high_school_ind == 1 or group_middle_school_ind == 1:
+            # multilevel_fitted = multilevel_model.fit(idata_kwargs = {"log_likelihood": True})
             multilevel_fitted = multilevel_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
-        
+
         else:
             flat_fitted = flat_model.fit(idata_kwargs = {"log_likelihood": True})
 

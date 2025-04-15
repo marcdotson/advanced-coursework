@@ -10,7 +10,7 @@ import glob
 ########################################################
 
 data_model_ind = 1          # Use the entire modeling data
-data_post_covid_ind = 1     # Use the post-covid modeling data
+data_post_covid_ind = 0     # Use the post-covid modeling data
 group_high_school_ind = 0   # Group by high schools
 group_middle_school_ind = 0 # Group by middle schools
 
@@ -61,17 +61,32 @@ df = df[~df['high_school'].isin(['Cache High', '0'])]
 
 # Define base data frame after dropping columns and specify predictors
 df_base = df.drop(columns = col_drop, axis=1)
-all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "high_school", "middle_school"]))
+# all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "high_school", "middle_school"]))
 
 # Specify the model formula
 if group_high_school_ind == 1:
+    all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "high_school", "middle_school"]))
     model_formula = f"ac_ind ~ ({all_predictors} | high_school)"
     # model_formula = f"ac_ind ~ {all_predictors} + ({all_predictors} | high_school)"
 
-if group_middle_school_ind == 1:
+elif group_middle_school_ind == 1:
+    all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "high_school", "middle_school"]))
     model_formula = f"ac_ind ~ ({all_predictors} | middle_school) + ({all_predictors} | high_school)"
 
 else:
+    # df_base = pd.get_dummies(df_base, columns=['high_school'], drop_first=False, dtype=int)
+    # df_base = pd.get_dummies(df_base, columns=['middle_school'], drop_first=True, dtype=int)
+
+    # df_base = df_base.rename(columns={
+    #     'high_school_Green Canyon': 'high_school_Green_Canyon',
+    #     'high_school_Mountain Crest': 'high_school_Mountain_Crest',
+    #     'high_school_Sky View': 'high_school_Sky_View',
+    #     'middle_school_North Cache Middle': 'middle_school_North_Cache_Middle',
+    #     'middle_school_South Cache Middle': 'middle_school_South_Cache_Middle',
+    #     'middle_school_Spring Creek Middle': 'middle_school_Spring_Creek_Middle'
+    # })
+
+    all_predictors = " + ".join(df_base.columns.difference(["ac_ind"]))
     model_formula = f"ac_ind ~ {all_predictors}"
 
 ################################################
@@ -187,6 +202,12 @@ if group_high_school_ind == 0 and group_middle_school_ind == 0 and flat_fitted i
 else:
     print("Cannot save output to a file.")
 
+# Flat Models:
+# 01 - Original flat model.
+# 02 - Flat model that corresponds with Multilevel Model 08.
+# 05 - Flat model that corresponds with Multilevel Model 09.
+# 06 - Flat Model 02 but with high and middle schools as fixed effects (Green Canyon and 0 as references).
+
 # Multilevel Models:
 # 01 - All schools as random effects | ell_disability_group, otherwise fixed effects.
 # 02 - Everything but school as random effects | ell_disability_group, otherwise fixed effects.
@@ -199,9 +220,4 @@ else:
 # 09 - 08 run on the post-COVID data.
 # 10 - 08 as a mixed effect model, including all predictors as both fixed and random effects.
 # 11 - 10 run for twice as long.
-
-# Flat Models:
-# 01 - Original flat model.
-# 02 - Flat model that corresponds with Multilevel Model 08.
-# 05 - Flat model that corresponds with Multilevel Model 09.
 

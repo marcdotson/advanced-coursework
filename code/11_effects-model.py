@@ -9,7 +9,7 @@ import glob
 # SPECIFY WHAT MODEL TO RUN
 ########################################################
 
-data_model_ind = 1          # Use the entire modeling data
+# data_model_ind = 1          # Use the entire modeling data
 # data_post_covid_ind = 0     # Use the post-covid modeling data
 group_high_school_ind = 1   # Group by high schools
 group_middle_school_ind = 0 # Group by middle schools
@@ -20,9 +20,8 @@ group_middle_school_ind = 0 # Group by middle schools
 ########################################################
 
 # Load in the data based on the indicators
-if data_model_ind == 1:
-    # df = pd.read_csv('data/modeling_data.csv', low_memory = False)
-    df = pd.read_csv('data/clearinghouse_model_data.csv', low_memory = False)
+# if data_model_ind == 1:
+df = pd.read_csv('data/clearinghouse_model_data.csv', low_memory = False)
 
 # if data_post_covid_ind == 1:
 #     df = pd.read_csv('data/post_covid_modeling_data.csv', low_memory = False)
@@ -91,7 +90,7 @@ all_predictors = " + ".join(df_base.columns.difference(["start_college_y", "high
 if group_high_school_ind == 1:
     model_formula = f"start_college_y ~ ({all_predictors} | high_school)"
 
-if group_middle_school_ind == 1:
+elif group_middle_school_ind == 1:
     model_formula = f"start_college_y ~ ({all_predictors} | middle_school) + ({all_predictors} | high_school)"
 
 else:

@@ -11,7 +11,7 @@ import glob
 
 data_model_ind = 1          # Use the entire modeling data
 data_post_covid_ind = 0     # Use the post-covid modeling data
-group_high_school_ind = 0   # Group by high schools
+group_high_school_ind = 1   # Group by high schools
 group_middle_school_ind = 0 # Group by middle schools
 
 
@@ -65,7 +65,8 @@ df_base = df.drop(columns = col_drop, axis=1)
 
 # Specify the model formula
 if group_high_school_ind == 1:
-    all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "high_school", "middle_school"]))
+    # all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "high_school", "middle_school"]))
+    all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "high_school"]))
     model_formula = f"ac_ind ~ ({all_predictors} | high_school)"
     # model_formula = f"ac_ind ~ {all_predictors} + ({all_predictors} | high_school)"
 
@@ -220,4 +221,5 @@ else:
 # 09 - 08 run on the post-COVID data.
 # 10 - 08 as a mixed effect model, including all predictors as both fixed and random effects.
 # 11 - 10 run for twice as long.
+# 12 - 08 but including middle_school as a fixed effect.
 

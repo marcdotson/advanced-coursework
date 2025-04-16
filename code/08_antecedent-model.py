@@ -55,6 +55,7 @@ else:
     all_predictors = " + ".join(df_base.columns.difference(["ac_ind"]))
     model_formula = f"ac_ind ~ {all_predictors}"
 
+
 ################################################
 # RUN THE MULTILEVEL MODEL 
 ################################################

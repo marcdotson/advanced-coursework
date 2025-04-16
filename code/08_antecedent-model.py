@@ -10,7 +10,7 @@ import glob
 ########################################################
 
 post_covid_data_ind = 1  # Only use the post-covid data
-multilevel_model_ind = 0 # Run a multilevel model
+multilevel_model_ind = 1 # Run a multilevel model
 
 
 ########################################################
@@ -155,6 +155,7 @@ else:
 # 02 - Flat model that corresponds with Multilevel Model 08.
 # 05 - Flat model that corresponds with Multilevel Model 09.
 # 06 - Flat Model 02 but with high and middle schools as fixed effects (Green Canyon and 0 as references).
+# 07 - Flat model that corresponds with Multilevel Model 13.
 
 # Multilevel Models:
 # 01 - All schools as random effects | ell_disability_group, otherwise fixed effects.
@@ -169,6 +170,7 @@ else:
 # 10 - 08 as a mixed effect model, including all predictors as both fixed and random effects.
 # 11 - 10 run for twice as long.
 # 12 - 08 but including middle_school as a random effect.
+# 13 - 12 run on the post-COVID data.
 
 # Final Models:
 # Full Dataset: Flat Model 06 + Multilevel Model 12.

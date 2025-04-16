@@ -159,7 +159,7 @@ ac_list = pd.merge(ac_list, mapping_df, on='course_title', how='left')
 
 # Create a new dataframe that will be used to create a grid (student_number = rows, course_title = columns)
 # Note: Using clean_course_title instead of course_number since course numbers can vary across schools
-ac_grid = ac_list[['student_number', 'clean_course_title']].copy()
+ac_grid = ac_list[['student_number', 'course_title', 'clean_course_title', 'course_subject', 'course_type']].copy()
 
 # Replace spaces with underscores and remove special characters
 ac_grid['clean_course_title'] = (
@@ -170,130 +170,61 @@ ac_grid['clean_course_title'] = (
     .str.replace(r'[^A-Za-z0-9_]', '', regex=True)  # Remove other special characters
 )
 
-ac_grid = ac_grid.drop_duplicates()
+ac_grid = ac_grid.drop_duplicates(subset=['student_number', 'course_title'])
 
+# Create two grids, one for course_type(AP, BTECH, CE), and one for course_subject(math, science, arts, ect.)
+ac_type = ac_grid[['student_number', 'course_type']].copy()
+ac_subject = ac_grid[['student_number', 'course_subject']].copy()
 
-# Define course categories
-# Create categories for the AP courses
-course_categories = {
-    "AP Courses": [
-        "AP_Art", "AP_Art_Studio", "AP_Biology", "AP_Calculus", "AP_Chemistry", 
-        "AP_Chinese_Language_and_Culture", "AP_Comparative_Government", "AP_Computer_Science", 
-        "AP_English", "AP_Enviromental_Science", "AP_European", "AP_French_Language", 
-        "AP_Human_Geography", "AP_Lit_and_Comp", "AP_Music", "AP_Physics", 
-        "AP_Psychology", "AP_Spanish_Language", "AP_Statistics", "AP_US_Gov_and_Politics", 
-        "AP_US_History"
-    ],
-    "Business": [
-        "Accounting_II_BUSN_2800", "Accounting_I_BUSN_1111", "Accounting_OSS_1450", "Adult_Roles_BUSN_1021", 
-        "BUSN_1010", "BUSN_1021", "BUSN_2200", "Econ_1500", "BTECH_Financial_Literacy", 
-        "BTECH_Real_Estate", "BTECH_Business_Management", "BTECH_Business_Tech", "OSS_1050"
-    ],
-    "Technology": [
-        "ASTE_2900", "AVTN_2320", "AV_1900", "BTECH_3D_Graphics", "BTECH_ASE_Diesel_Brakes", 
-        "BTECH_ASE_Diesel_Engine", "BTECH_ASE_Diesel_IMMR", "BTECH_CAD_Architectural_Design", 
-        "BTECH_CAD_Mechanical_Design", "BTECH_CAM_Automated_Manufacturing", "BTECH_Construction_Tech", 
-        "BTECH_Cosmetology", "BTECH_Culinary_Arts", "BTECH_Digital_Media", "BTECH_Drafting_and_Design", 
-        "BTECH_Electrician", "BTECH_Electronics", "BTECH_Interior_Design", "BTECH_Intro_InfoTec", 
-        "BTECH_Machining", "BTECH_Manufacturing_Principles", "BTECH_Media_Design", "BTECH_Web_Mobile_Dev", 
-        "BTECH_Welding", "BTECH_Veterinary_Tech", "BTEC_Automated_Manufacturing", 
-        "DET_1010", "DGM_1645", "CS_1030", "CS_1400"
-    ],
-    "Health & Medical Sciences": [
-        "Adv_First_Aid_2300", "Adv_Health_Sci_A_1110", "Adv_Health_Sci_B_1111", "Adv_Health_Sci_C_1111", 
-        "Advanced_Medical_Term", "BIOL_1010", "BTECH_Dental_Assistant", "BTECH_Med_Heavy_Vehicle_Systems", 
-        "BTECH_Medical_Assistant", "BTECH_Medical_Terminology", "BTECH_Medication_Aide", 
-        "BTECH_Nurses_Aide", "BTECH_Pharmacy_Tech", "FCHD_1500", "FCHD_2400", "HTHS_1110", 
-        "HTHS_1111", "HTHS_1120", "Health", "NDFS_1020", "Exercise_Science_2175", 
-        "Adv_Health_Sci_C_1111", "HDFS_1500", "HDFS_2400"
-    ],
-    "Humanities & Social Sciences": [
-        "CMST_1020", "CMST_2110", "COMM_1020", "COMM_2110", "ENGL_1010", "ENGL_2020", 
-        "ENGL_2200", "HUMANITIES_1320", "History_1700", "POLITICAL_SCIENCE", "PSY_1010", 
-        "PSY_1020", "GEO_1010", "GEO_1060", "HIST_1700", "SOC_1110", "PSY_1100", "SOC_2200", 
-        "Cultural_Studies", "MATH_1060"
-    ],
-    "Languages": [
-        "CHIN_3116", "CHIN_3117", "French_1010", "French_1020", "French_3116", "French_3117", 
-        "German_1010", "German_1020", "PORT_3116", "PORT_3117", "PORT_3118", "SPAN_1010", 
-        "SPAN_1020", "SPAN_3116", "SPAN_3117"
-    ],
-    "Science & Math": [
-        "AP_Biology", "AP_Calculus", "AP_Chemistry", "AP_Physics", "AP_Statistics", 
-        "CHEM_1010", "MATH_1060", "Math_1050", "Math_1060", "MATH_1040", "STAT_1040"
-    ],
-    "Arts & Design": [
-        "AP_Art", "AP_Art_Studio", "AP_Music", "BTECH_Digital_Media", "BTECH_Media_Design", 
-        "BTECH_Fashion_Mer", "BTECH_Interior_Design", "BTECH_CAD_Architectural_Design", 
-        "BTECH_CAD_Mechanical_Design"
-    ],
-    "Agriculture & Horticulture": [
-        "PSC_1800"
-    ],
-    "BTECH Courses": [
-        "BTECH_Auto_Collision", "BTECH_Auto_Mech", "BTECH_Build_Constr", "BTECH_Cosmetology", 
-        "BTECH_Culinary_Arts", "BTECH_Diesel_Mech", "BTECH_Electrician", "BTECH_Electronics", 
-        "BTECH_Financial_Literacy", "BTECH_Machining", "BTECH_Medical_Terminology", 
-        "BTECH_Veterinary_Assistant", "BTECH_Wildland_Firefighter", "BTECH_Welding", 
-        "BTECH_Veterinary_Tech", "BTECH_Machining", "BTECH_Web_Mobile_Dev", "BTECH_Real_Estate"
-    ],
-    "Concurrent Courses": [
-        "ASTE_2900", "AVTN_2320", "AV_1900", "BUSN_1111", "BUSN_2800", "OSS_1450",
-        "BUSN_1021", "BIOL_1010", "BUSN_1010", "BUSN_2200", "CHEM_1010", "CHIN_3116",
-        "CHIN_3117", "CMST_1020", "CMST_2110", "COMM_1020", "COMM_2110", "CS_1030",
-        "CS_1400", "DET_1010", "DGM_1645", "ENGL_1010", "ENGL_2020", "ENGL_2200",
-        "Econ_1500", "FCHD_1500", "FCHD_2400", "FCSE_1040", "FCSE_1140", "FCSE_1350",
-        "FHS_2400", "French_1010", "French_1020", "French_3116", "French_3117",
-        "GEO_1010", "GEO_1060", "German_1010", "German_1020", "HDFS_1500", "HDFS_2400",
-        "HEAL_1008", "HIST_1700", "HTHS_1110", "HTHS_1111", "HTHS_1120", "Humanities_1320",
-        "IDT_1010", "MATH_1060", "Math_1050", "Math_1060", "Music_1010", "NDFS_1020",
-        "OSS_1050", "PHYS_1010", "POLS_1100", "PORT_3116", "PORT_3117", "PORT_3118",
-        "PSC_1800", "PSY_1010", "SPAN_1010", "SPAN_1020", "SPAN_3116", "SPAN_3117",
-        "SPED_1000", "STAT_1040", "TEAL_1010", "USU_1045", "USU_1320"
-    ]}
-
-# Function to categorize course
-def categorize_course(course_number):
-    for category, courses in course_categories.items():
-        if course_number in courses:
-            return category
-    return "Other"  # Default category if not found
-
-# Apply categorization function to the CourseNumber column in student_course_data
-ac_grid['clean_course_title'] = ac_grid['clean_course_title'].apply(categorize_course)
-
-# Create the grid (pivot table)
-ac_grid = ac_grid.pivot_table(
+# Create the grids (pivot table)
+ac_type = ac_type.pivot_table(
     index='student_number',
-    columns='clean_course_title',
+    columns='course_type',
+    aggfunc='size',
+    fill_value=0
+).astype(int)
+
+ac_subject = ac_subject.pivot_table(
+    index='student_number',
+    columns='course_subject',
     aggfunc='size',
     fill_value=0
 ).astype(int)
 
 # Reset the index so student_number becomes a column
-ac_grid = ac_grid.reset_index()
+ac_type = ac_type.reset_index()
+ac_subject = ac_subject.reset_index()
 
 # Remove the column axis name
-ac_grid.columns.name = None
+ac_type.columns.name = None
+ac_subject.columns.name = None
 
 # Drop duplicates before the merge
-ac_grid = ac_grid.drop_duplicates()
+ac_type = ac_type.drop_duplicates()
+ac_subject = ac_subject.drop_duplicates()
 
 # Make sure student_number is a string
-ac_grid['student_number'] = ac_grid['student_number'].astype(str)
+ac_type['student_number'] = ac_type['student_number'].astype(str)
+ac_subject['student_number'] = ac_subject['student_number'].astype(str)
 
-# Join ac_grid with the student_table to include all student_numbers not just student_numbers for students who have taken an advanced Course
-ac_grid = pd.merge(student, ac_grid, on='student_number', how='left')
+# Join the grids with the student_table to include all student_numbers not just student_numbers for students who have taken an advanced Course
+ac_type = pd.merge(student, ac_type, on='student_number', how='left')
+ac_subject = pd.merge(student, ac_subject, on='student_number', how='left')
 
 # Drop duplicate rows after the merge
-ac_grid = ac_grid.drop_duplicates()
+ac_type = ac_type.drop_duplicates()
+ac_subject = ac_subject.drop_duplicates()
 
 # Make sure null values are filled with 0
-ac_grid = ac_grid.fillna(0)
+ac_type = ac_type.fillna(0)
+ac_subject = ac_subject.fillna(0)
 
 # Merge with the model_df and df
-df = pd.merge(df, ac_grid, on='student_number', how='left')
-model_df = pd.merge(model_df, ac_grid, on='student_number', how='left')
+df = pd.merge(df, ac_type, on='student_number', how='left')
+df = pd.merge(df, ac_subject, on='student_number', how='left')
+
+model_df = pd.merge(model_df, ac_type, on='student_number', how='left')
+model_df = pd.merge(model_df, ac_subject, on='student_number', how='left')
 
 
 ######################################################################################################################################################

@@ -55,6 +55,7 @@ else:
     all_predictors = " + ".join(df_base.columns.difference(["ac_ind"]))
     model_formula = f"ac_ind ~ {all_predictors}"
 
+
 ################################################
 # RUN THE MULTILEVEL MODEL 
 ################################################
@@ -62,31 +63,29 @@ else:
 if __name__ == '__main__':
     print("Starting model setup...")
 
+    # Specify the model
     if multilevel_model_ind == 1:
-        multilevel_model = bmb.Model(model_formula, df_base, family = "bernoulli", noncentered = True)
-        multilevel_model.build()
+        antecedent_model = bmb.Model(model_formula, df_base, family = "bernoulli", noncentered = True)
     else:
-        flat_model = bmb.Model(model_formula, df_base, family = "bernoulli")
-        flat_model.build()
+        antecedent_model = bmb.Model(model_formula, df_base, family = "bernoulli")
+        
+    # Build the model
+    antecedent_model.build()
 
     # Run the sampling (ADJUST THE AMOUNT OF SAMPLING (TUNE, DRAW, ETC.) HERE AS NEEDED)
     try:
         print("Starting model sampling...")
         
         if multilevel_model_ind == 1:
-            multilevel_fitted = multilevel_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
+            model_fitted = antecedent_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
         else:
-            flat_fitted = flat_model.fit(idata_kwargs = {"log_likelihood": True})
+            model_fitted = antecedent_model.fit(idata_kwargs = {"log_likelihood": True})
 
         print("Sampling complete.")
 
     except Exception as e:
         print(f"Sampling failed: {e}")
-
-        if multilevel_model_ind == 1:
-            multilevel_fitted = None
-        else:
-            flat_fitted = None
+        model_fitted = None
 
 
 ###############################################################
@@ -105,40 +104,26 @@ def get_next_filename(folder_path, base_name, extension):
     return f"{folder_path}/{base_name}_{next_number:02d}.{extension}"
 
 # Only try to export if the model is not None
-if multilevel_model_ind == 1 and multilevel_fitted is not None:
+if model_fitted is not None:
     print('Saving Model Output to a File...')
 
     # Generate incremented filenames
-    netcdf_filename = get_next_filename(folder_path, "multilevel-model-output", "nc")
-    csv_filename = get_next_filename(folder_path, "multilevel-model-output-ordered", "csv")
+    if multilevel_model_ind == 1:
+        filename_nc = "multilevel-model-output"
+        filename_csv = "multilevel-model-output-ordered"
+    else:
+        filename_nc = "flat-model-output"
+        filename_csv = "flat-model-output-ordered"
+    
+    netcdf_filename = get_next_filename(folder_path, filename_nc, "nc")
+    csv_filename = get_next_filename(folder_path, filename_csv, "csv")
 
     # Save the NetCDF file
-    multilevel_fitted.to_netcdf(netcdf_filename)
+    model_fitted.to_netcdf(netcdf_filename)
     print(f'Output successfully saved as {netcdf_filename}')
 
     # Extract posterior summary
-    summary = az.summary(multilevel_fitted)
-
-    # Sort predictors by absolute mean effect size
-    sorted_summary = summary.reindex(summary["mean"].abs().sort_values(ascending=False).index)
-
-    # Save ordered model output to CSV
-    sorted_summary.to_csv(csv_filename)
-    print(f"Ordered model output saved as {csv_filename}!")
-
-elif multilevel_model_ind == 0 and flat_fitted is not None:
-    print('Saving Model Output to a File...')
-
-    # Generate incremented filenames
-    netcdf_filename = get_next_filename(folder_path, "flat-model-output", "nc")
-    csv_filename = get_next_filename(folder_path, "flat-model-output-ordered", "csv")
-
-    # Save the NetCDF file
-    flat_fitted.to_netcdf(netcdf_filename)
-    print(f'Output successfully saved as {netcdf_filename}')
-
-    # Extract posterior summary
-    summary = az.summary(flat_fitted)
+    summary = az.summary(model_fitted)
 
     # Sort predictors by absolute mean effect size
     sorted_summary = summary.reindex(summary["mean"].abs().sort_values(ascending=False).index)

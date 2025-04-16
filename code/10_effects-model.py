@@ -10,7 +10,7 @@ import glob
 ########################################################
 
 # post_covid_data_ind = 0  # Only use the post-covid data
-multilevel_model_ind = 0 # Run a multilevel model
+multilevel_model_ind = 1 # Run a multilevel model
 
 
 ########################################################
@@ -93,9 +93,9 @@ if __name__ == '__main__':
         print("Starting model sampling...")
         
         if multilevel_model_ind == 1:
-            model_fitted = effects_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
+            model_fitted = effects_model.fit(draws=3000, idata_kwargs = {"log_likelihood": True})
         else:
-            model_fitted = effects_model.fit(idata_kwargs = {"log_likelihood": True})
+            model_fitted = effects_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
 
         print("Sampling complete.")
 

@@ -47,6 +47,22 @@ df = df[~df['high_school'].isin(['Cache High', '0'])]
 # Define base data frame after dropping columns and specify predictors
 df_base = df.drop(columns = col_drop, axis=1)
 
+# Update the columns names
+df_base = df_base.rename(columns={
+    'AP Courses': 'ap_courses',
+    'Agriculture & Horticulture': 'agriculture_horticulture',
+    'Arts & Design': 'arts_design',
+    'BTECH Courses': 'btech_courses',
+    'Business': 'business',
+    'Concurrent Courses': 'concurrent_courses',
+    'Health & Medical Sciences': 'health_medical_sciences',
+    'Humanities & Social Sciences': 'humanities_social_sciences',
+    'Languages': 'languages',
+    'Other': 'other_courses',
+    'Science & Math': 'science_math',
+    'Technology': 'technology'
+})
+
 # Specify the model formula
 if multilevel_model_ind == 1:
     all_predictors = " + ".join(df_base.columns.difference(["start_college_y", "high_school"]))

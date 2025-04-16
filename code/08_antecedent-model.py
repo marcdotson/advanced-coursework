@@ -1,139 +1,178 @@
 import pandas as pd
-import pymc as pm
 import bambi as bmb
 import arviz as az
-import networkx as nx
-import matplotlib.pyplot as plt
-
-################################################################################################
-# Create a DAG
-G = nx.DiGraph()
-
-# Add edges based on the DAG structure
-edges = [
-    ("Teacher", "AC_Ind"),
-    ("Teacher", "Grades"),
-    ("Attendance", "Grades"),
-    ("School", "Teacher"),
-    ("School", "Grades"),
-    ("School", "AC_Ind"),
-    ("Disadvantage", "Grades"),
-    ("Disadvantage", "Attendance"),
-    ("Disadvantage", "AC_Ind"),
-    ("Overall_GPA", "AC_Ind")
-]
-
-G.add_edges_from(edges)
-
-# Draw the DAG
-plt.figure(figsize=(10, 8))
-pos = nx.shell_layout(G)  # Trying a shell layout for better separation
-nx.draw(G, pos, with_labels=True, node_color='lightblue', edge_color='gray', node_size=3000, font_size=10)
-plt.title("DAG for Advanced Coursework ASC Project")
-plt.show()
-
-################################################################################################
-# Load in the dataset
-df = pd.read_csv('data/modeling_data.csv', low_memory = False)
-
-import polars as pl
-import polars.selectors as cs
-import seaborn.objects as so
-
-dfpl = pl.read_csv('data/modeling_data.csv')
-dfpl.group_by(pl.col('hs_advanced_math_y')).agg(n = pl.len())
-
-(so.Plot(dfpl, x="scram_membership")
-    .add(so.Bars(), so.Hist())
-)
-
-dfpl = (dfpl
-    .with_columns(
-        pl.sum_horizontal(cs.contains('exit_code')).alias('new')
-    )
-)
-dfpl.group_by(pl.col('new')).agg(n = pl.len())
-
-col_drop = ['student_number']
-
-# Convert categorical group column to an integer array
-group_idx = df["ell_disability_group"].astype("category").cat.codes.values
-group_names = df["ell_disability_group"].astype("category").cat.categories.tolist()
-
-# Predictor variables
-X = df.drop(columns=col_drop, axis=1).values
-predictor_names = df.drop(columns=col_drop, axis=1).columns.tolist()
-
-# Outcome variable
-y = df["ac_ind"].values 
-
-################################################################################################
-# RUN A FLAT TEST MODEL FIRST (using Bambi)
-df_new = df.drop(columns=col_drop, axis=1)
-
-predictors_new = "+".join(df_new.columns.difference(["ac_ind"]))
-formula_new = f"ac_ind ~ {predictors_new}"
-
-flat_model = bmb.Model('ac_ind ~ ethnicity_y', df_new, family="bernoulli")
-flat_model.build()
+import os
+import glob
 
 
-pymc_model = flat_model.backend.model
+########################################################
+# SPECIFY WHAT MODEL TO RUN
+########################################################
+
+post_covid_data_ind = 1  # Only use the post-covid data
+multilevel_model_ind = 1 # Run a multilevel model
 
 
-flat_fitted = flat_model.fit(
-    draws=2000, target_accept=0.85, random_seed=42, idata_kwargs={"log_likelihood": True}
-)
+########################################################
+# LOAD IN THE DATASET AND ESTABLISH FOLDER PATH
+########################################################
 
-az.plot_trace(flat_fitted, combined = True)
-az.plot_forest(flat_fitted, combined = True, hdi_prob=0.95) #kind = 'ridgeplot')
+# Load in the data based on the indicators
+if post_covid_data_ind == 1:
+    df = pd.read_csv('data/post_covid_modeling_data.csv', low_memory = False)
+else:
+    df = pd.read_csv('data/modeling_data.csv', low_memory = False)
 
-################################################################################################
-# RUN THE MODEL AND EXPORT DRAWS TO A FILE
+# Define the folder path where the model output will be saved
+folder_path = "output/"
+
+# Check if the folder exists, and create it if not
+if not os.path.exists(folder_path):
+    os.makedirs(folder_path)
+
+
+#######################################################
+# PREP THE MODEL AND SPECIFY THE MODEL FORMULA
+#######################################################
+
+# Columns to exclude from modeling
+col_drop = ['student_number', 'hs_advanced_math_y', 'tribal_affiliation_g']
+for col in df.columns:
+    if col.startswith('teacher') or col.startswith('exit') or col.startswith('envi'):
+        col_drop.append(col)
+
+# Filter students out from Cache High who have no high school assigned
+df = df[~df['high_school'].isin(['Cache High', '0'])]
+
+# Define base data frame after dropping columns and specify predictors
+df_base = df.drop(columns = col_drop, axis=1)
+
+# Specify the model formula
+if multilevel_model_ind == 1:
+    all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "high_school"]))
+    model_formula = f"ac_ind ~ ({all_predictors} | high_school)"
+else:
+    all_predictors = " + ".join(df_base.columns.difference(["ac_ind"]))
+    model_formula = f"ac_ind ~ {all_predictors}"
+
+################################################
+# RUN THE MULTILEVEL MODEL 
+################################################
+
 if __name__ == '__main__':
     print("Starting model setup...")
 
-    #set up and create the model
-    with pm.Model(coords={"group": group_names, "predictor": predictor_names}) as model:
-        # Group-level intercepts (varying by ELL-Disability group)
-        mu_a = pm.Normal("mu_a", mu=0, sigma=1)                   # Hyperprior for intercept mean
-        sigma_a = pm.Exponential("sigma_a", 1)                    # Hyperprior for variance
-        a = pm.Normal("a", mu=mu_a, sigma=sigma_a, dims = 'group')  # Varying intercepts for groups
+    if multilevel_model_ind == 1:
+        multilevel_model = bmb.Model(model_formula, df_base, family = "bernoulli", noncentered = True)
+        multilevel_model.build()
+    else:
+        flat_model = bmb.Model(model_formula, df_base, family = "bernoulli")
+        flat_model.build()
 
-        # Group-level slopes
-        mu_b = pm.Normal("mu_b", mu=0, sigma=1, dims="predictor")  
-        sigma_b = pm.Exponential("sigma_b", 1, dims="predictor")  
-        b = pm.Normal("b", mu=mu_b, sigma=sigma_b, dims=("group", "predictor"))  # Use both coordinates
-
-        # Linear predictor (logit model)
-        logit_p = a[group_idx] + pm.math.sum(b[group_idx] * X, axis=1)
-
-        # Sigmoid transformation to convert log-odds to probability
-        p = pm.Deterministic("p", pm.math.sigmoid(logit_p))
-
-        # Likelihood (Bernoulli response)
-        y_obs = pm.Bernoulli("y_obs", p=p, observed=y)
-
-        # Run the sampling *******ADJUST THE AMOUNT OF SAMPLING (TUNE) HERE AS NEEDED ********
-        try:
-            print("Starting model sampling...")
-            trace = pm.sample(2000, tune=2000, target_accept=0.95, return_inferencedata=True)
-            print("Sampling complete.")
-
-        except Exception as e:
-            print(f"Sampling failed: {e}")
-            trace = None  # Set trace to None if sampling fails
-
-        # Only try to export the trace if it is not none
-        if trace is not None:
-            # Assign coordinate names before saving
-            trace = trace.assign_coords(group=group_names, predictor=predictor_names)
-            
-            # Save trace to a NetCDF file
-            print('Saving Trace File...')
-            trace.to_netcdf("data/trace_output.nc")
-            print('File successfully saved, look for it in the data folder')
-
+    # Run the sampling (ADJUST THE AMOUNT OF SAMPLING (TUNE, DRAW, ETC.) HERE AS NEEDED)
+    try:
+        print("Starting model sampling...")
+        
+        if multilevel_model_ind == 1:
+            multilevel_fitted = multilevel_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
         else:
-            print("Trace is None, cannot save trace to a file.")
+            flat_fitted = flat_model.fit(idata_kwargs = {"log_likelihood": True})
+
+        print("Sampling complete.")
+
+    except Exception as e:
+        print(f"Sampling failed: {e}")
+
+        if multilevel_model_ind == 1:
+            multilevel_fitted = None
+        else:
+            flat_fitted = None
+
+
+###############################################################
+# SAVE THE MODEL OUTPUT AND THE SORTED MODEL OUTPUT
+###############################################################
+
+# Function to find the next available output filename
+def get_next_filename(folder_path, base_name, extension):
+    """Finds the next available file number to avoid overwriting."""
+    existing_files = glob.glob(f"{folder_path}/{base_name}_*.{extension}")
+    existing_numbers = sorted(
+        [int(f.split("_")[-1].split(".")[0]) for f in existing_files if f.split("_")[-1].split(".")[0].isdigit()]
+    )
+
+    next_number = existing_numbers[-1] + 1 if existing_numbers else 1
+    return f"{folder_path}/{base_name}_{next_number:02d}.{extension}"
+
+# Only try to export if the model is not None
+if multilevel_model_ind == 1 and multilevel_fitted is not None:
+    print('Saving Model Output to a File...')
+
+    # Generate incremented filenames
+    netcdf_filename = get_next_filename(folder_path, "multilevel-model-output", "nc")
+    csv_filename = get_next_filename(folder_path, "multilevel-model-output-ordered", "csv")
+
+    # Save the NetCDF file
+    multilevel_fitted.to_netcdf(netcdf_filename)
+    print(f'Output successfully saved as {netcdf_filename}')
+
+    # Extract posterior summary
+    summary = az.summary(multilevel_fitted)
+
+    # Sort predictors by absolute mean effect size
+    sorted_summary = summary.reindex(summary["mean"].abs().sort_values(ascending=False).index)
+
+    # Save ordered model output to CSV
+    sorted_summary.to_csv(csv_filename)
+    print(f"Ordered model output saved as {csv_filename}!")
+
+elif multilevel_model_ind == 0 and flat_fitted is not None:
+    print('Saving Model Output to a File...')
+
+    # Generate incremented filenames
+    netcdf_filename = get_next_filename(folder_path, "flat-model-output", "nc")
+    csv_filename = get_next_filename(folder_path, "flat-model-output-ordered", "csv")
+
+    # Save the NetCDF file
+    flat_fitted.to_netcdf(netcdf_filename)
+    print(f'Output successfully saved as {netcdf_filename}')
+
+    # Extract posterior summary
+    summary = az.summary(flat_fitted)
+
+    # Sort predictors by absolute mean effect size
+    sorted_summary = summary.reindex(summary["mean"].abs().sort_values(ascending=False).index)
+
+    # Save ordered model output to CSV
+    sorted_summary.to_csv(csv_filename)
+    print(f"Ordered model output saved as {csv_filename}!")
+
+else:
+    print("Cannot save output to a file.")
+
+# Flat Models:
+# 01 - Original flat model.
+# 02 - Flat model that corresponds with Multilevel Model 08.
+# 05 - Flat model that corresponds with Multilevel Model 09.
+# 06 - Flat Model 02 but with high and middle schools as fixed effects (Green Canyon and 0 as references).
+# 07 - Flat model that corresponds with Multilevel Model 13.
+
+# Multilevel Models:
+# 01 - All schools as random effects | ell_disability_group, otherwise fixed effects.
+# 02 - Everything but school as random effects | ell_disability_group, otherwise fixed effects.
+# 03 - Everything as random effects | high_school (including the intercept), no other schools.
+# 04 - Everything as random effects | both high_school and middle_school (including the intercept).
+# 05 - 04 run for twice as long.
+# 06 - 03 run on the post-COVID data.
+# 07 - 04 run for twice as long on the post-COVID data.
+# 08 - 03 without hs_advanced_math_y and with "Cache High" and "0" students filtered out.
+# 09 - 08 run on the post-COVID data.
+# 10 - 08 as a mixed effect model, including all predictors as both fixed and random effects.
+# 11 - 10 run for twice as long.
+# 12 - 08 but including middle_school as a random effect.
+# 13 - 12 run on the post-COVID data.
+
+# Final Models:
+# Full Dataset: Flat Model 06 + Multilevel Model 12.
+# Post-COVID: Flat Model 07 + Multilevel Model 13.
 

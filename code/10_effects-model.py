@@ -10,7 +10,7 @@ import glob
 ########################################################
 
 # post_covid_data_ind = 0  # Only use the post-covid data
-multilevel_model_ind = 1 # Run a multilevel model
+multilevel_model_ind = 0 # Run a multilevel model
 
 
 ########################################################
@@ -47,33 +47,19 @@ df = df[~df['high_school'].isin(['Cache High', '0'])]
 # Define base data frame after dropping columns and specify predictors
 df_base = df.drop(columns = col_drop, axis=1)
 
-# Update the columns names
-df_base = df_base.rename(columns={
-    'AP Courses': 'ap_courses',
-    'Agriculture & Horticulture': 'agriculture_horticulture',
-    'Arts & Design': 'arts_design',
-    'BTECH Courses': 'btech_courses',
-    'Business': 'business',
-    'Concurrent Courses': 'concurrent_courses',
-    'Health & Medical Sciences': 'health_medical_sciences',
-    'Humanities & Social Sciences': 'humanities_social_sciences',
-    'Languages': 'languages',
-    'Other': 'other_courses',
-    'Science & Math': 'science_math',
-    'Technology': 'technology'
-})
-
 # Specify the model formula
 if multilevel_model_ind == 1:
-    all_predictors = " + ".join(df_base.columns.difference(["start_college_y", "high_school"]))
-    model_formula = f"start_college_y ~ ({all_predictors} | high_school)"
+    all_predictors = " + ".join(df_base.columns.difference(["start_college_y", "college_grad_y","high_school"]))
+    # model_formula = f"start_college_y ~ ({all_predictors} | high_school)"
+    model_formula = f"college_grad_y ~ ({all_predictors} | high_school)"
 else:
-    all_predictors = " + ".join(df_base.columns.difference(["start_college_y"]))
-    model_formula = f"start_college_y ~ {all_predictors}"
+    all_predictors = " + ".join(df_base.columns.difference(["start_college_y", "college_grad_y"]))
+    # model_formula = f"start_college_y ~ {all_predictors}"
+    model_formula = f"college_grad_y ~ {all_predictors}"
 
 
 ################################################
-# RUN THE MULTILEVEL MODEL 
+# RUN THE MODEL 
 ################################################
 
 if __name__ == '__main__':
@@ -93,9 +79,9 @@ if __name__ == '__main__':
         print("Starting model sampling...")
         
         if multilevel_model_ind == 1:
-            model_fitted = effects_model.fit(draws=3000, idata_kwargs = {"log_likelihood": True})
+            model_fitted = effects_model.fit(tune=2000, draws=2000, idata_kwargs = {"log_likelihood": True})
         else:
-            model_fitted = effects_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
+            model_fitted = effects_model.fit(tune=3000, draws=3000, idata_kwargs = {"log_likelihood": True})
 
         print("Sampling complete.")
 
@@ -154,11 +140,12 @@ else:
 # Flat Models:
 # 03 - Original flat effects model.
 # 04 - Flat model 03 run for longer.
-# 08 - Flat model with collapsed classes.
+# 08 - Flat model of start_college_y with advanced course categories.
+# 09 - Flat model of college_grad_y with advanced course categories.
 
 # Multilevel Models:
-# 14 - Multilevel model with collapsed classes.
+# ?? - Multilevel model with collapsed classes.
 
 # Final Models:
-# Full Dataset: Flat Model 08 + Multilevel Model 14.
+# Full Dataset: Flat Model 08 + Multilevel Model ??.
 

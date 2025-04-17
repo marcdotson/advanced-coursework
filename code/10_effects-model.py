@@ -81,7 +81,7 @@ if __name__ == '__main__':
         if multilevel_model_ind == 1:
             model_fitted = effects_model.fit(tune=2000, draws=2000, idata_kwargs = {"log_likelihood": True})
         else:
-            model_fitted = effects_model.fit(tune=2000, draws=2000, idata_kwargs = {"log_likelihood": True})
+            model_fitted = effects_model.fit(tune=3000, draws=3000, idata_kwargs = {"log_likelihood": True})
 
         print("Sampling complete.")
 

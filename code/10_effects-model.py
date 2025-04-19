@@ -36,7 +36,7 @@ if not os.path.exists(folder_path):
 #######################################################
 
 # Columns to exclude from modeling
-col_drop = ['Unnamed: 0', 'student_number', 'hs_advanced_math_y', 'tribal_affiliation_g', 'year']
+col_drop = ['Unnamed: 0', 'student_number', 'hs_advanced_math_y', 'tribal_affiliation_g', 'year', 'passed_civics_exam_y']
 for col in df.columns:
     if col.startswith('teacher') or col.startswith('exit') or col.startswith('envi'):
         col_drop.append(col)
@@ -142,6 +142,8 @@ else:
 # 04 - Flat model 03 run for longer.
 # 08 - Flat model of start_college_y with advanced course categories.
 # 09 - Flat model of college_grad_y with advanced course categories.
+# 13 - Flat model of start_college_y with advanced course categories and passed_civics_exam_y removed.
+# 14 - Flat model of college_grad_y with advanced course categories and passed_civics_exam_y removed.
 
 # Multilevel Models:
 # ?? - Multilevel model with collapsed classes.

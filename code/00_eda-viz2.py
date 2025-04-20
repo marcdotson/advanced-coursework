@@ -4,9 +4,12 @@ import seaborn as sns
 import warnings
 import ast
 import matplotlib as mpl
+import pickle
 
 warnings.filterwarnings("ignore")
 
+gray = "#9EA2A2"
+navy = "#00274C"
 # USU color palette
 usu_colors = ["#00274C", "#9EA2A2", "#D6D6D6"]
 
@@ -122,46 +125,91 @@ def calculate_ac_non_ac_metrics(df):
 # Call the function
 calculate_ac_non_ac_metrics(df)
 
+pre_covid_years = [2017, 2018, 2019]
+post_covid_years = [2021, 2022, 2023, 2024]
 
-# Visualization Functions
-def visualize_college_statistics_by_school(school_summary):
-    """Visualize college start and graduation rates grouped by school."""
-    school_summary = school_summary.sort_values(by='percent_started_college', ascending=True)
-    plt.figure(figsize=(10, 6))
-    sns.barplot(
-        data=school_summary,
-        x="schools_attended",
-        y="percent_started_college",
-        palette=usu_colors
+# Filter data for pre- and post-COVID years
+df_pre_covid = df[df['year'].isin(pre_covid_years)]
+df_post_covid = df[df['year'].isin(post_covid_years)]
+
+def calculate_college_statistics_by_school(df):
+    """
+    Calculate college-related statistics grouped by high schools.
+    """
+    valid_high_schools = ['Green Canyon', 'Mountain Crest', 'Sky View', 'Ridgeline']
+    df['schools_attended'] = df['schools_attended'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+    df_exploded = df.explode('schools_attended')
+    filtered_df = df_exploded[df_exploded['schools_attended'].isin(valid_high_schools)]
+    
+    school_summary = filtered_df.groupby('schools_attended').agg(
+        total_students=('student_number', 'size'),
+        total_started_college=('start_college_y', 'sum'),
+        total_graduated_college=('college_grad_y', 'sum')
+    ).reset_index()
+
+    school_summary['percent_started_college'] = school_summary['total_started_college'] / school_summary['total_students'] * 100
+    school_summary['percent_graduated_college'] = school_summary['total_graduated_college'] / school_summary['total_students'] * 100
+    school_summary['percent_graduated_started'] = school_summary.apply(
+        lambda row: (row['total_graduated_college'] / row['total_started_college'] * 100) if row['total_started_college'] > 0 else 0, axis=1
     )
-    plt.title("College Start Rates by School", fontsize=16)
+
+    return school_summary
+
+# Calculate pre- and post-COVID summaries
+school_summary_pre_covid = calculate_college_statistics_by_school(df_pre_covid)
+school_summary_post_covid = calculate_college_statistics_by_school(df_post_covid)
+
+
+def visualize_pre_post_statistics(pre_summary, post_summary, metric, title, ylabel):
+    """
+    Visualize pre- and post-COVID statistics for a given metric.
+    """
+    pre_summary['period'] = 'Pre-COVID'
+    post_summary['period'] = 'Post-COVID'
+    combined_summary = pd.concat([pre_summary, post_summary])
+    
+    # Sort by the metric values (post-COVID for consistency)
+    combined_summary = combined_summary.sort_values(by=metric, ascending=False)
+
+    plt.figure(figsize=(12, 6))
+    ax = sns.barplot(
+        data=combined_summary,
+        x="schools_attended",
+        y=metric,
+        hue="period",
+        palette=[gray, navy]  # Pre-COVID: gray, Post-COVID: navy
+    )
+
+    # Add labels to each bar with percent signs
+    for container in ax.containers:
+        ax.bar_label(container, fmt="%.1f%%", label_type="edge", color="black", fontsize=10)
+
+    plt.title(title, fontsize=16)
     plt.xlabel("School")
-    plt.ylabel("College Start Rate (%)")
+    plt.ylabel(ylabel)
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
     plt.show()
 
-    school_summary = school_summary.sort_values(by='percent_graduated_college', ascending=True)
+# Graph 1: Pre- and Post-COVID College Start Rates
+visualize_pre_post_statistics(
+    pre_summary=school_summary_pre_covid,
+    post_summary=school_summary_post_covid,
+    metric="percent_started_college",
+    title="Pre- and Post-COVID College Start Rates by School",
+    ylabel="College Start Rate (%)"
+)
 
-    plt.figure(figsize=(10, 6))
-    sns.barplot(
-        data=school_summary,
-        x="schools_attended",
-        y="percent_graduated_college",
-        palette=usu_colors
-    )
-    plt.title("College Graduation Rates by School", fontsize=16)
-    plt.xlabel("School")
-    plt.ylabel("College Graduation Rate (%)")
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    plt.show()
-
-# Visualize college statistics
-visualize_college_statistics_by_school(school_summary)
+# Graph 2: Pre- and Post-COVID College Graduation Rates
+visualize_pre_post_statistics(
+    pre_summary=school_summary_pre_covid,
+    post_summary=school_summary_post_covid,
+    metric="percent_graduated_college",
+    title="Pre- and Post-COVID College Graduation Rates by School",
+    ylabel="College Graduation Rate (%)"
+)
 
 
-import pickle
 # Most popular AC course visualization (until new eda data is updated)
 
 # Load the clearinghouse data

@@ -46,9 +46,6 @@ total_ac_courses_by_school = filtered_data.groupby('current_school')['ac_count']
 high_schools = ['Green Canyon', 'Mountain Crest', 'Sky View', 'Ridgeline']
 
 
-
-
-
 ### Visualization 1: Pie Chart - AC vs Non-AC Students ###
 plt.figure(figsize=(12, 6))
 ac_counts = data['ac_ind'].value_counts()
@@ -141,73 +138,107 @@ plt.xticks(rotation=45, fontsize=12)
 plt.tight_layout()
 plt.show()
 
-### Visualization 7: Proportion of AC Students and Courses for High School ###
+### Visualization 8: Student Count by High School ###
 
-# Plot AC courses and students by school side by side
-fig, ax = plt.subplots(1, 1, figsize=(10, 6))  # Adjusted figure size for better readability
-width = 0.4  # Width of each bar
-x = np.arange(len(total_ac_courses_by_school))  # X positions for bars
+# Clean up the data and establish variables
+data['overall_gpa'] = pd.to_numeric(data['overall_gpa'], errors='coerce')
+high_schools = ['Green Canyon', 'Mountain Crest', 'Sky View', 'Ridgeline']
+filtered_data = data[data['current_school'].isin(high_schools)]  # Filter by high school names
 
-# Plot the bars side by side
+# Define pre- and post-COVID years
+pre_covid_years = [2018, 2019, 2020]
+post_covid_years = [2021, 2022, 2023, 2024]
+
+# Pre-COVID data
+pre_covid_data = filtered_data[filtered_data['year'].isin(pre_covid_years)]
+pre_total_ac_students = pre_covid_data[pre_covid_data['ac_ind'] == 1].groupby('current_school').size()
+pre_total_students = pre_covid_data.groupby('current_school').size()
+pre_ac_proportion = (pre_total_ac_students / pre_total_students) * 100
+pre_course_count = pre_covid_data.groupby('current_school')['ac_count'].sum()
+
+# Post-COVID data
+post_covid_data = filtered_data[filtered_data['year'].isin(post_covid_years)]
+post_total_ac_students = post_covid_data[post_covid_data['ac_ind'] == 1].groupby('current_school').size()
+post_total_students = post_covid_data.groupby('current_school').size()
+post_ac_proportion = (post_total_ac_students / post_total_students) * 100
+post_course_count = post_covid_data.groupby('current_school')['ac_count'].sum()
+
+# Sort high schools by post-COVID count of AC courses (descending)
+sorted_high_schools = post_course_count.sort_values(ascending=False).index.tolist()
+
+# Plot the data
+fig, ax = plt.subplots(1, 1, figsize=(14, 8))
+width = 0.35  # Width of each bar
+x = np.arange(len(sorted_high_schools))  # X positions for the schools
+
+# Plot the bars
 ax.bar(
     x - width / 2, 
-    total_ac_courses_by_school.sort_values(ascending=False), 
-    width, 
-    color=navy, 
-    edgecolor='black', 
-    label='AC Courses'
-)
-ax.bar(
-    x + width / 2, 
-    total_ac_students_by_school.sort_values(ascending=False), 
+    pre_course_count.reindex(sorted_high_schools).fillna(0), 
     width, 
     color=gray, 
     edgecolor='black', 
-    label='AC Students'
+    label='Pre-COVID'
+)
+ax.bar(
+    x + width / 2, 
+    post_course_count.reindex(sorted_high_schools).fillna(0), 
+    width, 
+    color=navy, 
+    edgecolor='black', 
+    label='Post-COVID'
 )
 
+# Add labels above the bars
+for i, value in enumerate(pre_course_count.reindex(sorted_high_schools).fillna(0)):
+    ax.text(i - width / 2, value + 60, f"{int(value)}", ha='center', fontsize=10, color='black')  # Pre-COVID courses
+for i, value in enumerate(post_course_count.reindex(sorted_high_schools).fillna(0)):
+    ax.text(i + width / 2, value + 60, f"{int(value)}", ha='center', fontsize=10, color='black')  # Post-COVID courses
+
 # Customize the plot
-ax.set_ylabel('Count', fontsize=14)
+ax.set_ylabel('Count of AC Courses', fontsize=14)
 ax.set_xticks(x)
-ax.set_xticklabels(total_ac_courses_by_school.sort_values(ascending=False).index, rotation=45, fontsize=12)
+ax.set_xticklabels(sorted_high_schools, rotation=45, fontsize=12)
 ax.legend(fontsize=12)
-ax.set_title('AC Courses and Students by School (All Years)', fontsize=16)
+ax.set_title('Count of AC Courses Pre- and Post-COVID', fontsize=16)
 plt.tight_layout()
 plt.show()
 
-# Plot AC courses and students by school (2022-2024) side by side
-fig, ax = plt.subplots(1, 1, figsize=(10, 6))  # Adjusted figure size for better readability
-# Filter data for years 2022-2024 and valid high schools
-data_22_24 = data[(data['year'].isin([2022, 2023, 2024])) & (data['current_school'].isin(high_schools))]
-total_ac_courses_by_school_22_24 = data_22_24.groupby('current_school')['ac_count'].sum()
-total_ac_students_by_school_22_24 = data_22_24.groupby('current_school').size()
+# Sort high schools by post-COVID proportion of students in AC courses (descending)
+sorted_high_schools = post_ac_proportion.sort_values(ascending=False).index.tolist()
 
-# X positions for the new plot
-x = np.arange(len(total_ac_courses_by_school_22_24))
+# Graph 2: Proportion of students in AC courses pre- and post-COVID
+fig, ax2 = plt.subplots(1, 1, figsize=(14, 8))
 
-# Plot the bars side by side
-ax.bar(
+# Plot the bars
+ax2.bar(
     x - width / 2, 
-    total_ac_courses_by_school_22_24.sort_values(ascending=False), 
-    width, 
-    color=navy, 
-    edgecolor='black', 
-    label='AC Courses (2022-2024)'
-)
-ax.bar(
-    x + width / 2, 
-    total_ac_students_by_school_22_24.sort_values(ascending=False), 
+    pre_ac_proportion.reindex(sorted_high_schools).fillna(0), 
     width, 
     color=gray, 
     edgecolor='black', 
-    label='AC Students (2022-2024)'
+    label='Pre-COVID'
+)
+ax2.bar(
+    x + width / 2, 
+    post_ac_proportion.reindex(sorted_high_schools).fillna(0), 
+    width, 
+    color=navy, 
+    edgecolor='black', 
+    label='Post-COVID'
 )
 
+# Add labels above the bars
+for i, value in enumerate(pre_ac_proportion.reindex(sorted_high_schools).fillna(0)):
+    ax2.text(i - width / 2, value + .5, f"{value:.1f}%", ha='center', fontsize=10, color='black')  # Pre-COVID proportions
+for i, value in enumerate(post_ac_proportion.reindex(sorted_high_schools).fillna(0)):
+    ax2.text(i + width / 2, value + .5, f"{value:.1f}%", ha='center', fontsize=10, color='black')  # Post-COVID proportions
+
 # Customize the plot
-ax.set_ylabel('Count', fontsize=14)
-ax.set_xticks(x)
-ax.set_xticklabels(total_ac_courses_by_school_22_24.sort_values(ascending=False).index, rotation=45, fontsize=12)
-ax.legend(fontsize=12)
-ax.set_title('AC Courses and Students by School (2022-2024)', fontsize=16)
+ax2.set_ylabel('Proportion of Students in AC Courses (%)', fontsize=14)
+ax2.set_xticks(x)
+ax2.set_xticklabels(sorted_high_schools, rotation=45, fontsize=12)
+ax2.legend(fontsize=12)
+ax2.set_title('Proportion of Students in AC Courses Pre- and Post-COVID', fontsize=16)
 plt.tight_layout()
 plt.show()

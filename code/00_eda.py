@@ -1,210 +1,184 @@
+# Import libraries
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
 import warnings
 
+# Suppress warnings and set display options
 warnings.filterwarnings("ignore")
+pd.set_option('display.max_rows', None)
+pd.set_option('display.float_format', lambda x: f'{x:.2f}')
 
-# Load the data from CSV files
+# Load dataset
 data = pd.read_csv("../data/exploratory_data.csv")
-modeldata = pd.read_csv("../data/modeling_data.csv")
 
-print("CCSD Powerschool Exploratory Data Analysis\n")
+# Title
+print("\033[1m" + "=" * 75)
+print("CCSDUT Powerschool Exploratory Data Analysis")
+print("=" * 75 + "\033[0m")
 
-# Display years in the dataset
-years = data['year'].unique()
-print(f"Years in data set: {years}\n")
+# === Utility Functions ===
+def print_section_header(title):
+    """Utility function to print section headers."""
+    print("\n" + title)
+    print("=" * 50)
 
-# Display summary statistics
-print("##############################################################################################################")
-print("Summary Statistics:")
-data.info()
-data.describe(include='all')
+def summarize_dataset(data):
+    """Display dataset structure and sample rows."""
+    print_section_header("Summary Statistics")
+    print(f"Years in dataset: {data['year'].unique()}\n")
+    data.info()
 
-# Display the count of missing values in each column
-print("\nCount of missing values in each column:")
-print(data.isna().sum())
+def calculate_academic_statistics(data):
+    """Calculate district-level academic stats."""
+    # Overall statistics
+    total = len(data)
+    ac_students = data[data['ac_ind'] == 1].shape[0]
+    avg_gpa = data[data['overall_gpa'] != 0]['overall_gpa'].mean()
+    avg_gpa_non_ac = data[data['ac_ind'] == 0]['overall_gpa'].mean()
+    avg_gpa_ac = data[data['ac_ind'] == 1]['overall_gpa'].mean()
+    avg_ac_count = data[data['ac_count'] > 0]['ac_count'].mean()
 
-# Display the first few rows of the data
-print("\nFirst few rows of data:")
-print(data.head().to_string(), "\n")
+    print("=== Overall Statistics ===")
+    print(f"Total students: {total}")
+    print(f"AC course takers: {ac_students} ({ac_students / total:.2%})")
+    print(f"Avg GPA: {avg_gpa:.2f}")
+    print(f"Avg GPA (Non-AC students): {avg_gpa_non_ac:.2f}")
+    print(f"Avg GPA (AC students): {avg_gpa_ac:.2f}")
+    print(f"Avg AC courses taken per AC student: {avg_ac_count:.2f}")
 
-# Display the column names
-print("Columns in the data:")
-for column in data.columns:
-    print(column, end=',\n ')
+    # Post-COVID statistics (2022, 2023, 2024)
+    post_covid_years = [2022, 2023, 2024]
+    post_covid_data = data[data['year'].isin(post_covid_years)]
+    total_post_covid = len(post_covid_data)
+    ac_students_post_covid = post_covid_data[post_covid_data['ac_ind'] == 1].shape[0]
+    avg_gpa_post_covid = post_covid_data[post_covid_data['overall_gpa'] != 0]['overall_gpa'].mean()
+    avg_gpa_non_ac_post_covid = post_covid_data[post_covid_data['ac_ind'] == 0]['overall_gpa'].mean()
+    avg_gpa_ac_post_covid = post_covid_data[post_covid_data['ac_ind'] == 1]['overall_gpa'].mean()
+    avg_ac_count_post_covid = post_covid_data[post_covid_data['ac_count'] > 0]['ac_count'].mean()
 
-# District-Wide Analysis
-print("##############################################################################################################")
-print("District-Wide Analysis\n")
+    print("\n=== Post-COVID Statistics (2022-2024) ===")
+    print(f"Total students: {total_post_covid}")
+    print(f"AC course takers: {ac_students_post_covid} ({ac_students_post_covid / total_post_covid:.2%})")
+    print(f"Avg GPA: {avg_gpa_post_covid:.2f}")
+    print(f"Avg GPA (Non-AC students): {avg_gpa_non_ac_post_covid:.2f}")
+    print(f"Avg GPA (AC students): {avg_gpa_ac_post_covid:.2f}")
+    print(f"Avg AC courses taken per AC student: {avg_ac_count_post_covid:.2f}")
 
-# Academic Data
-print("##############################################################################################################")
-print("Academic Data from 02_academic_table data\n")
+def analyze_demographics(data):
+    """Analyze student demographics with 'Y' indicator only."""
+    ethnic_cols = [
+        'amerindian_alaskan', 'asian', 'black_african_amer',
+        'hawaiian_pacific_isl', 'white', 'migrant', 'immigrant',
+        'refugee_student', 'ethnicity'
+    ]
 
-# Count total number of students in data set
-total_students = data.shape[0]
-print(f"Total number of students: {total_students}")
+    # Counts of 'Y' in ethnic and gender columns
+    ethnic_counts = data[ethnic_cols].apply(lambda col: (col == 'Y').sum())
+    ethnic_counts_ac = data[data['ac_ind'] == 1][ethnic_cols].apply(lambda col: (col == 'Y').sum())
+    ethnic_proportion_ac = (ethnic_counts_ac / ethnic_counts_ac.sum()).map('{:.2%}'.format) 
+    gender_counts = data['gender'].value_counts()
+    gender_counts_ac = data[data['ac_ind'] == 1]['gender'].value_counts()
+    gender_proportion_ac = (gender_counts_ac / gender_counts_ac.sum()).map('{:.2%}'.format)
 
-# Count of students with ac_ind=1
-ac_ind_count = data[data['ac_ind'] == 1].shape[0]
-print(f"Number of students who have taken an AC course: {ac_ind_count} ({ac_ind_count / total_students:.2f}%)")
+    print(f"=== Total ethnic group counts ===\n{ethnic_counts}")
+    print(f"\n=== Total ethnic group counts for AC students ===\n{ethnic_counts_ac}\n")
+    print(f"\n=== Proportion of each ethnic group taking AC courses ===\n{ethnic_proportion_ac}")
+    print(f"=== Gender counts ===\n{gender_counts}")
+    print(f"\n=== AC enrollment counts by gender ===\n{gender_counts_ac}")
+    print(f"\n=== Proportion of each gender taking AC courses ===\n{gender_proportion_ac}")
 
-# Calculate average overall GPA (excluding 0s)
-average_gpa = data['overall_gpa'][data['overall_gpa'] != 0].mean()
-print(f"\nAverage overall GPA: {average_gpa:.2f}")
+def analyze_indicators(data, indicators):
+    """Compare total and AC students for each indicator."""
+    print("\n=== AC enrollment rates across various indicators ===")
+    for indicator in indicators:
+        print(f"\n=== {indicator} ===")
+        total_counts = data[indicator].value_counts()
+        ac_counts = data[data['ac_ind'] == 1][indicator].value_counts()
 
-# Average overall GPA of students who have not taken an AC course
-non_ac_overall_gpa = round(data[data['ac_ind'] == 0]['overall_gpa'].mean(), 2)
-print(f"Average overall GPA for ac_ind = 0 students: {non_ac_overall_gpa}")
+        results = [
+            (value, ac_counts.get(value, 0), total, ac_counts.get(value, 0) / total if total > 0 else 0)
+            for value, total in total_counts.items()
+        ]
+        results.sort(key=lambda x: x[3], reverse=True)
 
-# Average overall GPA of students who have taken an AP course
-ac_overall_gpa = round(data[data['ac_ind'] == 1]['overall_gpa'].mean(), 2)
-print(f"Average overall GPA for ac_ind = 1 students: {ac_overall_gpa}")
+        for value, ac, total, rate in results:
+            print(f"{value}: {ac}/{total} ({rate:.2%})")
 
-# Count how many AC courses a student has taken
-avg_ac_count = round(data[data['ac_count'] > 0]['ac_count'].mean(), 2)
-print(f"Average number of AC courses taken by students who took AC courses: {avg_ac_count}")
+def analyze_school_data(data):
+    """Analyze AC course and student data across the district and schools, including post-COVID analysis."""
+    # Define high schools
+    high_schools = ['Green Canyon', 'Sky View', 'Mountain Crest', 'Ridgeline']
 
-# Extended school year
-extended = data['extended_school_year'].value_counts()
-print(extended)
+    # Mean GPA of AC courses by school
+    school_mean_gpa = data[(data['ac_gpa'] > 0) & (data['current_school'].isin(high_schools))].groupby('current_school')['ac_gpa'].mean().sort_values(ascending=False)
+    print(f"\nMean GPA of AC courses by school:\n{school_mean_gpa}\n")
 
-# Demographic Data
-print("\n##############################################################################################################")
-print("Demographic Data from 03_demographic_table - EOY Student Table\n")
+    # Total AC courses in the district
+    ac_count_district_total = data['ac_count'].sum()
+    print(f"Number of AC classes in the district: {ac_count_district_total}")
 
-# Services 504
-service_504 = data['services_504'].value_counts()
-print(service_504)
+    # Post-COVID AC courses in the district
+    post_covid_years = [2022, 2023, 2024]
+    ac_count_district_total_post_covid = data[data['year'].isin(post_covid_years)]['ac_count'].sum()
+    print(f"Number of AC classes in the district post-covid: {ac_count_district_total_post_covid}\n")
 
-# Count total number of each ethnic group
-ethnic_counts = data[['amerindian_alaskan', 'asian', 'black_african_amer', 'hawaiian_pacific_isl', 'white', 'migrant', 'immigrant','refugee_student', 'ethnicity']].apply(pd.Series.value_counts).fillna(0)
-print(f"\nTotal number of each ethnic group: {ethnic_counts}")
+    # AC courses by school
+    school_ac_count = data[data['current_school'].isin(high_schools)].groupby('current_school')['ac_count'].sum().sort_values(ascending=False)
+    print(f"Number of total AC courses taken in each school:\n{school_ac_count}\n")
 
-# Count total number of each ethnic group for students taking AP courses
-ethnic_counts_ap = data[data['ac_ind'] == 1][['amerindian_alaskan', 'asian', 'black_african_amer', 'hawaiian_pacific_isl', 'white', 'migrant', 'immigrant', 'refugee_student', 'ethnicity']].apply(pd.Series.value_counts).fillna(0)
-print("\nAC Count By Ethnicity:")
-print(ethnic_counts_ap['amerindian_alaskan'])
-print(ethnic_counts_ap['asian'])
-print(ethnic_counts_ap['black_african_amer'])
-print(ethnic_counts_ap['hawaiian_pacific_isl'])
-print(ethnic_counts_ap['white'])
-print(ethnic_counts_ap['migrant'])
-print(ethnic_counts_ap['immigrant'])
-print(ethnic_counts_ap['refugee_student'])
-print(ethnic_counts_ap['ethnicity'])
+    # Post-COVID AC courses by school
+    school_ac_count_post_covid = data[data['year'].isin(post_covid_years) & data['current_school'].isin(high_schools)].groupby('current_school')['ac_count'].sum().sort_values(ascending=False)
+    print(f"Number of AC courses taken in each school post-COVID:\n{school_ac_count_post_covid}\n")
 
-# Count proportion of gender
-print("\nTotal number of each gender:")
-gender_counts = data.groupby('gender')['gender'].count()
-print(gender_counts)
+    # Total AC students in the district
+    district_ac_students = len(data[(data['ac_ind'] == 1) & (data['current_school'].isin(high_schools))])
+    print(f"Number of AC students in the district: {district_ac_students}")
 
-# Calculate AC enrollment rates by gender
-ac_enrollment_by_gender = data[data['ac_ind'] == 1].groupby('gender')['ac_ind'].value_counts()
-print("AC counts by gender: \n", ac_enrollment_by_gender)
-gender_ac = data[data['ac_ind'] == 1]['gender'].value_counts().sum()
-gender_proportion_ac = data[data['ac_ind'] == 1].groupby('gender')['ac_ind'].count() / gender_counts
-print(f"\nProportion of each gender taking AC courses:\n{gender_proportion_ac.map('{:.2%}'.format)}")
+    # Post-COVID AC students in the district
+    district_ac_students_post_covid = len(data[(data['year'].isin(post_covid_years)) & (data['ac_ind'] == 1) & (data['current_school'].isin(high_schools))])
+    print(f"Number of AC students in the district post-covid: {district_ac_students_post_covid}")
+    print(f"Proportion of AC students in the data that are post-covid: {district_ac_students_post_covid / district_ac_students:.2%}\n")
 
-# Indicators
-indicators = [
-    'military_child', 'passed_civics_exam', 'read_grade_level',
-    'reading_intervention', 'hs_complete_status',
-    'tribal_affiliation',
-    'read_grade_level'
-]
+    # AC students by school
+    school_ac_students = data[(data['ac_ind'] == 1) & (data['current_school'].isin(high_schools))].groupby('current_school')['ac_ind'].count().sort_values(ascending=False)
+    print(f"Number of AC students in each school:\n{school_ac_students}\n")
 
-for indicator in indicators:
-    print(f"\nCount of each category in {indicator}:")
-    print(data[indicator].value_counts())
+    # Post-COVID AC students by school
+    school_ac_students_post_covid = data[(data['year'].isin(post_covid_years)) & (data['ac_ind'] == 1) & (data['current_school'].isin(high_schools))].groupby('current_school')['ac_ind'].count().sort_values(ascending=False)
+    print(f"Number of AC students in each school post-covid:\n{school_ac_students_post_covid}")
 
-# Transcript Data
-print("##############################################################################################################")
-print("Assessment Data from 04_assessment-table script\n")
+    # Average AC students to non-AC students by school
+    average_ac_to_nonac_by_school = (school_ac_students / (school_ac_count - school_ac_students)).sort_values(ascending=False)
+    print(f"\nAverage number of AC students to each non-AC student at each school:\n{average_ac_to_nonac_by_school}")
 
-composite = data['composite_score'].value_counts()
-composite = composite[composite.index != 0]
-composite.describe()
+    # Post-COVID average AC students to non-AC students by school
+    average_ac_to_nonac_by_school_postcovid = (school_ac_students_post_covid / (school_ac_count_post_covid - school_ac_students_post_covid)).sort_values(ascending=False)
+    print(f"\nAverage number of AC students to each non-AC student at each school post-COVID:\n{average_ac_to_nonac_by_school_postcovid}")
 
-# Calculate average test composite score in district (excluding zeros)
-avg_composite_score = data[data['composite_score'] != 0]['composite_score'].mean()
-print(f"Average composite score in the district: {avg_composite_score:.2f}")
+    # Average AC classes per AC student by school
+    average_ac_classes_per_ac_student_by_school = (school_ac_count / school_ac_students).sort_values(ascending=False)
+    print(f"\nAverage AC classes per AC student by school:\n{average_ac_classes_per_ac_student_by_school}")
 
-# Average test score by AC Status (excluding zeros)
-avg_composite_score_ac_1 = data[(data['ac_ind'] == 1) & (data['composite_score'] != 0)]['composite_score'].mean()
-avg_composite_score_ac_0 = data[(data['ac_ind'] == 0) & (data['composite_score'] != 0)]['composite_score'].mean()
-print(f"Average composite score for students with ac ind =1: {avg_composite_score_ac_1:.2f}")
-print(f"Average composite score for students with ac ind =0: {avg_composite_score_ac_0:.2f}")
+    # Post-COVID average AC classes per AC student by school
+    average_ac_classes_per_ac_student_by_school_postcovid = (school_ac_count_post_covid / school_ac_students_post_covid).sort_values(ascending=False)
+    print(f"\nAverage AC classes per AC student by school post-COVID:\n{average_ac_classes_per_ac_student_by_school_postcovid}")
 
-# Course Master Data
-print("\n##############################################################################################################")
-print("Teacher Data from 05_teacher-table script\n")
+# === Main Processing ===
+if __name__ == "__main__":
+    summarize_dataset(data)
 
-# Not sure that this is accurate*** come back to this
-# teacher_columns = [col for col in modeldata.columns if col.startswith('teacher_')]
-# # Remove 'teachers_had' and 'teacher_count' from the teacher_columns list
-# teacher_columns = [col for col in teacher_columns if col not in ['teachers_had', 'teacher_count']]
+    print_section_header("District-Wide Analysis")
+    calculate_academic_statistics(data)
 
-# # Calculate correlations for teacher columns with ac_ind = 1
-# teacher_correlations = modeldata[modeldata['ac_ind'] == 1][teacher_columns].corrwith(modeldata[modeldata['ac_ind'] == 1]['ac_ind']).sort_values(ascending=False)
-# # Display the top 5 correlated teacher features
-# top_teacher_features = teacher_correlations.index[:5]  # Get the top 5 features
-# print("\nTop 5 correlated teacher features with ac_ind = 1:")
-# print(modeldata[top_teacher_features].columns, sep=', ')
+    print_section_header("Demographic Data Analysis")
+    analyze_demographics(data)
 
-# Course Membership Data
-print("\n##############################################################################################################")
-print("School Data from 06_school-table script")
+    indicators = [
+        'military_child', 'passed_civics_exam', 'reading_intervention',
+        'hs_complete_status', 'tribal_affiliation', 'services_504',
+        'homeless_y', 'environment',
+        'part_time_home_school_y', 'ell_disability_group'
+    ]
+    analyze_indicators(data, indicators)
 
-# Calculate average GPA by school
-school_gpa = data.groupby('current_school')['overall_gpa'].mean()
-print("\nAverage Overall GPA by school:")
-
-# Calculate average GPA for students taking AC courses by school
-print("\nAverage GPA for students taking AC courses by school:")
-average_ac_gpa_by_school = data[(data['ac_ind'] == 1) & (data['overall_gpa'] != 0)].groupby('current_school')['overall_gpa'].mean()
-print(average_ac_gpa_by_school)
-
-# Total number of AC courses taken in the district
-ac_count_district_total = data['ac_count'].sum()
-# Number of AC courses taken in each school
-school_ac_count = data.groupby('current_school')['ac_count'].sum()
-print(f"Number of AC classes in the district: {ac_count_district_total}")
-print(f"Number of AC classes in each school:\n{school_ac_count}")
-# Total number of AC students in the district
-school_ac_students = data[data['ac_ind'] == 1].groupby('current_school')['ac_ind'].count()
-# Total number of AC students in the district
-district_ac_students = data['ac_ind'].sum()
-print(f"Number of AC students in each school:\n{school_ac_students}")
-print(f"Number of AC students in the district: {district_ac_students}")
-
-# Calculate the average number of AC students to each non-AC student at each school
-average_ac_to_nonac_by_school = (school_ac_students / (school_ac_count - school_ac_students)).sort_values(ascending=False)
-print("\nAverage number of AC students to each non-AC student at each school:")
-
-# Filter for specific high schools
-high_schools = [706, 705, 703, 702]
-average_ac_to_nonac_by_school = average_ac_to_nonac_by_school.loc[high_schools]
-print(average_ac_to_nonac_by_school)
-
-# Calculate the average AC classes per AP student by school
-average_ac_classes_per_ap_student_by_school = (school_ac_count / school_ac_students).sort_values(ascending=False)
-# Filter the average AC classes per AP student by school for specific high schools
-average_ac_classes_per_ap_student_by_school = average_ac_classes_per_ap_student_by_school.loc[high_schools]
-
-# Print results
-print("\nAverage AC classes per AP student by school:")
-print(average_ac_classes_per_ap_student_by_school.sort_values(ascending=False))
-
-# Overall Correlations
-print("\n##############################################################################################################")
-print("Overall Correlations")
-
-# Drop test scores from modeldata, except for cumulative score
-# Rank each column against ac_ind and list the top correlated features
-modeldata = modeldata.drop(['english_score', 'reading_score', 'math_score', 'science_score'], axis=1)
-modelcorrelations = modeldata.select_dtypes(include=[np.number]).corrwith(modeldata['ac_ind'] == 1).sort_values(ascending=False)
-print("\nTop correlated features with ac_ind == 1 from the modeling data:")
-print(modelcorrelations.iloc[:10])
+    print_section_header("School Analysis")
+    analyze_school_data(data)

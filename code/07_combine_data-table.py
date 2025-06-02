@@ -45,28 +45,29 @@ def process_student_data(years, prefix=""):
 
     for year in years:
         student_table = student_tables[year]
-        all_students.append(student_table[['student_number']])
+        student_table['year'] = year
+        all_students.append(student_table[['student_number', 'year']])
 
-    df = pd.concat(all_students, ignore_index=True).drop_duplicates(keep='first')
+    df = pd.concat(all_students, ignore_index=True).drop_duplicates(subset=['student_number', 'year'], keep='first')
     model_df = df.copy()
+    model_df = model_df.drop(columns='year')
+    model_df = model_df.drop_duplicates(keep='first')
 
     # Merge model_df with all modeling datasets
     model_df = pd.merge(model_df, academic_model, on='student_number', how='left')
     model_df = pd.merge(model_df, demographic_model, on='student_number', how='left')
     model_df = pd.merge(model_df, assessment_model, on='student_number', how='left')
-    model_df = pd.merge(model_df, teacher_model, on='student_number', how='left')
+    # model_df = pd.merge(model_df, teacher_model, on='student_number', how='left')
     model_df = pd.merge(model_df, school_model, on='student_number', how='left')
 
     # Merge df with all exploratory datasets
-    df = pd.merge(df, academic_df, on='student_number', how='left')
-    df = pd.merge(df, demographic_df, on='student_number', how='left')
-    df = pd.merge(df, assessment_df, on='student_number', how='left')
-    df = pd.merge(df, teacher_df, on='student_number', how='left')
-    df = pd.merge(df, school_df, on='student_number', how='left')
+    df = pd.merge(df, academic_df, on=['student_number', 'year'], how='left')
+    df = pd.merge(df, demographic_df, on=['student_number', 'year'], how='left')
+    df = pd.merge(df, assessment_df, on=['student_number'], how='left')
+    # df = pd.merge(df, teacher_df, on=['student_number', 'year'], how='left')
+    df = pd.merge(df, school_df, on=['student_number', 'year'], how='left')
 
     df = df.drop_duplicates(keep='first')
-
-    # Export the data with an optional prefix
     df.to_csv(f'./data/{prefix}exploratory_data.csv', index=False)
     model_df.to_csv(f'./data/{prefix}modeling_data.csv', index=False)
 

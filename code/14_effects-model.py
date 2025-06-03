@@ -9,8 +9,8 @@ import glob
 # SPECIFY WHAT MODEL TO RUN
 ########################################################
 
-post_covid_data_ind = 0  # Only use the post-covid data
-multilevel_model_ind = 1 # Run a multilevel model
+# post_covid_data_ind = 0  # Only use the post-covid data
+multilevel_model_ind = 0 # Run a multilevel model
 
 
 ########################################################
@@ -18,10 +18,10 @@ multilevel_model_ind = 1 # Run a multilevel model
 ########################################################
 
 # Load in the data based on the indicators
-if post_covid_data_ind == 1:
-    df = pd.read_csv('data/post_covid_modeling_data.csv', low_memory = False)
-else:
-    df = pd.read_csv('data/modeling_data.csv', low_memory = False)
+# if post_covid_data_ind == 1:
+#     df = pd.read_csv('data/post_covid_modeling_data.csv', low_memory = False)
+# else:
+df = pd.read_csv('data/clearinghouse_model_data.csv', low_memory = False)
 
 # Define the folder path where the model output will be saved
 folder_path = "output/"
@@ -36,7 +36,7 @@ if not os.path.exists(folder_path):
 #######################################################
 
 # Columns to exclude from modeling
-col_drop = ['student_number', 'hs_advanced_math_y', 'tribal_affiliation_g', 'passed_civics_exam_y']
+col_drop = ['Unnamed: 0', 'student_number', 'hs_advanced_math_y', 'tribal_affiliation_g', 'year', 'passed_civics_exam_y']
 for col in df.columns:
     if col.startswith('teacher') or col.startswith('exit') or col.startswith('envi'):
         col_drop.append(col)
@@ -49,11 +49,13 @@ df_base = df.drop(columns = col_drop, axis=1)
 
 # Specify the model formula
 if multilevel_model_ind == 1:
-    all_predictors = " + ".join(df_base.columns.difference(["ac_ind", "high_school"]))
-    model_formula = f"ac_ind ~ ({all_predictors} | high_school)"
+    all_predictors = " + ".join(df_base.columns.difference(["start_college_y", "college_grad_y","high_school"]))
+    # model_formula = f"start_college_y ~ ({all_predictors} | high_school)"
+    model_formula = f"college_grad_y ~ ({all_predictors} | high_school)"
 else:
-    all_predictors = " + ".join(df_base.columns.difference(["ac_ind"]))
-    model_formula = f"ac_ind ~ {all_predictors}"
+    all_predictors = " + ".join(df_base.columns.difference(["start_college_y", "college_grad_y"]))
+    # model_formula = f"start_college_y ~ {all_predictors}"
+    model_formula = f"college_grad_y ~ {all_predictors}"
 
 
 ################################################
@@ -65,21 +67,21 @@ if __name__ == '__main__':
 
     # Specify the model
     if multilevel_model_ind == 1:
-        antecedent_model = bmb.Model(model_formula, df_base, family = "bernoulli", noncentered = True)
+        effects_model = bmb.Model(model_formula, df_base, family = "bernoulli", noncentered = True)
     else:
-        antecedent_model = bmb.Model(model_formula, df_base, family = "bernoulli")
+        effects_model = bmb.Model(model_formula, df_base, family = "bernoulli")
         
     # Build the model
-    antecedent_model.build()
+    effects_model.build()
 
     # Run the sampling (ADJUST THE AMOUNT OF SAMPLING (TUNE, DRAW, ETC.) HERE AS NEEDED)
     try:
         print("Starting model sampling...")
         
         if multilevel_model_ind == 1:
-            model_fitted = antecedent_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
+            model_fitted = effects_model.fit(tune=2000, draws=2000, idata_kwargs = {"log_likelihood": True})
         else:
-            model_fitted = antecedent_model.fit(tune=2000, draws=2000, idata_kwargs = {"log_likelihood": True})
+            model_fitted = effects_model.fit(tune=3000, draws=3000, idata_kwargs = {"log_likelihood": True})
 
         print("Sampling complete.")
 
@@ -136,31 +138,13 @@ else:
     print("Cannot save output to a file.")
 
 # Flat Models:
-# 01 - Original flat model.
-# 02 - Flat model that corresponds with Multilevel Model 08.
-# 05 - Flat model that corresponds with Multilevel Model 09.
-# 06 - Flat Model 02 but with high and middle schools as fixed effects (Green Canyon and 0 as references).
-# 07 - Flat model that corresponds with Multilevel Model 13.
-# 10 - Flat Model 07 with passed_civics_exam_y removed.
-# 11 - Flat Model 06 with passed_civics_exam_y removed.
-# 12 - Flat Model 06 with passed_civics_exam_y removed run for longer.
-
-# Multilevel Models:
-# 01 - All schools as random effects | ell_disability_group, otherwise fixed effects.
-# 02 - Everything but school as random effects | ell_disability_group, otherwise fixed effects.
-# 03 - Everything as random effects | high_school (including the intercept), no other schools.
-# 04 - Everything as random effects | both high_school and middle_school (including the intercept).
-# 05 - 04 run for twice as long.
-# 06 - 03 run on the post-COVID data.
-# 07 - 04 run for twice as long on the post-COVID data.
-# 08 - 03 without hs_advanced_math_y and with "Cache High" and "0" students filtered out.
-# 09 - 08 run on the post-COVID data.
-# 10 - 08 as a mixed effect model, including all predictors as both fixed and random effects.
-# 11 - 10 run for twice as long.
-# 12 - 08 but including middle_school as a random effect.
-# 13 - 12 run on the post-COVID data.
+# 03 - Original flat effects model.
+# 04 - Flat model 03 run for longer.
+# 08 - Flat model of start_college_y with advanced course categories.
+# 09 - Flat model of college_grad_y with advanced course categories.
+# 13 - Flat model of start_college_y with advanced course categories and passed_civics_exam_y removed.
+# 14 - Flat model of college_grad_y with advanced course categories and passed_civics_exam_y removed.
 
 # Final Models:
-# Full Dataset: Flat Model 06 + Multilevel Model 12.
-# Post-COVID: Flat Model 07 + Multilevel Model 13.
+# Full Dataset: Flat Models 13 and 14.
 

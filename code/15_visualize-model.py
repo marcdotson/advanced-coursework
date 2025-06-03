@@ -2,6 +2,7 @@
                              #IMPORT LIBRARIES
 ############################################################################## 
 import arviz as az
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os 
@@ -35,7 +36,7 @@ except Exception as e:
     print(f"Loading Data failed: {e}")
 
 # Define the folder path where the trace plots will be saved
-folder_path = "figures/model-plots"
+folder_path = "figures"
 #define file extension
 extension = 'png'
 
@@ -317,7 +318,7 @@ def compare_group_effects(
     colors = ["#00274C", "#9EA2A2", "#D6D6D6"]
 
     # Directory handling
-    output_dir = "figures/model-plots"
+    output_dir = "figures"
     os.makedirs(output_dir, exist_ok=True)
     full_path = os.path.join(output_dir, filename)
 
@@ -540,7 +541,7 @@ plt.ylabel("")
 plt.tight_layout()
 
 # Save for PowerPoint
-# full_path = 'figures/model-plots/heat-map-high-level-fixed-effects.png'
+full_path = 'figures/heat-map-high-level-fixed-effects.png'
 plt.savefig(full_path, dpi=300)
 plt.show()
 

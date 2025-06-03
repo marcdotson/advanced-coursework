@@ -1,6 +1,0 @@
----
-title: "Writing"
-format: gfm
----
-
-Case studies, papers, etc.

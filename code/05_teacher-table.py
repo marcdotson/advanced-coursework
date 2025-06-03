@@ -1,46 +1,43 @@
-"""
-This script has two parts:
+# This script has two parts:
 
-----------------------------------
-PART 1: School-Level Teacher Grids
-----------------------------------
-- Combines Course Master and Course Membership data from 2017, 2018, 2022, 2023, and 2024.
-- Builds matrices showing which teachers taught at which secondary schools.
-- Splits the data into:
-    - High schools vs. middle schools
-    - All years vs. post-COVID years (2022–2024)
-- Each matrix has schools as rows and teachers as columns (1 = taught at that school, 0 = did not).
+# ----------------------------------
+# PART 1: School-Level Teacher Grids
+# ----------------------------------
+# - Combines Course Master and Course Membership data from 2017, 2018, 2022, 2023, and 2024.
+# - Builds matrices showing which teachers taught at which secondary schools.
+# - Splits the data into:
+#     - High schools vs. middle schools
+#     - All years vs. post-COVID years (2022–2024)
+# - Each matrix has schools as rows and teachers as columns (1 = taught at that school, 0 = did not).
 
-Files Exported:
-- ./data/hs_teacher_data.csv
-- ./data/ms_teacher_data.csv
-- ./data/hs_post_covid_teacher_data.csv
-- ./data/ms_post_covid_teacher_data.csv
+# Files Exported:
+# - ./data/hs_teacher_data.csv
+# - ./data/ms_teacher_data.csv
+# - ./data/hs_post_covid_teacher_data.csv
+# - ./data/ms_post_covid_teacher_data.csv
 
-----------------------------------
-PART 2: Student-Teacher Exposure Grids
-----------------------------------
-- Uses the same Course Master and Course Membership data as Part 1
-- Adds student-level data (from pickled student_tables) to get accurate student_number information
-- Also loads academic outcome data from 02_academic_modeling.csv to merge in each student's ac_ind
-- Builds:
-    - A grid of all students and all teachers
-    - A grid of all students and only non-AC teachers
-    - A grid for each school showing student exposure to non-AC teachers
+# ----------------------------------
+# PART 2: Student-Teacher Exposure Grids
+# ----------------------------------
+# - Uses the same Course Master and Course Membership data as Part 1
+# - Adds student-level data (from pickled student_tables) to get accurate student_number information
+# - Also loads academic outcome data from 02_academic_modeling.csv to merge in each student's ac_ind
+# - Builds:
+#     - A grid of all students and all teachers
+#     - A grid of all students and only non-AC teachers
+#     - A grid for each school showing student exposure to non-AC teachers
 
-Files Exported:
-- ./data/all_teacher_grid.csv
-- ./data/non_ac_teacher_grid.csv
-- ./data/sky_view_non_ac_teacher_grid.csv
-- ./data/green_canyon_non_ac_teacher_grid.csv
-- ./data/ridgeline_non_ac_teacher_grid.csv
-- ./data/mountain_crest_non_ac_teacher_grid.csv
-- ./data/cache_high_non_ac_teacher_grid.csv
-- ./data/spring_creek_middle_non_ac_teacher_grid.csv
-- ./data/north_cache_middle_non_ac_teacher_grid.csv
-- ./data/south_cache_middle_non_ac_teacher_grid.csv
-"""
-
+# Files Exported:
+# - ./data/all_teacher_grid.csv
+# - ./data/non_ac_teacher_grid.csv
+# - ./data/sky_view_non_ac_teacher_grid.csv
+# - ./data/green_canyon_non_ac_teacher_grid.csv
+# - ./data/ridgeline_non_ac_teacher_grid.csv
+# - ./data/mountain_crest_non_ac_teacher_grid.csv
+# - ./data/cache_high_non_ac_teacher_grid.csv
+# - ./data/spring_creek_middle_non_ac_teacher_grid.csv
+# - ./data/north_cache_middle_non_ac_teacher_grid.csv
+# - ./data/south_cache_middle_non_ac_teacher_grid.csv
 
 import pandas as pd
 import pickle
@@ -185,6 +182,7 @@ with open('./data/student_data.pkl', 'rb') as f:
 # Initialize empty lists to store year-specific DataFrames
 all_membership = []
 all_master = []
+all_student_tables = []
 
 years = [2017, 2018, 2022, 2023, 2024]
 
@@ -198,8 +196,8 @@ for year in years:
     student_table_year['year'] = year
 
     # Append year-specific data to the respective lists
-    all_membership.append(membership_year)
-    all_master.append(master_year)
+    all_membership.append(membership_table)
+    all_master.append(master_table)
     all_student_tables.append(student_table_year[['student_number', 'year']])
 
 # Concatenate and clean the DataFrames for each dataset across all years
@@ -462,7 +460,8 @@ school_grids['spring_creek_middle_grid'].to_csv('./data/spring_creek_middle_non_
 school_grids['north_cache_middle_grid'].to_csv('./data/north_cache_middle_non_ac_teacher_grid.csv', index=False)
 school_grids['south_cache_middle_grid'].to_csv('./data/south_cache_middle_non_ac_teacher_grid.csv', index=False)
 
-# print('===========================================')
-# print('Teacher data exported successfully!')
-# print("Next, run: 06_school-table.py")
-# print('===========================================')
+print('===========================================')
+print('Teacher data exported successfully!')
+print("Next, run: 06_school-table.py")
+print('===========================================')
+

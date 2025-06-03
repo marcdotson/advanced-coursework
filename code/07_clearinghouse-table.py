@@ -1,9 +1,6 @@
 # The code will output two data files: '07_clearinghouse_exploratory_data.csv' and '07_clearinghouse_model_data.csv'
-
 import pandas as pd
 import pickle
-import numpy as np
-import re
 
 # Load the clearinghouse data. We have two files, so we will load both and combine them
 clearing_old = pd.read_csv('data/Clearing House Data - USU Version.csv').drop_duplicates()
@@ -377,3 +374,4 @@ print('===========================================')
 print('Clearinghouse data exported successfully!')
 print("Next, run: 08_combine_data-table.py")
 print('===========================================')
+

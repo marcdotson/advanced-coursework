@@ -1,4 +1,0 @@
-# Presentations
-
-
-Presentation slides.

@@ -1,5 +1,4 @@
 # The code will output two data files: 06_school_exploratory_data.csv and 06_school_modeling_data.csv
-
 import pandas as pd
 import pickle
 
@@ -243,5 +242,5 @@ model_df.to_csv('./data/06_school_modeling_data.csv', index=False)
 
 print('===========================================')
 print('School data exported successfully!')
-print("Next, run: 07_combine_data-table.py")
+print("Next, run: 07_clearinghouse-table.py")
 print('===========================================')

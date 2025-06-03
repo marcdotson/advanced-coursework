@@ -1,6 +1,5 @@
 # The code will output one data file: 04_assessment_data.csv
 import pandas as pd
-import numpy as np
 import pickle
 
 # Define the list of years to process

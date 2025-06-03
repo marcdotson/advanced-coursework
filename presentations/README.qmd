@@ -1,6 +1,0 @@
----
-title: "Presentations"
-format: gfm
----
-
-Presentation slides.

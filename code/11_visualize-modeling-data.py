@@ -2,14 +2,12 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.preprocessing import StandardScaler
-import re
 
 # Set the seaborn style for better visuals
 sns.set(style="whitegrid")
 
 # Function to load and prepare data
-def load_data(filepath='../data/modeling_data.csv'):
+def load_data(filepath='data/modeling_data.csv'):
     """Load and prepare the modeling data"""
     df = pd.read_csv(filepath)
     return df
@@ -205,7 +203,7 @@ def plot_feature_importance(feature_importance_df, group_name, n_top=10):
     return plt.gcf(), None
 
 # Main function to generate all visualizations
-def generate_all_visualizations(data_path='../data/modeling_data.csv'):
+def generate_all_visualizations(data_path='data/modeling_data.csv'):
     """Generate visualizations for all feature groups"""
     # Load data
     df = load_data(data_path)
@@ -265,15 +263,9 @@ def generate_all_visualizations(data_path='../data/modeling_data.csv'):
     return visualizations
 
 # Execute the visualization generator
-# In practice, you'd call this with your actual data path
-visualizations = generate_all_visualizations('../data/modeling_data.csv')
-
-# To display a specific visualization:
-plt.figure(visualizations['Academic']['correlation'].number)
-plt.show()
+visualizations = generate_all_visualizations('data/modeling_data.csv')
 
 # Main execution code (uncomment to run)
-
 if __name__ == "__main__":
     # Generate all visualizations
     visualizations = generate_all_visualizations()
@@ -285,3 +277,4 @@ if __name__ == "__main__":
             plt.show()
             # Alternatively, save to file:
             # fig.savefig(f"{group_name}_{viz_type}.png", dpi=300, bbox_inches='tight')
+

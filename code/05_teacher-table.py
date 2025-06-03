@@ -185,17 +185,13 @@ with open('./data/student_data.pkl', 'rb') as f:
 # Initialize empty lists to store year-specific DataFrames
 all_membership = []
 all_master = []
-all_student_tables = []
 
-# Loop through each year and load the data and drop duplicates immediatly to clean the data and speed up the loop
+years = [2017, 2018, 2022, 2023, 2024]
+
 for year in years:
-    membership_year = pd.read_excel(
-        f'data/{year} EOY Data - USU.xlsx', sheet_name='Course Membership', usecols=membership_columns.keys(), dtype=membership_columns
-        ).drop_duplicates()
-    
-    master_year = pd.read_excel(
-    f'data/{year} EOY Data - USU.xlsx', sheet_name='Course Master', usecols=master_columns.keys(),dtype=master_columns
-    ).drop_duplicates()
+    # Load Course Master and Course Membership data for the year
+    master_table = pd.read_excel(f'data/{year} EOY Data - USU.xlsx', sheet_name= 'Course Master').drop_duplicates(keep='first')
+    membership_table = pd.read_excel(f'data/{year} EOY Data - USU.xlsx', sheet_name= 'Course Membership').drop_duplicates(keep='first')
 
     # Retrieve the data for the specified year from the student_tables dictionary
     student_table_year = student_tables[year]
@@ -466,7 +462,7 @@ school_grids['spring_creek_middle_grid'].to_csv('./data/spring_creek_middle_non_
 school_grids['north_cache_middle_grid'].to_csv('./data/north_cache_middle_non_ac_teacher_grid.csv', index=False)
 school_grids['south_cache_middle_grid'].to_csv('./data/south_cache_middle_non_ac_teacher_grid.csv', index=False)
 
-print('===========================================')
-print('Teacher data exported successfully!')
-print("Next, run: 06_school-table.py")
-print('===========================================')
+# print('===========================================')
+# print('Teacher data exported successfully!')
+# print("Next, run: 06_school-table.py")
+# print('===========================================')

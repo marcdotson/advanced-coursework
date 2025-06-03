@@ -3,12 +3,33 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
+from scipy.stats import gaussian_kde
 
+# Set warnings to ignore
 warnings.filterwarnings("ignore")
 pd.set_option('display.max_rows', None)
 pd.set_option('display.float_format', lambda x: f'{x:.2f}')
 
-# Load dataset
+# USU color palette
+navy = "#00274C"
+gray = "#9EA2A2"
+usu_colors = [navy, gray]
+darker_red = "#8B0000"
+
+# Set global font to Montserrat and apply USU colors
+plt.rcParams.update({
+    "font.family": "Montserrat",  # Global font
+    "axes.titlesize": 16,         # Title font size
+    "axes.labelsize": 12,         # Axis label size
+    "axes.labelcolor": navy,      # Axis label color
+    "xtick.color": navy,          # X-tick color
+    "ytick.color": navy,          # Y-tick color
+    "text.color": navy            # General text color
+})
+sns.set_palette(usu_colors)  # Apply USU color palette to Seaborn globally
+sns.set_style("whitegrid")  # Set Seaborn style
+
+# Load the data from CSV files
 data = pd.read_csv("../data/exploratory_data.csv")
 
 # Title

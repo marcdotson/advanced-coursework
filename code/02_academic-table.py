@@ -95,7 +95,6 @@ for year in years:
     scram = scram.rename(columns={'StudentNumber': 'student_number'})
     scram['year'] = year
 
-
     ######################################################################################################################################################
     # df will represent the exploratory data, and model_df will represent the model data
 
@@ -346,9 +345,6 @@ for year in years:
     # Store the resulting DataFrames in dictionaries (i.e. df_2017, model_df_2017)
     df_dict[f'df_{year}'] = df.copy()
     model_dict[f'model_df_{year}'] = model_df.copy()
-
-    # Add a year column to df_dict. This may be important later
-    df_dict[f'df_{year}']['year'] = year
 
 
 

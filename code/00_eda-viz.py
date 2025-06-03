@@ -1,12 +1,14 @@
+# Import libraries
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import numpy as np
 import warnings
 from scipy.stats import gaussian_kde
 
 # Set warnings to ignore
 warnings.filterwarnings("ignore")
+pd.set_option('display.max_rows', None)
+pd.set_option('display.float_format', lambda x: f'{x:.2f}')
 
 # USU color palette
 navy = "#00274C"
@@ -29,216 +31,185 @@ sns.set_style("whitegrid")  # Set Seaborn style
 
 # Load the data from CSV files
 data = pd.read_csv("../data/exploratory_data.csv")
-modeldata = pd.read_csv("../data/modeling_data.csv")
 
-print("EDA Visualizations\n")
+# Title
+print("\033[1m" + "=" * 75)
+print("CCSDUT Powerschool Exploratory Data Analysis")
+print("=" * 75 + "\033[0m")
 
-### Clean up data and establish variables ###
-data['overall_gpa'] = pd.to_numeric(data['overall_gpa'], errors='coerce')
-filtered_data = data[data['overall_gpa'] > 0]  # Filter out zero GPAs
-total_students = data.shape[0]
-total_ac_students = data[data['ac_ind'] == 1].shape[0]
-total_ac_courses = data['ac_count'].sum()
-total_students_by_school = filtered_data.groupby('current_school').size()
-total_ac_students_by_school = filtered_data[filtered_data['ac_ind'] == 1].groupby('current_school').size()
-total_ac_courses_by_school = filtered_data.groupby('current_school')['ac_count'].sum()
-# Create high school name list to filter by
-high_schools = ['Green Canyon', 'Mountain Crest', 'Sky View', 'Ridgeline']
+# === Utility Functions ===
+def print_section_header(title):
+    """Utility function to print section headers."""
+    print("\n" + title)
+    print("=" * 50)
 
+def plot_ac_courses_and_students(data, post_covid_years=None):
+    """Plot AC courses and AC students by school."""
+    if post_covid_years:
+        data = data[data['year'].isin(post_covid_years)]
+        title_suffix = " (Post-COVID)"
+    else:
+        title_suffix = ""
 
-### Visualization 1: Pie Chart - AC vs Non-AC Students ###
-plt.figure(figsize=(12, 6))
-ac_counts = data['ac_ind'].value_counts()
-labels = ['Non-AC', 'AC']
-sizes = [ac_counts[0], ac_counts[1]]
-plt.pie(
-    sizes,
-    labels=labels,
-    colors=[darker_red, navy],
-    wedgeprops=dict(edgecolor='black'),
-    autopct='%1.1f%%',
-    startangle=90,
-    textprops={'color': 'white', 'fontsize': 20},  # White text for percentages inside the pie chart
-    pctdistance=0.7  # Adjusts the position of the percentages closer to the center
-)
-# Make labels outside the chart larger and more visible
-plt.gca().legend(labels, loc="upper left", fontsize=20)  # Moves legend outside the chart
-plt.title('Distribution of AC and Non-AC Students', fontsize=22)
-plt.axis('equal')  # Ensure the pie chart is a circle
-plt.tight_layout()  # Prevents clipping
-plt.show()
+    # Group data by school
+    ac_courses_by_school = data.groupby('current_school')['ac_count'].sum().sort_values(ascending=False)
+    ac_students_by_school = data[data['ac_ind'] == 1].groupby('current_school').size().sort_values(ascending=False)
 
-### Visualization 2: Histogram - AC GPA Distribution ###
-filtered_ac_gpa = data['ac_gpa'][data['ac_gpa'] > 0]
-plt.figure(figsize=(12, 6))
-plt.hist(filtered_ac_gpa, bins=np.arange(0.0, 4.0, 0.5), color=navy, edgecolor='black')
-plt.title('AC GPA Distribution', fontsize=16)
-plt.xlabel('Advanced Course GPA', fontsize=12)
-plt.ylabel('Number of Students', fontsize=12)
-plt.show()
+    # Plot AC courses and students
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ac_courses_by_school.plot(kind='bar', color='blue', edgecolor='black', ax=ax, label='AC Courses', position=0, width=0.4)
+    ac_students_by_school.plot(kind='bar', color='steelblue', edgecolor='black', ax=ax, label='AC Students', position=1, width=0.4)
 
-### Visualization 3: GPA vs AC Count Scatter Plot ###
-plt.figure(figsize=(12, 6))
-sns.scatterplot(x='overall_gpa', y='ac_count', hue='ac_ind', data=data, palette={0: darker_red, 1: navy})
-plt.title('Relationship Between GPA and AC Course Count', fontsize=16)
-plt.xlabel('GPA', fontsize=12)
-plt.ylabel('Number of AC Courses', fontsize=12)
-plt.legend(title='AC Status', loc='upper left')
-plt.show()
+    ax.set_title(f'AC Count and Number of AC Students by School{title_suffix}')
+    ax.set_ylabel('Count')
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
+    ax.legend()
+    plt.tight_layout()
+    plt.show()
 
-### Visualization 4: Histogram - AC Status by Gender ###
-plt.figure(figsize=(12, 6))
-ac_enrollment_by_gender = data[data['ac_ind'] == 1].groupby('gender')['ac_ind'].value_counts()
-ac_enrollment_by_gender.plot(kind='bar', color=navy, edgecolor='black')
-plt.title('AC Students By Gender', fontsize=16)
-plt.xlabel('Gender', fontsize=12)
-plt.ylabel('Student Count', fontsize=12)
-plt.xticks(rotation=45, fontsize=12)
-plt.show()
+def plot_ac_vs_non_ac_distribution(data):
+    """Plot the distribution of AC vs Non-AC students."""
+    plt.figure(figsize=(8, 6))
+    ac_counts = data['ac_ind'].value_counts()
+    labels = ['Non-AC', 'AC']
+    sizes = [ac_counts[0], ac_counts[1]]
+    colors = ['#8B0000', 'steelblue']
+    plt.pie(sizes, labels=labels, colors=colors, wedgeprops=dict(edgecolor='black'), autopct='%1.1f%%', startangle=90)
+    plt.title('Distribution of AC and Non-AC Students')
+    plt.axis('equal')
+    plt.show()
 
-### Visualization 5: Density Plot - Overall GPA (AC vs Non-AC Students) ###
-plt.figure(figsize=(12, 6))
-sns.kdeplot(data=data[data['ac_ind'] == 1]['overall_gpa'], shade=True, color=navy, label='AC Students', bw_adjust=0.8, alpha=0.6)
-sns.kdeplot(data=data[data['ac_ind'] == 0]['overall_gpa'], shade=True, color=darker_red, label='Non-AC Students', bw_adjust=0.8, alpha=0.6)
-mean_ac = data[data['ac_ind'] == 1]['overall_gpa'].mean()
-mean_non_ac = data[data['ac_ind'] == 0]['overall_gpa'].mean()
-plt.axvline(mean_ac, color=navy, linestyle='dashed', alpha=0.8, label=f'AC Mean: {mean_ac:.2f}')
-plt.axvline(mean_non_ac, color=darker_red, linestyle='dashed', alpha=0.8, label=f'Non-AC Mean: {mean_non_ac:.2f}')
-plt.title('Distribution of Overall GPA: AC vs. Non-AC Students', fontsize=16)
-plt.xlabel('Overall GPA', fontsize=12)
-plt.ylabel('Probability Density', fontsize=12)
-plt.xlim(0, 4)
-plt.grid(True, linestyle='--', alpha=0.5)
-plt.legend()
-plt.show()
+def plot_ac_gpa_distribution(data):
+    """Plot the distribution of AC GPA."""
+    filtered_ac_gpa = data['ac_gpa'][data['ac_gpa'] > 0]
+    plt.figure(figsize=(8, 6))
+    plt.hist(filtered_ac_gpa, bins=np.arange(0.0, 4.0, 0.5), color='steelblue', edgecolor='black')
+    plt.title('AC GPA Distribution')
+    plt.xlabel('Advanced Course GPA')
+    plt.ylabel('Number of Students')
+    plt.tight_layout()
+    plt.show()
 
-### Visualization 6: Proportion of Students for Each Ethnic Group ###
-plt.figure(figsize=(12, 6))
-ethnic_columns = ['amerindian_alaskan', 'asian', 'black_african_amer', 'hawaiian_pacific_isl', 'white', 'migrant', 'immigrant', 'refugee_student']
-ethnic_counts = data[ethnic_columns].apply(lambda col: (col == 'Y').sum())
-ethnic_proportions = (ethnic_counts / total_students) * 100
-ethnic_proportions.plot(kind='bar', color=navy, edgecolor='black')
-plt.title('Proportion of Students for Each Ethnic Group', fontsize=16)
-plt.ylabel('Proportion (%)', fontsize=12)
-plt.xlabel('Ethnic Group', fontsize=12)
-plt.xticks(rotation=45, fontsize=12)
-plt.tight_layout()
-plt.show()
+def plot_ac_gpa_by_school(data):
+    """Plot the AC GPA distribution by school."""
+    plt.figure(figsize=(6, 12))
+    sns.boxplot(
+        x='ac_gpa', y='current_school',
+        data=data[data['ac_gpa'] > 0],
+        showfliers=False, palette='Blues', orient='h'
+    )
+    plt.title('AC GPA Distribution by School')
+    plt.xlabel('AC GPA')
+    plt.xticks(rotation=0)
+    plt.tight_layout()
+    plt.show()
 
-### Visualization 7: Proportion of AC Participation by Ethnic Group ###
-plt.figure(figsize=(12, 6))
-ethnic_counts_ac = data[data['ac_ind'] == 1][ethnic_columns].apply(lambda col: (col == 'Y').sum())
-ethnic_proportions_ac = (ethnic_counts_ac / ethnic_counts) * 100
-ethnic_proportions_ac = ethnic_proportions_ac.fillna(0)  # Replace NaN with 0 for missing data
-ethnic_proportions_ac.plot(kind='bar', color=navy, edgecolor='black')
-plt.title('Proportion of Students in AC Courses by Ethnic Group', fontsize=16)
-plt.ylabel('Proportion (%)', fontsize=12)
-plt.xlabel('Ethnic Group', fontsize=12)
-plt.xticks(rotation=45, fontsize=12)
-plt.tight_layout()
-plt.show()
+def plot_gpa_density(data):
+    """Plot GPA density for AC and Non-AC students."""
+    plt.figure(figsize=(10, 6))
+    sns.kdeplot(data[data['ac_ind'] == 1]['overall_gpa'], label='AC Students', shade=True, color='steelblue')
+    sns.kdeplot(data[data['ac_ind'] == 0]['overall_gpa'], label='Non-AC Students', shade=True, color='red')
 
-### Visualization 8: Student Count by High School ###
+    # Calculate mean and median for both groups
+    ac_mean = data[data['ac_ind'] == 1]['overall_gpa'].mean()
+    ac_median = data[data['ac_ind'] == 1]['overall_gpa'].median()
+    non_ac_mean = data[data['ac_ind'] == 0]['overall_gpa'].mean()
+    non_ac_median = data[data['ac_ind'] == 0]['overall_gpa'].median()
 
-# Clean up the data and establish variables
-data['overall_gpa'] = pd.to_numeric(data['overall_gpa'], errors='coerce')
-high_schools = ['Green Canyon', 'Mountain Crest', 'Sky View', 'Ridgeline']
-filtered_data = data[data['current_school'].isin(high_schools)]  # Filter by high school names
+    # Add legend for mean and median
+    plt.legend([
+        f'AC Mean: {ac_mean:.2f}', f'AC Median: {ac_median:.2f}',
+        f'Non-AC Mean: {non_ac_mean:.2f}', f'Non-AC Median: {non_ac_median:.2f}'
+    ], loc='upper right')
 
-# Define pre- and post-COVID years
-pre_covid_years = [2018, 2019, 2020]
-post_covid_years = [2021, 2022, 2023, 2024]
+    plt.title('Comparison of GPA Distributions: AC vs Non-AC Students')
+    plt.xlabel('GPA')
+    plt.ylabel('Density')
+    plt.tight_layout()
+    plt.show()
 
-# Pre-COVID data
-pre_covid_data = filtered_data[filtered_data['year'].isin(pre_covid_years)]
-pre_total_ac_students = pre_covid_data[pre_covid_data['ac_ind'] == 1].groupby('current_school').size()
-pre_total_students = pre_covid_data.groupby('current_school').size()
-pre_ac_proportion = (pre_total_ac_students / pre_total_students) * 100
-pre_course_count = pre_covid_data.groupby('current_school')['ac_count'].sum()
+def plot_ethnic_group_proportions(data, total_students):
+    """Plot the proportion of ethnic groups in AC courses."""
+    ethnic_counts = data[['amerindian_alaskan', 'asian', 'black_african_amer', 'hawaiian_pacific_isl', 'white', 'migrant', 'immigrant', 'refugee_student', 'ethnicity']].apply(pd.Series.value_counts).fillna(0)
+    ethnic_proportions = (ethnic_counts.loc['Y'] / total_students) * 100
+    plt.figure(figsize=(10, 6))
+    ethnic_proportions.plot(kind='bar', color='steelblue', edgecolor='black')
+    plt.title('Proportion of Students for Each Ethnic Group')
+    plt.ylabel('Proportion')
+    plt.xticks(rotation=45)
+    for p in plt.gca().patches:
+        plt.text(p.get_x() + (p.get_width() / 2), p.get_y() + (p.get_height() / 2), '{:.1f}%'.format(p.get_height()), ha='center')
+    plt.tight_layout()
+    plt.show()
 
-# Post-COVID data
-post_covid_data = filtered_data[filtered_data['year'].isin(post_covid_years)]
-post_total_ac_students = post_covid_data[post_covid_data['ac_ind'] == 1].groupby('current_school').size()
-post_total_students = post_covid_data.groupby('current_school').size()
-post_ac_proportion = (post_total_ac_students / post_total_students) * 100
-post_course_count = post_covid_data.groupby('current_school')['ac_count'].sum()
+def plot_ethnic_ac_participation(data):
+    """Plot participation of ethnic groups in AC courses."""
+    ethnic_counts_total = data[['amerindian_alaskan', 'asian', 'black_african_amer', 'hawaiian_pacific_isl', 'white', 'migrant', 'immigrant', 'refugee_student']].apply(pd.Series.value_counts).fillna(0).loc['Y']
+    ethnic_counts_ac = data[data['ac_ind'] == 1][['amerindian_alaskan', 'asian', 'black_african_amer', 'hawaiian_pacific_isl', 'white', 'migrant', 'immigrant', 'refugee_student']].apply(pd.Series.value_counts).fillna(0).loc['Y']
+    ethnic_proportions_ac = (ethnic_counts_ac / ethnic_counts_total) * 100
+    plt.figure(figsize=(10, 6))
+    ethnic_proportions_ac.plot(kind='bar', color='steelblue', edgecolor='black')
+    plt.title('Proportion of Students in AC Courses by Ethnic Group')
+    plt.ylabel('Proportion')
+    plt.xticks(rotation=45)
+    for p in plt.gca().patches:
+        plt.text(p.get_x() + (p.get_width() / 2), p.get_y() + (p.get_height() / 2), '{:.1f}%'.format(p.get_height()), ha='center')
+    plt.tight_layout()
+    plt.show()
 
-# Sort high schools by post-COVID count of AC courses (descending)
-sorted_high_schools = post_course_count.sort_values(ascending=False).index.tolist()
+def plot_gpa_vs_ac_count(data):
+    """Plot GPA vs AC course count."""
+    plt.figure(figsize=(12, 6))
+    sns.scatterplot(x='overall_gpa', y='ac_count', hue='ac_ind', data=data, palette={0: 'red', 1: 'steelblue'})
+    plt.title('Relationship Between GPA and AC Course Count')
+    plt.xlabel('GPA')
+    plt.ylabel('Number of AC Courses')
+    plt.legend(title='AC Status', loc='upper left')
+    plt.tight_layout()
+    plt.show()
 
-# Plot the data
-fig, ax = plt.subplots(1, 1, figsize=(14, 8))
-width = 0.35  # Width of each bar
-x = np.arange(len(sorted_high_schools))  # X positions for the schools
+def plot_ac_students_by_gender(data):
+    """Plot AC enrollment by gender."""
+    plt.figure(figsize=(10, 6))
+    ac_enrollment_by_gender = data[data['ac_ind'] == 1].groupby('gender').size()
+    ac_enrollment_by_gender.plot(kind='bar', color='steelblue', edgecolor='black')
+    plt.title('AC Students By Gender')
+    plt.xlabel('Gender')
+    plt.ylabel('Student Count')
+    plt.xticks(rotation=0)
+    plt.tight_layout()
+    plt.show()
 
-# Plot the bars
-ax.bar(
-    x - width / 2, 
-    pre_course_count.reindex(sorted_high_schools).fillna(0), 
-    width, 
-    color=gray, 
-    edgecolor='black', 
-    label='Pre-COVID'
-)
-ax.bar(
-    x + width / 2, 
-    post_course_count.reindex(sorted_high_schools).fillna(0), 
-    width, 
-    color=navy, 
-    edgecolor='black', 
-    label='Post-COVID'
-)
+# === Main Processing ===
+if __name__ == "__main__":
+    total_students = data.shape[0]
 
-# Add labels above the bars
-for i, value in enumerate(pre_course_count.reindex(sorted_high_schools).fillna(0)):
-    ax.text(i - width / 2, value + 60, f"{int(value)}", ha='center', fontsize=10, color='black')  # Pre-COVID courses
-for i, value in enumerate(post_course_count.reindex(sorted_high_schools).fillna(0)):
-    ax.text(i + width / 2, value + 60, f"{int(value)}", ha='center', fontsize=10, color='black')  # Post-COVID courses
+    print_section_header("EDA Visualizations")
 
-# Customize the plot
-ax.set_ylabel('Count of AC Courses', fontsize=14)
-ax.set_xticks(x)
-ax.set_xticklabels(sorted_high_schools, rotation=45, fontsize=12)
-ax.legend(fontsize=12)
-ax.set_title('Count of AC Courses Pre- and Post-COVID', fontsize=16)
-plt.tight_layout()
-plt.show()
+    # Plot AC courses and students by school (total and post-COVID)
+    plot_ac_courses_and_students(data)
+    plot_ac_courses_and_students(data, post_covid_years=[2022, 2023, 2024])
 
-# Sort high schools by post-COVID proportion of students in AC courses (descending)
-sorted_high_schools = post_ac_proportion.sort_values(ascending=False).index.tolist()
+    # Plot AC vs Non-AC distribution
+    plot_ac_vs_non_ac_distribution(data)
 
-# Graph 2: Proportion of students in AC courses pre- and post-COVID
-fig, ax2 = plt.subplots(1, 1, figsize=(14, 8))
+    # Plot AC GPA distribution
+    plot_ac_gpa_distribution(data)
 
-# Plot the bars
-ax2.bar(
-    x - width / 2, 
-    pre_ac_proportion.reindex(sorted_high_schools).fillna(0), 
-    width, 
-    color=gray, 
-    edgecolor='black', 
-    label='Pre-COVID'
-)
-ax2.bar(
-    x + width / 2, 
-    post_ac_proportion.reindex(sorted_high_schools).fillna(0), 
-    width, 
-    color=navy, 
-    edgecolor='black', 
-    label='Post-COVID'
-)
+    # Plot AC GPA by school
+    plot_ac_gpa_by_school(data)
 
-# Add labels above the bars
-for i, value in enumerate(pre_ac_proportion.reindex(sorted_high_schools).fillna(0)):
-    ax2.text(i - width / 2, value + .5, f"{value:.1f}%", ha='center', fontsize=10, color='black')  # Pre-COVID proportions
-for i, value in enumerate(post_ac_proportion.reindex(sorted_high_schools).fillna(0)):
-    ax2.text(i + width / 2, value + .5, f"{value:.1f}%", ha='center', fontsize=10, color='black')  # Post-COVID proportions
+    # Plot GPA density
+    plot_gpa_density(data)
 
-# Customize the plot
-ax2.set_ylabel('Proportion of Students in AC Courses (%)', fontsize=14)
-ax2.set_xticks(x)
-ax2.set_xticklabels(sorted_high_schools, rotation=45, fontsize=12)
-ax2.legend(fontsize=12)
-ax2.set_title('Proportion of Students in AC Courses Pre- and Post-COVID', fontsize=16)
-plt.tight_layout()
-plt.show()
+    # Plot ethnic group proportions
+    plot_ethnic_group_proportions(data, total_students)
+
+    # Plot ethnic AC participation
+    plot_ethnic_ac_participation(data)
+
+    # Plot GPA vs AC course count
+    plot_gpa_vs_ac_count(data)
+
+    # Plot AC enrollment by gender
+    plot_ac_students_by_gender(data)

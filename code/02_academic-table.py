@@ -338,7 +338,6 @@ for year in years:
     # Merge the non-dummied data with the df
     df = pd.merge(df, scram, on=['student_number', 'year'], how='left')
 
-
     # Merge the dummied data with the model_df
     model_df = pd.merge(model_df, scram_dummies, on='student_number', how='left')
 

@@ -418,6 +418,7 @@ model_df['student_number'] = model_df['student_number'].astype(str)
 # Before dropping duplicates, merge home_status_df with df
 df = pd.merge(df, home_status_df, on=['student_number', 'year'], how='left')
 
+
 # Drop home_status from the df
 #df = df.drop(columns=['home_status'])
 #=================================================================
@@ -442,7 +443,7 @@ df.head()
 # - model_df retains part-time home school status if a student was ever enrolled (one row per student)
 
 # Extract only relevant columns and make a copy
-part_time_home_df = concat_model[['student_number', 'part_time_home_school' , 'year']].copy()
+part_time_home_df = concat_model[['student_number', 'part_time_home_school', 'year']].copy()
 
 # Create part_time_home_school_y column (1 if part_time_home_school is not null, else 0)
 part_time_home_df['part_time_home_school_y'] = part_time_home_df['part_time_home_school'].notna().astype(int)
@@ -605,8 +606,22 @@ df["ell_status"] = df["limited_english"].apply(lambda x: 1 if x in ['Y', 'O', 'F
 # Create ell_disability_group column to store classification labels
 df["ell_disability_group"] = df["ell_status"].astype(str) + "_" + df["disability_status"].astype(str)
 
-# Apply mapping
-df["ell_disability_group"] = df["ell_disability_group"].map(group_mapping)
+# Define a priority mapping for the groups. this will help make sure we retain the max value per student per year
+group_priority = {
+    "ell_with_disability": 4,
+    "ell_without_disability": 3,
+    "non_ell_with_disability": 2,
+    "non_ell_without_disability": 1,
+}
+df['ell_group_priority'] = df['ell_disability_group'].map(group_priority).fillna(0)
+
+# Sort by student and row and keep the highest-priority row
+df = df.sort_values(by=['student_number', 'year', 'ell_group_priority'], ascending=[True, True, False])
+df = df.drop_duplicates(subset=['student_number', 'year'], keep='first')
+
+# Now that the correct row is retained, we can drop the helper column
+df = df.drop(columns=['ell_group_priority'])
+
 
 # Define a priority mapping for the groups. this will help make sure we retain the max value per student per year
 group_priority = {
@@ -627,6 +642,7 @@ df = df.drop(columns=['ell_group_priority'])
 
 model_df.head()
 df.head()
+
 
 
 ######################################################################################################################################################
@@ -673,7 +689,6 @@ model_columns_to_drop += [col for col in model_df.columns if col.startswith('hs_
 # Make sure the column exists before dropping
 model_df = model_df.drop(columns=[col for col in model_columns_to_drop if col in model_df.columns], errors='ignore')
 
-
 # Specify the columns to be dropped from the df
 df_columns_to_drop = ['ell_entry_date', 'entry_date', 'first_enroll_us']
 df = df.drop(columns = df_columns_to_drop, errors='ignore')
@@ -690,6 +705,7 @@ df_columns = ['student_number', 'year', 'gender', 'ethnicity', 'amerindian_alask
 
 df = df[df_columns]
 df = df.drop_duplicates(keep='first')
+
 # Specify the column order for the model_df
 model_columns = (
     ['student_number']+

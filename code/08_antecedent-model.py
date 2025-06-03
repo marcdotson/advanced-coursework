@@ -9,7 +9,7 @@ import glob
 # SPECIFY WHAT MODEL TO RUN
 ########################################################
 
-post_covid_data_ind = 1  # Only use the post-covid data
+post_covid_data_ind = 0  # Only use the post-covid data
 multilevel_model_ind = 1 # Run a multilevel model
 
 
@@ -36,7 +36,7 @@ if not os.path.exists(folder_path):
 #######################################################
 
 # Columns to exclude from modeling
-col_drop = ['student_number', 'hs_advanced_math_y', 'tribal_affiliation_g']
+col_drop = ['student_number', 'hs_advanced_math_y', 'tribal_affiliation_g', 'passed_civics_exam_y']
 for col in df.columns:
     if col.startswith('teacher') or col.startswith('exit') or col.startswith('envi'):
         col_drop.append(col)
@@ -57,7 +57,7 @@ else:
 
 
 ################################################
-# RUN THE MULTILEVEL MODEL 
+# RUN THE MODEL 
 ################################################
 
 if __name__ == '__main__':
@@ -79,7 +79,7 @@ if __name__ == '__main__':
         if multilevel_model_ind == 1:
             model_fitted = antecedent_model.fit(draws=2000, idata_kwargs = {"log_likelihood": True})
         else:
-            model_fitted = antecedent_model.fit(idata_kwargs = {"log_likelihood": True})
+            model_fitted = antecedent_model.fit(tune=2000, draws=2000, idata_kwargs = {"log_likelihood": True})
 
         print("Sampling complete.")
 
@@ -141,6 +141,9 @@ else:
 # 05 - Flat model that corresponds with Multilevel Model 09.
 # 06 - Flat Model 02 but with high and middle schools as fixed effects (Green Canyon and 0 as references).
 # 07 - Flat model that corresponds with Multilevel Model 13.
+# 10 - Flat Model 07 with passed_civics_exam_y removed.
+# 11 - Flat Model 06 with passed_civics_exam_y removed.
+# 12 - Flat Model 06 with passed_civics_exam_y removed run for longer.
 
 # Multilevel Models:
 # 01 - All schools as random effects | ell_disability_group, otherwise fixed effects.

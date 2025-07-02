@@ -23,20 +23,15 @@ insights that can inform district policy and program development.
 - `/private` A catch-all folder for miscellaneous files, not pushed.
 - `/.venv` Hidden project library, not pushed.
 - `.gitignore` Hidden Git instructions file.
-- `.python-version` Hidden Python version for the reproducible
-  environment.
-- `requirements.txt` Information on the reproducible environment.
+- `.python-version` Hidden Python version file.
+- `pyproject.toml` Project environment configuration file.
+- `uv.lock` Project environment lock file.
 
-## Reproducible Environment
+## Project Environment
 
 After cloning this repository, go to the project’s terminal in Positron
-and run `python -m venv .venv` to create the `/.venv` project library,
-followed by `pip install -r requirements.txt` to install the specified
-library versions.
+and run `uv run` to create the `/.venv` project library and install the
+specified Python and library versions.
 
-Whenever you install new libraries or decide to update the versions of
-libraries you use, run `pip freeze > requirements.txt` to update
-`requirements.txt`.
-
-For more details on using GitHub, Quarto, etc. see [ASC
-Training](https://github.com/marcdotson/asc-training).
+For more details on using Python, Positron, GitHub, Quarto, etc. see the
+recommended [Data Stack](https://github.com/marcdotson/data-stack).

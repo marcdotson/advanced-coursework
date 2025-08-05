@@ -8,6 +8,9 @@ import ast
 import pickle
 # from scipy.stats import gaussian_kde
 
+# Specify all years
+years = [2017, 2018, 2022, 2023, 2024, 2025]
+
 # Set warnings to ignore
 warnings.filterwarnings("ignore")
 pd.set_option('display.max_rows', None)
@@ -191,9 +194,13 @@ if __name__ == "__main__":
 
     print_section_header("EDA Visualizations")
 
-    # Plot AC courses and students by school (total and post-COVID)
+    # Plot AC courses and students by school (total)
     plot_ac_courses_and_students(data)
-    plot_ac_courses_and_students(data, post_covid_years=[2022, 2023, 2024])
+
+    # Plot AC courses and students by school (post-COVID)
+    years_temp = pd.Series(years)
+    post_covid_years = years_temp[years_temp >= 2022].tolist()
+    plot_ac_courses_and_students(data, post_covid_years)
 
     # Plot AC vs Non-AC distribution
     plot_ac_vs_non_ac_distribution(data)
@@ -317,8 +324,12 @@ def calculate_ac_non_ac_metrics(df):
 # Call the function
 calculate_ac_non_ac_metrics(df)
 
-pre_covid_years = [2017, 2018, 2019]
-post_covid_years = [2021, 2022, 2023, 2024]
+years_temp = pd.Series(years)
+pre_covid_years = years_temp[years_temp < 2022].tolist()
+post_covid_years = years_temp[years_temp >= 2022].tolist()
+
+# pre_covid_years = [2017, 2018, 2019]
+# post_covid_years = [2021, 2022, 2023, 2024]
 
 # Filter data for pre- and post-COVID years
 df_pre_covid = df[df['year'].isin(pre_covid_years)]
@@ -417,7 +428,6 @@ clearing = clearing.drop_duplicates()
 # Load the pickled student data
 with open('data/student_data.pkl', 'rb') as f:
     student_tables = pickle.load(f)
-years = [2017, 2018, 2022, 2023, 2024]
 
 # Create empty tables to store yearly data
 all_membership = []

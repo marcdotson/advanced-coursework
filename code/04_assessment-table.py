@@ -3,7 +3,7 @@ import pandas as pd
 import pickle
 
 # Define the list of years to process
-years = [2017, 2018, 2022, 2023, 2024]
+years = [2017, 2018, 2022, 2023, 2024, 2025]
 
 # Create an empty dictionary to store the df data for each year
 # Only one file will be exported, so df will represent the exploratory and modeling data.

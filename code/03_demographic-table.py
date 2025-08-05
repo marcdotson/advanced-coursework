@@ -4,7 +4,7 @@ import pandas as pd
 import pickle
 
 # Define the list of years to process
-years = [2017, 2018, 2022, 2023, 2024]
+years = [2017, 2018, 2022, 2023, 2024, 2025]
 
 ######################################################################################################################################################
 # Function to process categorical variables. Add non-dummied columns to df and dummy-coded columns to model_df

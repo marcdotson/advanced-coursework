@@ -7,7 +7,7 @@ import numpy as np
 import pickle
 
 # Define the list of years to process
-years = [2017, 2018, 2022, 2023, 2024]
+years = [2017, 2018, 2022, 2023, 2024, 2025]
 
 ######################################################################################################################################################
 # All of the data will be left joined with the df and model_df
@@ -316,11 +316,14 @@ for year in years:
 
     ################################################################
     # Dummy code extended_school_year (extended_school_year_y)
-    extended_year_dummies = pd.get_dummies(scram['extended_school_year'].replace(0, 'n'), prefix='extended_school_year').astype(int)
-
-    # Lowercase column titles
-    extended_year_dummies.columns = extended_year_dummies.columns.str.lower()
-
+    if sum(scram['extended_school_year'] == 'Y') > 0:
+        extended_year_dummies = pd.get_dummies(scram['extended_school_year'].replace(0, 'n'), prefix='extended_school_year').astype(int)
+        
+        # Lowercase column titles
+        extended_year_dummies.columns = extended_year_dummies.columns.str.lower()
+    else:
+        extended_year_dummies['extended_school_year_y'] = 0
+    
     # Concat with scram_dummies table
     scram_dummies = pd.concat([scram_dummies, extended_year_dummies], axis=1)
 

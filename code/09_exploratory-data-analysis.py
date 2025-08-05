@@ -3,6 +3,9 @@ import pandas as pd
 import warnings
 import ast
 
+# Specify all years
+years = [2017, 2018, 2022, 2023, 2024, 2025]
+
 # Suppress warnings and set display options
 warnings.filterwarnings("ignore")
 pd.set_option('display.max_rows', None)
@@ -30,7 +33,7 @@ def summarize_dataset(data):
     print(f"Years in dataset: {data['year'].unique()}\n")
     data.info()
 
-def calculate_academic_statistics(data):
+def calculate_academic_statistics(data, years):
     """Calculate district-level academic stats."""
     # Overall statistics
     total = len(data)
@@ -48,8 +51,9 @@ def calculate_academic_statistics(data):
     print(f"Avg GPA (AC students): {avg_gpa_ac:.2f}")
     print(f"Avg AC courses taken per AC student: {avg_ac_count:.2f}")
 
-    # Post-COVID statistics (2022, 2023, 2024)
-    post_covid_years = [2022, 2023, 2024]
+    # Post-COVID statistics
+    years_temp = pd.Series(years)
+    post_covid_years = years_temp[years_temp >= 2022].tolist()
     post_covid_data = data[data['year'].isin(post_covid_years)]
     total_post_covid = len(post_covid_data)
     ac_students_post_covid = post_covid_data[post_covid_data['ac_ind'] == 1].shape[0]
@@ -106,7 +110,7 @@ def analyze_indicators(data, indicators):
         for value, ac, total, rate in results:
             print(f"{value}: {ac}/{total} ({rate:.2%})")
 
-def analyze_school_data(data):
+def analyze_school_data(data, years):
     """Analyze AC course and student data across the district and schools, including post-COVID analysis."""
     # Define high schools
     high_schools = ['Green Canyon', 'Sky View', 'Mountain Crest', 'Ridgeline']
@@ -120,7 +124,8 @@ def analyze_school_data(data):
     print(f"Number of AC classes in the district: {ac_count_district_total}")
 
     # Post-COVID AC courses in the district
-    post_covid_years = [2022, 2023, 2024]
+    years_temp = pd.Series(years)
+    post_covid_years = years_temp[years_temp >= 2022].tolist()
     ac_count_district_total_post_covid = data[data['year'].isin(post_covid_years)]['ac_count'].sum()
     print(f"Number of AC classes in the district post-covid: {ac_count_district_total_post_covid}\n")
 
@@ -170,7 +175,7 @@ if __name__ == "__main__":
     summarize_dataset(data)
 
     print_section_header("District-Wide Analysis")
-    calculate_academic_statistics(data)
+    calculate_academic_statistics(data, years)
 
     print_section_header("Demographic Data Analysis")
     analyze_demographics(data)
@@ -184,7 +189,7 @@ if __name__ == "__main__":
     analyze_indicators(data, indicators)
 
     print_section_header("School Analysis")
-    analyze_school_data(data)
+    analyze_school_data(data, years)
 
 ##########################################################################
 # PHASE TWO - Clearinghouse Exploratory Data

@@ -25,7 +25,7 @@ clearing = clearing.drop_duplicates()
 # Load the pickled data (student_tables)
 with open('./data/student_data.pkl', 'rb') as f:
     student_tables = pickle.load(f)
-years = [2017, 2018, 2022, 2023, 2024]
+years = [2017, 2018, 2022, 2023, 2024, 2025]
 
 # Create empty tables to store yearly data
 all_membership = []

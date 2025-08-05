@@ -16,7 +16,7 @@ import pandas as pd
 import pickle
 
 # List of years to process
-years = [2017, 2018, 2022, 2023, 2024]
+years = [2017, 2018, 2022, 2023, 2024, 2025]
 
 ##########################################################################################################################################################
 # Columns to drop if they exist in the student_table. Some years are missing columns.
@@ -82,7 +82,6 @@ for year in years:
     ##########################################################################################################################################################
     # Add the processed tables to their respective dictionaries
     student_tables[year] = student_table
-
 
 ##########################################################################################################################################################
 # Save the dictionaries into a single pickle file (student_data.pkl)

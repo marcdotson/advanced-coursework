@@ -3,11 +3,11 @@
 # ----------------------------------
 # PART 1: School-Level Teacher Grids
 # ----------------------------------
-# - Combines Course Master and Course Membership data from 2017, 2018, 2022, 2023, and 2024.
+# - Combines Course Master and Course Membership data from 2017, 2018, 2022, 2023, 2024, etc.
 # - Builds matrices showing which teachers taught at which secondary schools.
 # - Splits the data into:
 #     - High schools vs. middle schools
-#     - All years vs. post-COVID years (2022–2024)
+#     - All years vs. post-COVID years (2022+)
 # - Each matrix has schools as rows and teachers as columns (1 = taught at that school, 0 = did not).
 
 # Files Exported:
@@ -51,7 +51,7 @@ import pickle
 all_membership = []
 all_master = []
 
-years = [2017, 2018, 2022, 2023, 2024]
+years = [2017, 2018, 2022, 2023, 2024, 2025]
 
 for year in years:
     # Load Course Master and Course Membership data for the year
@@ -91,8 +91,7 @@ df = df[df['school_number'].isin(secondary_school_ids)]
 df = df.drop_duplicates(subset=['teacher_id', 'school_number'], keep='first')
 
 # Remove teachers who did not teach in the years below
-all_years = [2017, 2018, 2022, 2023, 2024]
-df = df[df['year'].isin(all_years)]
+df = df[df['year'].isin(years)]
 
 # Map the school numbers to their names
 school_name_map = {
@@ -121,7 +120,8 @@ high_school = df[df['school_number'].isin(high_school_ids)]
 middle_school = df[df['school_number'].isin(middle_school_ids)]
 
 # Create a dataframe to store post-covid data for high school and middle school
-post_covid_years = [2022, 2023, 2024]
+years_temp = pd.Series(years)
+post_covid_years = years_temp[years_temp >= 2022].tolist()
 post_high = high_school[high_school['year'].isin(post_covid_years)]
 post_middle = middle_school[middle_school['year'].isin(post_covid_years)]
 
@@ -183,8 +183,6 @@ with open('./data/student_data.pkl', 'rb') as f:
 all_membership = []
 all_master = []
 all_student_tables = []
-
-years = [2017, 2018, 2022, 2023, 2024]
 
 for year in years:
     # Load Course Master and Course Membership data for the year

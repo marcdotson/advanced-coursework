@@ -16,16 +16,17 @@
 import pandas as pd
 import pickle
 
+# Define the years to process
+years = [2017, 2018, 2022, 2023, 2024, 2025]
+
+# Post Covid years
+years_temp = pd.Series(years)
+post_covid_years = years_temp[years_temp >= 2022].tolist()
+
 ######################################################################################################################################################
 # ----------------------------------
 # PART 1: Phase One Combine Data
 # ----------------------------------
-
-# Define the years to process
-years = [2017, 2018, 2022, 2023, 2024]
-
-# Post Covid years
-post_covid_years = [2022, 2023, 2024]
 
 # Load in the modeling datasets that will be joined later
 # []_model represents modeling files
@@ -101,9 +102,6 @@ print('===========================================')
 # ----------------------------------
 # PART 2: Phase Two Combine Data with Clearinghouse Data
 # ----------------------------------
-
-# Define the years to process EOY Data
-years = [2017, 2018, 2022, 2023, 2024]
 
 # Load in the modeling datasets that will be joined later
 # []_model represents modeling files

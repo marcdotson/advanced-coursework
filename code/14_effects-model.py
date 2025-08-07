@@ -10,7 +10,8 @@ import glob
 ########################################################
 
 # post_covid_data_ind = 0  # Only use the post-covid data
-multilevel_model_ind = 0 # Run a multilevel model
+multilevel_model_ind = 0   # Run a multilevel model
+college_grad_model_ind = 0 # Run a model for college graduation
 
 
 ########################################################
@@ -50,12 +51,16 @@ df_base = df.drop(columns = col_drop, axis=1)
 # Specify the model formula
 if multilevel_model_ind == 1:
     all_predictors = " + ".join(df_base.columns.difference(["start_college_y", "college_grad_y","high_school"]))
-    # model_formula = f"start_college_y ~ ({all_predictors} | high_school)"
-    model_formula = f"college_grad_y ~ ({all_predictors} | high_school)"
+    if college_grad_model_ind == 1:
+        model_formula = f"college_grad_y ~ ({all_predictors} | high_school)"
+    else:
+        model_formula = f"start_college_y ~ ({all_predictors} | high_school)"
 else:
     all_predictors = " + ".join(df_base.columns.difference(["start_college_y", "college_grad_y"]))
-    # model_formula = f"start_college_y ~ {all_predictors}"
-    model_formula = f"college_grad_y ~ {all_predictors}"
+    if college_grad_model_ind == 1:
+        model_formula = f"college_grad_y ~ {all_predictors}"
+    else:
+        model_formula = f"start_college_y ~ {all_predictors}"
 
 
 ################################################

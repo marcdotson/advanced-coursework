@@ -11,7 +11,7 @@ import glob
 
 # post_covid_data_ind = 0  # Only use the post-covid data
 multilevel_model_ind = 0   # Run a multilevel model
-college_grad_model_ind = 0 # Run a model for college graduation
+college_grad_model_ind = 1 # Run a model for college graduation
 
 
 ########################################################
@@ -149,7 +149,10 @@ else:
 # 09 - Flat model of college_grad_y with advanced course categories.
 # 13 - Flat model of start_college_y with advanced course categories and passed_civics_exam_y removed.
 # 14 - Flat model of college_grad_y with advanced course categories and passed_civics_exam_y removed.
+# 15 - 2025 Update: Flat model of start_college_y with advanced course categories and passed_civics_exam_y removed.
+# 16 - 2025 Update: Flat model of college_grad_y with advanced course categories and passed_civics_exam_y removed.
 
 # Final Models:
 # Full Dataset: Flat Models 13 and 14.
+# 2025 Update: Full Dataset: Flat Models 15 and 16.
 

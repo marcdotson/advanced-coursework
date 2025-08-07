@@ -1,5 +1,5 @@
 ##############################################################################
-                             #IMPORT LIBRARIES
+# IMPORT LIBRARIES
 ############################################################################## 
 import arviz as az
 import pandas as pd
@@ -12,12 +12,11 @@ import itertools
 from matplotlib.colors import ListedColormap, BoundaryNorm
 
 #############################################################################
-                        #  PREP FOR MODEL VISUALS
-############################################################################## 
-
+# PREP FOR MODEL VISUALS
+##############################################################################
 # Load trace from the NetCDF file saved from model output and the dataset file
 try:
-    #Inerence data for all years
+    #Inference data for all years
     idata_multi = az.from_netcdf("output/multilevel-model-output_12.nc")
 
     #inference data for multilevel model post covid
@@ -46,7 +45,6 @@ if not os.path.exists(folder_path):
 
 #Finds the next available file number to avoid overwriting
 def get_next_filename(folder_path, base_name, extension, group=None):
-  
     # Ensure the extension is in lowercase for consistency
     extension = extension.lower()
     
@@ -85,9 +83,8 @@ def get_next_filename(folder_path, base_name, extension, group=None):
 usu_palette = ["#0F2439", "#1D3F6E", "#A7A8AA"]  # Navy, Aggie Blue, and Gray
 
 ##############################################################################
-              #CREATE OUR GROUPIING STRUCTURES FOR THE VISUALS
+# CREATE OUR GROUPIING STRUCTURES FOR THE VISUALS
 ##############################################################################
-
 def process_filtered_idata(idata, var_list, group_dims=None):
     # Drop `_sigma` variables and Intercept from the posterior
     filtered = idata.posterior.drop_vars([var for var in idata.posterior.data_vars if '_sigma' in var or var == 'Intercept'])
@@ -207,7 +204,6 @@ groups = {
                                  "non_ell_with_disability", "services_504_y", "environment_h", 
                                  "environment_r", "scram_membership"],
 
-
     "Demograophic": ["tribal_affiliation_g", "tribal_affiliation_n", "tribal_affiliation_o",
                            "tribal_affiliation_p", "tribal_affiliation_s", "tribal_affiliation_u",
                            "amerindian_alaskan_y", "asian_y", "black_african_amer_y", "hawaiian_pacific_isl_y",
@@ -224,12 +220,10 @@ summary_flat = az.summary(idata_flat)
 summary_flat_pc = az.summary(idata_flat_pc)
 
 ##############################################################################
-            # EXTACT OUR MOST INFLUENTIAL FACTORS FOR FLAT MODEL
+# EXTACT OUR MOST INFLUENTIAL FACTORS FOR FLAT MODEL
 ##############################################################################
 all_summaries = [summary_flat, summary_flat_pc]
 summary_names = ["Average Effects Across All Years", "Average Effects Post-Covid"]  # Corresponding names for file output
-
-
 
 for i, summary in enumerate(all_summaries):
     fixed_effects_summary = summary[
@@ -237,7 +231,6 @@ for i, summary in enumerate(all_summaries):
         (~summary.index.str.contains("Intercept")) & 
         (~summary.index.str.contains("homeless_y")) &
         (~summary.index.str.contains("refugee_student_y"))
-        
     ]
     
     significant_effects = fixed_effects_summary[
@@ -270,7 +263,6 @@ for i, summary in enumerate(all_summaries):
     plt.savefig(f"{folder_path}/flat-phase-1-plot-{summary_names[i]}.png", format="png", dpi=300, bbox_inches='tight')
     plt.close()
 
-    
     sorted_fixed_effects_not_abs = significant_effects.reindex(
     significant_effects["mean"].sort_values(ascending=False).index
     )
@@ -298,11 +290,9 @@ for i, summary in enumerate(all_summaries):
 
     plt.close()
 
-
 # ###############################################################################
-#                          # INTERVAL PLOTS
+# INTERVAL PLOTS
 # ###############################################################################
-
 def compare_group_effects(
     models,
     labels,
@@ -399,21 +389,15 @@ def compare_group_effects(
 
     print(f"✅ Plot saved to: {full_path}")
 
-
 # *******CHANGE THIS NAME HERE BASED ON HOW YOU WOULD LIKE IT TO SAVE***********
 interval_plot_base_name = 'interval-comparisons-gender'
 
 #SAVE THE PLOT, First two parameters must be wrapped in a [] in order to treat like a list
 compare_group_effects([sorted_multi, sorted_multi_pc], ['All Years', 'Post-Covid'], 'gender_m|high_school', interval_plot_base_name, 'Effect of Being Male Across Schools' )
 
-
-
 ###############################################################################
-                         # HEAT MAP HIGH LEVEL
+# HEAT MAP HIGH LEVEL
 ###############################################################################
-
-
-
 # Access the posterior dataset
 posterior = idata_multi.posterior
 flat_posterior = idata_flat.posterior
@@ -475,7 +459,6 @@ def classify_fixed_effect(varname):
 # Step C: Concatenate fixed effects into a single DataFrame
 fixed_effects_df = pd.concat([classify_fixed_effect(var) for var in flat_predictor_vars])
 fixed_effects_df = fixed_effects_df.drop_duplicates(subset=["predictor"])
-
 
 # Step D: Remove duplicates from the multilevel classification if needed
 classification_df = classification_df.drop_duplicates(subset=["predictor", "high_school"])

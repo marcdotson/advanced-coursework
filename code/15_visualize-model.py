@@ -12,7 +12,7 @@ import itertools
 from matplotlib.colors import ListedColormap, BoundaryNorm
 
 #############################################################################
-# PREP FOR MODEL VISUALS
+# PREP FOR PHASE 1 MODEL VISUALS
 ##############################################################################
 # Load trace from the NetCDF file saved from model output and the dataset file
 try:
@@ -527,4 +527,126 @@ plt.tight_layout()
 full_path = 'figures/heat-map-high-level-fixed-effects.png'
 plt.savefig(full_path, dpi=300)
 plt.show()
+
+#############################################################################
+# PREP FOR PHASE 2 MODEL VISUALS
+##############################################################################
+# Load trace from the NetCDF file saved from model output and the dataset file
+try:
+    # Inference data for enrollment model
+    # idata_enroll = az.from_netcdf("output/flat-model-output_13.nc")
+    idata_enroll = az.from_netcdf("output/flat-model-output_15.nc")
+    # Inference data for graduation model
+    # idata_grad = az.from_netcdf("output/flat-model-output_14.nc")
+    idata_grad = az.from_netcdf("output/flat-model-output_16.nc")
+except Exception as e:
+    print(f"Loading Data failed: {e}")
+
+all_idata = [ idata_enroll, idata_grad ]
+
+#all groups from phase 2, for easier sorted plotting
+groups = {
+    "Academic Performance": [
+        "composite_score", "english_score", "math_score", "reading_score",
+        "science_score", "writing_score", "overall_gpa", "percent_days_attended",
+        "passed_civics_exam", "hs_advanced_math_y", "extracurricular_ind",
+        "part_time_home_school_y"
+    ],
+
+    "Environmental Factors": [
+        "immigrant_y", "migrant_y", "homeless_y", "military_child_y", "refugee_student_y"
+    ],
+
+    "Disability & ELL Status": [
+        "ell_with_disability", "ell_without_disability",
+        "non_ell_with_disability", "services_504_y",
+        "environment_h", "environment_r", "scram_membership"
+    ],
+
+    "Demographic": [
+        "tribal_affiliation_g", "tribal_affiliation_n", "tribal_affiliation_o",
+        "tribal_affiliation_p", "tribal_affiliation_s", "tribal_affiliation_u",
+        "amerindian_alaskan_y", "asian_y", "black_african_amer_y",
+        "hawaiian_pacific_isl_y", "white_y", "ethnicity_y",
+        "gender_m", "gender_u"
+    ],
+
+    "Classes": [
+         "arts", "business", "math", "science", "social_studies", "technology", "language", "medical"
+    ],
+
+    "Course Types": [
+        "ap_course", "btech_course", "ce_course",
+    ],
+
+    "School": [
+        "high_school[Mountain Crest]", "high_school[Ridgeline]", "high_school[Sky View]",
+        "middle_school[North Cache Middle]", "middle_school[South Cache Middle]",
+        "middle_school[Spring Creek Middle]"
+    ]
+}
+
+# USU color palette
+colors = ["#00274C", "#9EA2A2", "#D6D6D6"]
+
+#####################################################################
+# INTERVAL PLOT FUNCTION FOR PHASE 2 MODELS
+#####################################################################
+def plot_summary_intervals(group_vars, labels, models, file_path, hdi_prob=0.94, sort_by_model=0):
+    # Collect summaries
+    summaries = []
+    for model in models:
+        summary = az.summary(model, hdi_prob=hdi_prob)
+        filtered_summary = summary.loc[summary.index.intersection(group_vars)]
+        summaries.append(filtered_summary)
+
+    # Sort by the specified model's means
+    sorted_groups = summaries[sort_by_model]["mean"].sort_values(ascending=True).index.tolist()
+
+    # Positions for y-axis
+    y_pos = np.arange(len(sorted_groups))
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    for i, summary in enumerate(summaries):
+        summary = summary.loc[sorted_groups] 
+        offset = (i - (len(summaries) - 1) / 2) * 0.15  # space between points
+
+        ax.errorbar(
+            summary["mean"],
+            y_pos + offset * 2,
+            xerr=[
+                summary["mean"] - summary[f"hdi_{int((1 - hdi_prob)/2 * 100)}%"],
+                summary[f"hdi_{int((1 + hdi_prob)/2 * 100)}%"] - summary["mean"]
+            ],
+            fmt='o',
+            color=colors[i % len(colors)],
+            label=labels[i],
+            capsize=4,
+            markersize=6,
+            alpha=0.9
+        )
+
+    # Clean up label formatting (replace underscores, title case)
+    clean_labels = [label.replace("_", " ").title() for label in sorted_groups]
+
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(clean_labels)
+    ax.set_xlabel("Impact On Likelihood\nPositive = More Likely | Negative = Less Likely")
+    ax.set_title("Advanced Course Categories\nPosterior Effects")
+    ax.legend()
+    ax.grid(True, axis='x', linestyle='--', alpha=0.5)
+
+    plt.tight_layout()
+    plt.savefig(file_path, dpi=300)
+    plt.close()
+
+    print(f"Plot saved to: {file_path}")
+
+#ALTER FILE PATH AS NEEDED
+file_path = "figures/2025-update_phase-02_comparison-college-enrollment-by-advanced-course-category.png"
+# file_path = "figures/phase-02_comparison-college-enrollment-by-advanced-course-category.png"
+
+#Plot whichever groups you want to visualize for phase 2 models
+plot_summary_intervals(groups["Classes"], ["College Enrollment", "College Graduation"], all_idata, file_path)
 
